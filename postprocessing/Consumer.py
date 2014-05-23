@@ -62,11 +62,19 @@ class Consumer(object):
                                     stderr=subprocess.PIPE, stdout=subprocess.PIPE)
             self.procList.append(proc)
             
+            # Check whether the maximum number of processes has been reached
+            max_procs_reached = len(self.procList) > self.config.max_procs
+            if max_procs_reached:
+                logging.debug("Maxmimum number of sub-processes reached: %s" % len(self.procList))
+                
+            # If we have reached the max number of processes, block until we have
+            # at least on free slot
             while len(self.procList) > self.config.max_procs:
-                logging.info("Maxmimum number of sub-processes reached: %s" % len(self.procList))
                 time.sleep(1.0)
                 self.update_processes()
                 
+            if max_procs_reached:
+                logging.debug("Resuming. Number of sub-processes: %s" % len(self.procList))
             self.update_processes()
         except:
             logging.error(sys.exc_value)

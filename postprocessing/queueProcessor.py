@@ -5,12 +5,17 @@
     @copyright: 2014 Oak Ridge National Laboratory
 """
 import logging, json, sys, os
+import argparse
 
+parser = argparse.ArgumentParser(description='Post-processing agent')
+parser.add_argument('-c', metavar='config', help='Configuration file', dest='config')
+namespace = parser.parse_args()
+    
 # Get the location of the software installation
-if sys.argv[1] is None:
+if namespace.config is None:
     CONFIG_FILE = '/etc/autoreduce/post_process_consumer.conf'
 else:
-    CONFIG_FILE = sys.argv[1]
+    CONFIG_FILE = namespace.config
 
 if os.access(CONFIG_FILE, os.R_OK) == False:
     raise RuntimeError, "Configuration file doesn't exist or is not readable."
@@ -29,5 +34,7 @@ from postprocessing.Consumer import Consumer
 from twisted.internet import reactor
 
 logging.info("Starting post-processing listener %s" % postprocessing.__version__)
+configuration.log_configuration()
+
 Consumer(configuration).run()
 reactor.run()

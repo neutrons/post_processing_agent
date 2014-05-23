@@ -33,12 +33,16 @@ class Configuration(object):
     def __init__(self, config_file):
         if os.access(config_file, os.R_OK) == False:
             raise RuntimeError, "Configuration file doesn't exist or is not readable: %s" % sys.exc_value
-        print "Using %s" % config_file
         cfg = open(config_file, 'r')
         json_encoded = cfg.read()
         config = json.loads(json_encoded)
+
+        # Keep a record of which config file we are using
+        self.config_file = config_file
+        # ActiveMQ user creds
         self.amq_user = config['amq_user']
         self.amq_pwd = config['amq_pwd']
+        # ActiveMQ broker information
         self.brokers = config['brokers']
         self.uri = config['uri']
         self.queues = config['amq_queues']
@@ -74,9 +78,30 @@ class Configuration(object):
         self.max_memory = config['max_memory'] if 'max_memory' in config else 8.0
         self.max_procs = config['max_procs'] if 'max_procs' in config else 5
         self.web_monitor_url = config['webmon_url_template'] if 'webmon_url_template' in config else "https://monitor.sns.gov/files/$instrument/$run_number/submit_reduced/"
+        self.comm_only = config['communication_only']==1 if 'communication_only' in config else False
+        self.remote_execution = config['remote_execution']==1 if 'remote_execution' in config else False
         
         sys.path.insert(0, self.sw_dir)
 
+    def log_configuration(self):
+        """
+            Log the current configuration
+        """
+        logging.info("Using %s" % self.config_file)
+        if self.comm_only:
+            logging.info("  - Running in COMMUNICATION ONLY mode: no post-processing will be performed")
+        if self.remote_execution:
+            logging.info("  - REMOTE execution")
+            logging.info("    Max chunk memory: %s" % self.max_memory)
+            logging.info("    Max nodes: %s" % self.max_nodes)
+        else:
+            logging.info("  - LOCAL execution")
+        logging.info("  - Max number of processes: %s" % self.max_procs)
+        logging.info("  - Input queues: %s" % self.queues)
+        logging.info("  - Installation dir: %s" % self.sw_dir)
+        logging.info("  - Start script: %s" % self.start_script)
+        logging.info("  - Task script: %s" % self.task_script)
+        
 # Set the log level for the Stomp client
 stomp_logger = logging.getLogger('stompest.sync.client')
 stomp_logger.setLevel(logging.ERROR)
@@ -94,7 +119,7 @@ configuration = read_configuration(CONFIG_FILE)
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s %(process)d/%(threadName)s: %(message)s",
+    format="%(asctime)s %(levelname)s/%(process)d %(message)s",
     filename=configuration.log_file,
     filemode='a'
 )

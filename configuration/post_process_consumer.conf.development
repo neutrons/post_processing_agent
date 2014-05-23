@@ -30,6 +30,7 @@
     "catalog_data_ready": "CATALOG.DATA_READY",
     "reduction_data_ready": "REDUCTION.DATA_READY",
     "reduction_catalog_data_ready": "REDUCTION_CATALOG.DATA_READY",
-    "communication_only": True,
-    "max_procs": 5
+    "communication_only": 1,
+    "max_procs": 5,
+    "remote_execution": 0
 }
