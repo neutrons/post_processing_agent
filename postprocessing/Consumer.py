@@ -57,9 +57,21 @@ class Consumer(object):
             data = frame.body
             logging.info("Received %s: %s" % (destination, data))
             
+            # Put together the command to execute, including any optional arguments
             post_proc_script = os.path.join(self.config.python_dir, self.config.task_script)
-            proc = subprocess.Popen([self.config.start_script, post_proc_script, destination, str(data).replace(' ','') ],
-                                    stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            command_args = [self.config.start_script, post_proc_script]
+            
+            # Format the queue name argument
+            if self.config.task_script_queue_arg is not None:
+                command_args.append(self.config.task_script_queue_arg)
+            command_args.append(destination)
+            
+            # Format the data argument
+            if self.config.task_script_data_arg is not None:
+                command_args.append(self.config.task_script_data_arg)
+            command_args.append(str(data).replace(' ',''))
+            
+            proc = subprocess.Popen(command_args, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
             self.procList.append(proc)
             
             # Check whether the maximum number of processes has been reached

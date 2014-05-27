@@ -81,6 +81,9 @@ class Configuration(object):
         self.comm_only = config['communication_only']==1 if 'communication_only' in config else False
         self.remote_execution = config['remote_execution']==1 if 'remote_execution' in config else False
         
+        self.task_script_queue_arg = config['task_script_queue_arg'] if 'task_script_queue_arg' in config else None
+        self.task_script_data_arg = config['task_script_data_arg'] if 'task_script_data_arg' in config else None
+        
         sys.path.insert(0, self.sw_dir)
 
     def log_configuration(self):

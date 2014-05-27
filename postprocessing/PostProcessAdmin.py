@@ -5,7 +5,7 @@
     The original code for this class was take from https://github.com/mantidproject/autoreduce
     
     Example input dictionaries:
-    {"information": "mac83808.sns.gov", "run_number": "85738", "instrument": "EQSANS", "ipts": "IPTS-10674", "facility": "SNS", "data_file": "/Volumes/RAID/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs"}
+    {"information": "mac83808.sns.gov", "run_number": "30892", "instrument": "EQSANS", "ipts": "IPTS-10674", "facility": "SNS", "data_file": "/Volumes/RAID/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs"}
     {"information": "autoreducer1.sns.gov", "run_number": "85738", "instrument": "CNCS", "ipts": "IPTS-10546", "facility": "SNS", "data_file": "/SNS/CNCS/IPTS-10546/0/85738/NeXus/CNCS_85738_event.nxs"}
     
     @copyright: 2014 Oak Ridge National Laboratory
@@ -84,11 +84,9 @@ class PostProcessAdmin:
             if os.path.exists(summary_script) == True:
                 summary_output = os.path.join(proposal_shared_dir, "%s_%s_runsummary.csv" % (self.instrument, self.proposal))
                 cmd = "python " + summary_script + " " + self.instrument + " " + self.data_file + " " + summary_output
-                logging.debug("sumRun subprocess started: " + cmd)
+                logging.debug("Run summary subprocess started: " + cmd)
                 subprocess.call(cmd, shell=True)
-                logging.info("sumRun subprocess completed, see " + summary_output)
-            else:
-                logging.info("sumRun is not enabled")
+                logging.info("Run summary subprocess completed, see " + summary_output)
 
             # Look for auto-reduction script
             reduce_script_path = os.path.join(instrument_shared_dir, "reduce_%s.py" % self.instrument)
@@ -103,10 +101,12 @@ class PostProcessAdmin:
                 os.makedirs(log_dir)
 
             # Run the reduction
+            out_log = os.path.join(log_dir, os.path.basename(self.data_file) + ".log")
+            out_err = os.path.join(log_dir, os.path.basename(self.data_file) + ".err")
             if remote:
-                self.remote_reduction(script, output_dir, log_dir)
+                self.remote_reduction(reduce_script_path, proposal_shared_dir, out_log, out_err)
             else:
-                self.local_reduction(script, output_dir, log_dir)
+                self.local_reduction(reduce_script_path, proposal_shared_dir, out_log, out_err)
                 
             # If the reduction succeeded, upload the images we might find in the reduction directory
             if not os.path.isfile(out_err) or os.stat(out_err).st_size == 0:
@@ -148,37 +148,44 @@ class PostProcessAdmin:
                     
                 self.data["error"] = "REDUCTION: %s" % error_line
                 self.send('/queue/'+self.conf.reduction_error , json.dumps(self.data))
-
-        except Exception, e:
-            self.data["error"] = "Reduction: %s " % e
+        except:
+            logging.error("reduce: %s" % sys.exc_value)
+            self.data["error"] = "Reduction: %s " % sys.exc_value
             self.send('/queue/'+self.conf.reduction_error , json.dumps(self.data))
 
-    def remote_reduction(self, script, output_dir, log_dir):
+    def remote_reduction(self, script, output_dir, out_log, out_err):
         """
             Run auto-reduction remotely
             @param script: full path to the reduction script to run
             @param output_dir: reduction output directory
-            @param log_dir: reduction log directory
+            @param out_log: reduction log file
+            @param out_err: reduction error file
         """
-        out_log = os.path.join(log_dir, os.path.basename(self.data_file) + ".log")
-        out_err = os.path.join(log_dir, os.path.basename(self.data_file) + ".err")
-
         #MaxChunkSize is set to 8G specifically for the jobs run on fermi, which has 32 nodes and 64GB/node
         #We would like to get MaxChunkSize from an env variable in the future
-        import mantid.simpleapi as api
-        Chunks = api.DetermineChunking(Filename=self.data_file,MaxChunkSize=configuration.max_memory)
-        nodesDesired = min(Chunks.rowCount(), configuration.max_nodes)
-        logging.info("Chunks: " + str(Chunks))
-        logging.info("nodesDesired: " + str(nodesDesired))
+        if self.conf.comm_only is False:
+            import mantid.simpleapi as api
+            chunks = api.DetermineChunking(Filename=self.data_file,MaxChunkSize=configuration.max_memory)
+            nodes_desired = min(chunks.rowCount(), configuration.max_nodes)
+        else:
+            chunks = 1
+            nodes_desired = 1
+        logging.info("Chunks: " + str(chunks))
+        logging.info("nodesDesired: " + str(nodes_desired))
         
         # Build qsub command
+        #TODO: Pass in the reduction script path directly instead of rebuilding it inside the job script.
         cmd_out = " -o " + out_log + " -e " + out_err
-        cmd_l = " -l nodes=" + str(nodesDesired) + ":ppn=1"
-        cmd_v = " -v data_file='" + self.data_file + "',n_nodes="+str(nodesDesired)+",facility='" + self.facility + "',instrument='" + self.instrument + "',proposal_shared_dir='" + output_dir + "'"
+        cmd_l = " -l nodes=" + str(nodes_desired) + ":ppn=1"
+        cmd_v = " -v data_file='" + self.data_file + "',n_nodes="+str(nodes_desired)+",facility='" + self.facility + "',instrument='" + self.instrument + "',proposal_shared_dir='" + output_dir + "'"
         cmd_job = " " + self.sw_dir + "/remoteJob.sh"
         cmd = "qsub" + cmd_out + cmd_l + cmd_v + cmd_job
-        logging.info("reduction subprocess started: " + cmd)
+        logging.info("Reduction process: " + cmd)
 
+        # If we are only dry-running, return immediately
+        if self.conf.comm_only is True:
+            return
+        
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True).stdout.read()
         list = proc.split(".")
         if len(list) > 0:
@@ -188,32 +195,31 @@ class PostProcessAdmin:
         logging.debug("qstat_pid: " + qstat_pid)
         
         while True:
-          qstat_cmd = "qstat " + pid
-          ret = subprocess.Popen(qstat_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).stdout.read().rstrip()
-          logging.debug("Popen return code: " + ret)
-          if ret.startswith(qstat_pid):
-            break
-          else:
-            time.sleep(30)
+            qstat_cmd = "qstat " + pid
+            ret = subprocess.Popen(qstat_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).stdout.read().rstrip()
+            logging.debug("Popen return code: " + ret)
+            if ret.startswith(qstat_pid):
+                break
+            else:
+                time.sleep(30)
     
-    def local_reduction(self, script, output_dir, log_dir):
+    def local_reduction(self, script, output_dir, out_log, out_err):
         """
             Run auto-reduction locally
             @param script: full path to the reduction script to run
             @param output_dir: reduction output directory
-            @param log_dir: reduction log directory
+            @param out_log: reduction log file
+            @param out_err: reduction error file
         """
         cmd = "python " + script + " " + self.data_file + " " + output_dir
-        out_log = os.path.join(log_dir, os.path.basename(self.data_file) + ".log")
-        out_err = os.path.join(log_dir, os.path.basename(self.data_file) + ".err")
         logFile=open(out_log, "w")
         errFile=open(out_err, "w")
-        proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
-                                stdout=logFile, stderr=errFile, universal_newlines = True)
-        proc.communicate()
+        if self.conf.comm_only is False:
+            proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
+                                    stdout=logFile, stderr=errFile, universal_newlines = True)
+            proc.communicate()
         logFile.close()
         errFile.close()
-        logging.info("reduction subprocess completed")
 
     def catalog_raw(self):
         """
@@ -221,12 +227,14 @@ class PostProcessAdmin:
         """
         try:
             self.send('/queue/'+self.conf.catalog_started, json.dumps(self.data))
-            ingestNexus = IngestNexus(self.data_file)
-            ingestNexus.execute()
-            ingestNexus.logout()
-            self.send('/queue/'+self.conf.catalog_complete, json.dumps(self.data))  
-        except Exception, e:
-            self.data["error"] = "Catalog: %s" % e
+            if self.conf.comm_only is False:
+                ingestNexus = IngestNexus(self.data_file)
+                ingestNexus.execute()
+                ingestNexus.logout()
+                self.send('/queue/'+self.conf.catalog_complete, json.dumps(self.data))  
+        except:
+            logging.error("catalog_raw: %s" % sys.exc_value)
+            self.data["error"] = "Catalog: %s" % sys.exc_value
             self.send('/queue/'+self.conf.catalog_error, json.dumps(self.data))
             
     def catalog_reduced(self):
@@ -235,12 +243,14 @@ class PostProcessAdmin:
         """
         try:
             self.send('/queue/'+self.conf.reduction_catalog_started, json.dumps(self.data))
-            ingestReduced = IngestReduced(self.facility, self.instrument, self.proposal, self.run_number)
-            ingestReduced.execute()
-            ingestReduced.logout()
+            if self.conf.comm_only is False:
+                ingestReduced = IngestReduced(self.facility, self.instrument, self.proposal, self.run_number)
+                ingestReduced.execute()
+                ingestReduced.logout()
             self.send('/queue/'+self.conf.reduction_catalog_complete , json.dumps(self.data))
-        except Exception, e:
-            self.data["error"] = "Reduction catalog: %s" % e
+        except:
+            logging.error("catalog_reduced: %s" % sys.exc_value)
+            self.data["error"] = "Reduction catalog: %s" % sys.exc_value
             self.send('/queue/'+self.conf.reduction_catalog_error , json.dumps(self.data))
             
     def send(self, destination, data):
@@ -249,7 +259,7 @@ class PostProcessAdmin:
             @param destination: AMQ queue to send to
             @param data: payload of the message
         """
-        logging.debug("%s: %s" % (destination, data))
+        logging.info("%s: %s" % (destination, data))
         self.client.connect()
         self.client.send(destination, data)
         self.client.disconnect()
@@ -295,8 +305,9 @@ if __name__ == "__main__":
         # Process the data
         try:
             pp = PostProcessAdmin(data, configuration)
+            logging.info("Processing: %s" % namespace.queue)
             if namespace.queue == '/queue/%s' % configuration.reduction_data_ready:
-                pp.reduce()
+                pp.reduce(configuration.remote_execution)
             elif namespace.queue == '/queue/%s' % configuration.catalog_data_ready:
                 pp.catalog_raw()
             elif namespace.queue == '/queue/%s' % configuration.reduction_catalog_data_ready:
