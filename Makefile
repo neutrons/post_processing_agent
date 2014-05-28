@@ -17,12 +17,12 @@ all: postproc
 	
 check:
 	# Check dependencies
-	@python -c "import xml.utils.iso8601" || echo "\nERROR: Need PyXML: easy_install PyXML\n"
-	@python -c "import requests" || echo "\nERROR: Need requests: easy_install requests\n"
-	@python -c "import stompest" || echo "\nERROR: Need stompest: easy_install stompest\n"
-	@python -c "import stompest.async" || echo "\nERROR: Need stompest.async: easy_install stompest.async\n"
-	@python -c "import suds" || echo "\nERROR: Need suds: easy_install suds\n"
-	@python -c "import nxs" || echo "\nERROR: Need nexus: http://download.nexusformat.org/kits/\n"
+	@python -c "import xml.utils.iso8601" || echo "ERROR: Need PyXML: easy_install PyXML"
+	@python -c "import requests" || echo "ERROR: Need requests: easy_install requests"
+	@python -c "import stompest" || echo "ERROR: Need stompest: easy_install stompest"
+	@python -c "import stompest.async" || echo "ERROR: Need stompest.async: easy_install stompest.async"
+	@python -c "import suds" || echo "ERROR: Need suds: easy_install suds"
+	@python -c "import nxs" || echo "ERROR: Need nexus: http://download.nexusformat.org/kits/"
 	
 install: postproc
 
@@ -35,13 +35,11 @@ postproc: check
 	test -d $(prefix)/postprocessing || mkdir -m 0755 $(prefix)/postprocessing
 	test -d $(prefix)/log || mkdir -m 0755 $(prefix)/log
 	test -d $(prefix)/scripts || mkdir -m 0755 $(prefix)/scripts
-	test -d $(prefix)/config || mkdir -m 0755 $(prefix)/config
 	
 	# Install application code
 	# install -m 664	configuration/icat4.cfg	 /etc/autoreduce/icat4.cfg
 	# For backward compatibility, install the configuration where hooks into the post-processing can find it
-	# install -m 664	configuration/post_process_consumer.conf.dev /etc/autoreduce/post_process_consumer.conf
-	install -m 664	configuration/post_process_consumer.conf.dev $(prefix)/config/post_process_consumer.conf
+	install -m 664	configuration/post_process_consumer.conf.dev /etc/autoreduce/post_process_consumer.conf
 	install -m 755	postprocessing/__init__.py	 $(prefix)/postprocessing/__init__.py
 	install -m 755	postprocessing/Consumer.py	 $(prefix)/postprocessing/Consumer.py
 	install -m 755	postprocessing/queueProcessor.py	 /usr/bin/queueProcessor.py

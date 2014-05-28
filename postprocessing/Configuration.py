@@ -32,7 +32,7 @@ class Configuration(object):
     """
     def __init__(self, config_file):
         if os.access(config_file, os.R_OK) == False:
-            raise RuntimeError, "Configuration file doesn't exist or is not readable: %s" % sys.exc_value
+            raise RuntimeError, "Configuration file doesn't exist or is not readable: %s" % config_file
         cfg = open(config_file, 'r')
         json_encoded = cfg.read()
         config = json.loads(json_encoded)
@@ -44,7 +44,7 @@ class Configuration(object):
         self.amq_pwd = config['amq_pwd']
         # ActiveMQ broker information
         self.brokers = config['brokers']
-        self.uri = config['uri']
+        self.failover_uri = config['failover_uri']
         self.queues = config['amq_queues']
         self.sw_dir = config['sw_dir'] if 'sw_dir' in config else '/opt/postprocessing'
         self.postprocess_error = config['postprocess_error']

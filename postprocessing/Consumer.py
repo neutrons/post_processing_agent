@@ -20,7 +20,7 @@ class Consumer(object):
         ActiveMQ consumer
     """
     def __init__(self, config):
-        self.stompConfig = StompConfig(config.uri, config.amq_user, config.amq_pwd)
+        self.stompConfig = StompConfig(config.failover_uri, config.amq_user, config.amq_pwd)
         self.config = config
         self.procList = []
         

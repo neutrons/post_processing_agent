@@ -18,7 +18,7 @@ else:
     CONFIG_FILE = namespace.config
 
 if os.access(CONFIG_FILE, os.R_OK) == False:
-    raise RuntimeError, "Configuration file doesn't exist or is not readable."
+    raise RuntimeError, "Configuration file doesn't exist or is not readable: %s" % CONFIG_FILE
 
 cfg = open(CONFIG_FILE, 'r')
 json_encoded = cfg.read()
