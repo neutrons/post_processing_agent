@@ -30,12 +30,16 @@ class PostProcessAdmin:
         self.conf = conf
         self.sw_dir = conf.sw_dir
 
-        stompConfig = StompConfig(self.conf.brokers, self.conf.amq_user, self.conf.amq_pwd)
+        stompConfig = StompConfig(self.conf.failover_uri, self.conf.amq_user, self.conf.amq_pwd)
         self.client = Stomp(stompConfig)
         
+        self.data_file = None
+        self.facility = None
+        self.instrument = None
+        self.proposal = None
+        self.run_number = None
         if data.has_key('data_file'):
             self.data_file = str(data['data_file'])
-            logging.info("data_file: " + self.data_file)
             if os.access(self.data_file, os.R_OK) == False:
                 raise ValueError("Data file does not exist or is not readable")
         else:
@@ -43,27 +47,25 @@ class PostProcessAdmin:
 
         if data.has_key('facility'):
             self.facility = str(data['facility']).upper()
-            logging.info("facility: " + self.facility)
         else: 
             raise ValueError("Facility is missing")
 
         if data.has_key('instrument'):
             self.instrument = str(data['instrument']).upper()
-            logging.info("instrument: " + self.instrument)
         else:
             raise ValueError("Instrument is missing")
 
         if data.has_key('ipts'):
             self.proposal = str(data['ipts']).upper()
-            logging.info("proposal: " + self.proposal)
         else:
             raise ValueError("IPTS is missing")
             
         if data.has_key('run_number'):
             self.run_number = str(data['run_number'])
-            logging.info("run_number: " + self.run_number)
         else:
             raise ValueError("Run number is missing")
+
+        logging.info("Data: %s" % self.data_file)
 
     def reduce(self, remote=False):
         """
@@ -76,8 +78,9 @@ class PostProcessAdmin:
             proposal_shared_dir = os.path.join('/', self.facility, self.instrument, self.proposal, 'shared', 'autoreduce')
 
             # Allow for an alternate output directory, if defined
-            if configuration.dev_output_dir is not None:
+            if len(configuration.dev_output_dir.strip())>0:
                 proposal_shared_dir = configuration.dev_output_dir
+            logging.info("Using output directory: %s" % proposal_shared_dir)
             
             # Look for run summary script
             summary_script = os.path.join(instrument_shared_dir, "sumRun_%s.py" % self.instrument)
@@ -114,23 +117,25 @@ class PostProcessAdmin:
                     os.remove(out_err)
                 self.send('/queue/'+self.conf.reduction_complete , json.dumps(self.data))
                 
-                url_template = string.Template(configuration.web_monitor_url)
-                url = url_template.substitute(instrument=self.instrument, run_number=self.run_number)
-
-                pattern=self.instrument+"_"+self.run_number+"*"
-                for dirpath, dirnames, filenames in os.walk(proposal_shared_dir):
-                    listing = glob.glob(os.path.join(dirpath, pattern))
-                    for filepath in listing:
-                        f, e = os.path.splitext(filepath)
-                        if e.startswith(os.extsep):
-                            e = e[len(os.extsep):]
-                            if e == "png" or e == "jpg":
-                                logging.info("filepath=" + filepath)
-                                files={'file': open(filepath, 'rb')}
-                                #TODO: Max image size should be properly configured
-                                if len(files) != 0 and os.path.getsize(filepath) < 500000:
-                                    request=requests.post(url, data=monitor_user, files=files, verify=False)
-                                    logging.info("Submitted reduced image file, https post status:" + str(request.status_code))
+                # Send image to the web monitor
+                if len(configuration.web_monitor_url.strip())>0:
+                    url_template = string.Template(configuration.web_monitor_url)
+                    url = url_template.substitute(instrument=self.instrument, run_number=self.run_number)
+    
+                    pattern=self.instrument+"_"+self.run_number+"*"
+                    for dirpath, dirnames, filenames in os.walk(proposal_shared_dir):
+                        listing = glob.glob(os.path.join(dirpath, pattern))
+                        for filepath in listing:
+                            f, e = os.path.splitext(filepath)
+                            if e.startswith(os.extsep):
+                                e = e[len(os.extsep):]
+                                if e == "png" or e == "jpg":
+                                    logging.info("filepath=" + filepath)
+                                    files={'file': open(filepath, 'rb')}
+                                    #TODO: Max image size should be properly configured
+                                    if len(files) != 0 and os.path.getsize(filepath) < 500000:
+                                        request=requests.post(url, data=monitor_user, files=files, verify=False)
+                                        logging.info("Submitted reduced image file, https post status:" + str(request.status_code))
             else:
                 # Go through each line and report the error message.
                 # If we can't fine the actual error, report the last line
@@ -316,7 +321,7 @@ if __name__ == "__main__":
             # If we have a proper data dictionary, send it back with an error message
             if type(data) == dict:
                 data["error"] = str(sys.exc_value)
-                stomp = Stomp(StompConfig(configuration.brokers, configuration.amq_user, configuration.amq_pwd))
+                stomp = Stomp(StompConfig(configuration.failover_uri, configuration.amq_user, configuration.amq_pwd))
                 stomp.connect()
                 stomp.send(configuration.postprocess_error, json.dumps(data))
                 stomp.disconnect()

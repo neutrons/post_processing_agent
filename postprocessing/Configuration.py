@@ -43,7 +43,6 @@ class Configuration(object):
         self.amq_user = config['amq_user']
         self.amq_pwd = config['amq_pwd']
         # ActiveMQ broker information
-        self.brokers = config['brokers']
         self.failover_uri = config['failover_uri']
         self.queues = config['amq_queues']
         self.sw_dir = config['sw_dir'] if 'sw_dir' in config else '/opt/postprocessing'
@@ -72,7 +71,7 @@ class Configuration(object):
         self.python_dir = config['python_dir'] if 'python_dir' in config else os.path.join(self.sw_dir, 'postprocessing')
         self.script_dir = config['script_dir'] if 'script_dir' in config else os.path.join(self.sw_dir, 'scripts')
         self.mantid_path = config['mantid_path'] if 'mantid_path' in config else '/opt/Mantid/bin'
-        self.dev_output_dir = config['dev_output_dir'] if 'dev_output_dir' in config else None
+        self.dev_output_dir = config['dev_output_dir'] if 'dev_output_dir' in config else ''
         
         self.max_nodes = config['max_nodes'] if 'max_nodes' in config else 32
         self.max_memory = config['max_memory'] if 'max_memory' in config else 8.0

@@ -69,7 +69,6 @@ class IngestReduced():
         datafiles = []
     
         pattern =  '*' + self._runNumber + '*'
-        logging.info("pattern: %s" % pattern)
         for dirpath, dirnames, filenames in os.walk(directory):    
             listing = glob.glob(os.path.join(dirpath, pattern))
             for filepath in listing:
@@ -97,11 +96,13 @@ class IngestReduced():
     
             dbInvestigations = self._service.search(self._sessionId, "Investigation INCLUDE Sample [name = '" + str(self._investigationName) + "'] <-> Instrument [name = '" + self._instrumentName + "'] <-> Dataset [name = '" + str(dataset.name) + "']")
         
-            if len(dbInvestigations) == 1:
-                investigation = dbInvestigations[0]
+            if len(dbInvestigations) == 0:
+                logging.error("No investigation entry found: try cataloging the raw data first.") 
+                return
             else:
-                logging.error("ERROR, there should be only one investigation per instrument per investigation name") 
-                return 1
+                investigation = dbInvestigations[0]
+                if len(dbInvestigations)>1:
+                    logging.error("Multiple investigation entries found: using the first.") 
 
             logging.info("Creating dataset: %s" % datetime.now())
             dataset.investigation = investigation
@@ -120,7 +121,7 @@ class IngestReduced():
                 self._service.deleteMany(self._sessionId, dfs)
             
             for df in datafiles:
-                 df.dataset = dbDataset
+                df.dataset = dbDataset
             self._service.createMany(self._sessionId, datafiles)
         
         else:
