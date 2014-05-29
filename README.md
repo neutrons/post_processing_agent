@@ -13,33 +13,30 @@ A configuration must be placed in `/etc/post_process_consumer.conf`.
 The `configuration/post_process_consumer.conf.developement` file will make a good starting
 point for configuration. Here are the entries to pay attention to:
 
-
-```sh
-{
-    "uri": "failover:(tcp://localhost:61613)?randomize=false,startupMaxReconnectAttempts=100,initialReconnectDelay=1000,maxReconnectDelay=5000,maxReconnectAttempts=-1",
-    "amq_user": "",
-    "amq_pwd": "",
-    "amq_queues": ["/queue/FERMI_REDUCTION.DATA_READY", "/queue/CATALOG.DATA_READY", "/queue/REDUCTION_CATALOG.DATA_READY"],
-    "reduction_data_ready": "FERMI_REDUCTION.DATA_READY",
-
-    "python_dir": "/opt/postprocessing/postprocessing",
-    "script_dir": "/opt/postprocessing/scripts",
-    "start_script": "python",
-    "task_script": "PostProcessAdmin.py",
-    "task_script_queue_arg": "-q",
-    "task_script_data_arg": "-d",
-    "log_file": "/opt/postprocessing/log/postprocessing.log",
-
-    "mantid_release": "/opt/Mantid/bin",
-    "mantid_nightly": "/opt/mantidnightly/bin",
-    "mantid_unstable": "/opt/mantidunstable/bin",
-
-    "dev_output_dir": "/tmp/",
-    "communication_only": 1,
-    "max_procs": 5,
-    "remote_execution": 0
-}
-```
+    {
+        "uri": "failover:(tcp://localhost:61613)?randomize=false,startupMaxReconnectAttempts=100,initialReconnectDelay=1000,maxReconnectDelay=5000,maxReconnectAttempts=-1",
+        "amq_user": "",
+        "amq_pwd": "",
+        "amq_queues": ["/queue/FERMI_REDUCTION.DATA_READY", "/queue/CATALOG.DATA_READY", "/queue/REDUCTION_CATALOG.DATA_READY"],
+        "reduction_data_ready": "FERMI_REDUCTION.DATA_READY",
+    
+        "python_dir": "/opt/postprocessing/postprocessing",
+        "script_dir": "/opt/postprocessing/scripts",
+        "start_script": "python",
+        "task_script": "PostProcessAdmin.py",
+        "task_script_queue_arg": "-q",
+        "task_script_data_arg": "-d",
+        "log_file": "/opt/postprocessing/log/postprocessing.log",
+    
+        "mantid_release": "/opt/Mantid/bin",
+        "mantid_nightly": "/opt/mantidnightly/bin",
+        "mantid_unstable": "/opt/mantidunstable/bin",
+    
+        "dev_output_dir": "/tmp/",
+        "communication_only": 1,
+        "max_procs": 5,
+        "remote_execution": 0
+    }
 
 #### ActiveMQ settings
 
@@ -56,25 +53,20 @@ point for configuration. Here are the entries to pay attention to:
 
 #### Mantid settings
 
-
    - Don't forget to set your Mantid user's properties to send output logs to stdout:
 
-     ```sh
-    logging.channels.consoleChannel.class=StdoutChannel
-     ```
-     
+        logging.channels.consoleChannel.class=StdoutChannel
+
 #### Runtime settings
 
 
 #### ICAT processing
 
    - You need to create the following files:
-     
-     ```sh
-     configuration/icatclient.properties
-     configuration/post_process_consumer.conf
-     ```
-     
+
+        configuration/icatclient.properties
+        configuration/post_process_consumer.conf
+
      They will be installed in /etc/autoreduce when running "make install".
      Examples in the configuration directory can be renamed and modified.
      
