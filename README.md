@@ -53,6 +53,49 @@ point for configuration. Here are the entries to pay attention to:
 
 #### Installation settings
 
+
 #### Mantid settings
 
+
+   - Don't forget to set your Mantid user's properties to send output logs to stdout:
+
+     ```sh
+    logging.channels.consoleChannel.class=StdoutChannel
+     ```
+     
 #### Runtime settings
+
+
+#### ICAT processing
+
+   - You need to create the following files:
+     
+     ```sh
+     configuration/icatclient.properties
+     configuration/post_process_consumer.conf
+     ```
+     
+     They will be installed in /etc/autoreduce when running "make install".
+     Examples in the configuration directory can be renamed and modified.
+     
+   - The ICAT processing in ingest_nexus.py and ingest_reduced.py were taken 
+     from https://github.com/mantidproject/autoreduce with only minor modifications.
+     
+     
+Installation
+------------
+   - Create the configuration files:
+
+        cd configuration
+        cp icatclient.properties.developement icatclient.properties
+        cp post_process_consumer.conf.developement post_process_consumer.conf
+
+    Edit those two files according to your installation.
+
+   - From the top source directory, run
+
+        sudo make install
+
+   - Alternatively, you can package your configured installation as an RPM:
+
+        make rpm
