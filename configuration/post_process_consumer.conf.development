@@ -1,12 +1,11 @@
 {
     "failover_uri": "failover:(tcp://localhost:61613)?randomize=false,startupMaxReconnectAttempts=100,initialReconnectDelay=1000,maxReconnectDelay=5000,maxReconnectAttempts=-1",
-    "amq_queues": ["/queue/FERMI_REDUCTION.DATA_READY"],
+    "amq_queues": ["/queue/REDUCTION.DATA_READY"],
     "amq_user": "",
     "amq_pwd": "",
     "sw_dir": "/opt/postprocessing",
     "python_dir": "/opt/postprocessing/postprocessing",
     "script_dir": "/opt/postprocessing/scripts",
-    "start_script_fermi": "/opt/postprocessing/scripts/startJob.sh",
     "start_script": "python",
     "task_script": "PostProcessAdmin.py",
     "task_script_queue_arg": "-q",
@@ -27,11 +26,11 @@
     "mantid_release": "/opt/Mantid/bin",
     "mantid_nightly": "/opt/mantidnightly/bin",
     "mantid_unstable": "/opt/mantidunstable/bin",
-    "dev_output_dir": "/tmp/",
+    "dev_output_dir": "",
     "catalog_data_ready": "CATALOG.DATA_READY",
     "reduction_data_ready": "REDUCTION.DATA_READY",
     "reduction_catalog_data_ready": "REDUCTION_CATALOG.DATA_READY",
-    "communication_only": 1,
+    "communication_only": 0,
     "max_procs": 5,
     "remote_execution": 0
 }
