@@ -28,7 +28,6 @@ class PostProcessAdmin:
         data["information"] = socket.gethostname()
         self.data = data
         self.conf = conf
-        self.sw_dir = conf.sw_dir
 
         stompConfig = StompConfig(self.conf.failover_uri, self.conf.amq_user, self.conf.amq_pwd)
         self.client = Stomp(stompConfig)
@@ -78,8 +77,8 @@ class PostProcessAdmin:
             proposal_shared_dir = os.path.join('/', self.facility, self.instrument, self.proposal, 'shared', 'autoreduce')
 
             # Allow for an alternate output directory, if defined
-            if len(configuration.dev_output_dir.strip())>0:
-                proposal_shared_dir = configuration.dev_output_dir
+            if len(self.conf.dev_output_dir.strip())>0:
+                proposal_shared_dir = self.conf.dev_output_dir
             logging.info("Using output directory: %s" % proposal_shared_dir)
             
             # Look for run summary script
@@ -118,8 +117,8 @@ class PostProcessAdmin:
                 self.send('/queue/'+self.conf.reduction_complete , json.dumps(self.data))
                 
                 # Send image to the web monitor
-                if len(configuration.web_monitor_url.strip())>0:
-                    url_template = string.Template(configuration.web_monitor_url)
+                if len(self.conf.web_monitor_url.strip())>0:
+                    url_template = string.Template(self.conf.web_monitor_url)
                     url = url_template.substitute(instrument=self.instrument, run_number=self.run_number)
     
                     pattern=self.instrument+"_"+self.run_number+"*"
@@ -170,8 +169,8 @@ class PostProcessAdmin:
         #We would like to get MaxChunkSize from an env variable in the future
         if self.conf.comm_only is False:
             import mantid.simpleapi as api
-            chunks = api.DetermineChunking(Filename=self.data_file,MaxChunkSize=configuration.max_memory)
-            nodes_desired = min(chunks.rowCount(), configuration.max_nodes)
+            chunks = api.DetermineChunking(Filename=self.data_file,MaxChunkSize=self.conf.max_memory)
+            nodes_desired = min(chunks.rowCount(), self.conf.max_nodes)
         else:
             chunks = 1
             nodes_desired = 1
@@ -183,7 +182,7 @@ class PostProcessAdmin:
         cmd_out = " -o " + out_log + " -e " + out_err
         cmd_l = " -l nodes=" + str(nodes_desired) + ":ppn=1"
         cmd_v = " -v data_file='" + self.data_file + "',n_nodes="+str(nodes_desired)+",facility='" + self.facility + "',instrument='" + self.instrument + "',proposal_shared_dir='" + output_dir + "'"
-        cmd_job = " " + self.sw_dir + "/remoteJob.sh"
+        cmd_job = " " + self.conf.script_dir + "/remoteJob.sh"
         cmd = "qsub" + cmd_out + cmd_l + cmd_v + cmd_job
         logging.info("Reduction process: " + cmd)
 
