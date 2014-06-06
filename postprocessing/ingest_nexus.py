@@ -3,15 +3,16 @@
     Cataloging process for raw data files.
     
     The original code for this class was take from https://github.com/mantidproject/autoreduce
+    This code is a slightly cleaned up version of the original code.
+    
     @copyright: 2014 Oak Ridge National Laboratory
 """
 VERSION = "1.4.2"
 
 from suds.client import Client
 
-import nxs, os, numpy, sys, posixpath, logging
+import nxs, os, logging
 import xml.utils.iso8601, ConfigParser
-from datetime import datetime
 
 class IngestNexus():
     def __init__(self, infilename):
@@ -35,14 +36,10 @@ class IngestNexus():
         entry.value = password
         credentials.entry.append(entry)
     
-        logging.debug("Begin login at: %s" % datetime.now())
         self._sessionId = self._service.login(plugin, credentials)
-        logging.debug("End login at: %s" % datetime.now()) 
    
     def logout(self): 
-        logging.debug("Begin logout at: %s" % datetime.now())
         self._service.logout(self._sessionId)
-        logging.debug("Begin logout at: %s" % datetime.now())
     
     def execute(self):
         #find facility, investigation_type 
@@ -187,12 +184,12 @@ class IngestNexus():
             
                 token=self._infilename.split("/")
                 proposalDir = "/" + token[1] + "/" + token[2] + "/" + token[3]
-                logging.info("proposal directory: %s" % proposalDir) 
                 for dirpath, dirnames, filenames in os.walk(proposalDir):
                     if dirpath.find("shared") == -1 and dirpath.find("data") == -1:
                         for filename in [f for f in filenames]:
                             #if dataset.name in filename and os.path.islink(filename) != False:
                             if dataset.name in filename:
+                                logging.info("Filename: %s" % filename)
                                 datafile = self._factory.create("datafile")
                                 filepath = os.path.join(dirpath,filename)
                                 extension = os.path.splitext(filename)[1][1:]
@@ -204,7 +201,6 @@ class IngestNexus():
                                 modTime = os.path.getmtime(filepath)
                                 datafile.datafileCreateTime = xml.utils.iso8601.tostring(modTime)
                                 datafile.fileSize = os.path.getsize(filepath)
-                
                                 datafiles.append(datafile)
                 
                 dataset.datafiles = datafiles
@@ -269,7 +265,7 @@ class IngestNexus():
             dbInvestigations = self._service.search(self._sessionId, "Investigation INCLUDE Sample [name = '" + investigation.name + "' AND visitId = '" + investigation.visitId + "'] <-> Instrument [name = '" + instrument.name + "']")
         
             if len(dbInvestigations) == 0: 
-                logging.info("New IPTS: creating investigation, sample, run...")
+                logging.debug("New IPTS: creating investigation, sample, run...")
                 # create new investigation
                 invId = self._service.create(self._sessionId, investigation)
                 investigation.id = invId
@@ -278,7 +274,7 @@ class IngestNexus():
                 sample.investigation = investigation
                 sampleId = self._service.create(self._sessionId, sample)
                 sample.id = sampleId
-                logging.info("  invId: %s  sampleId: %s" % (str(invId), str(sampleId)))
+                logging.debug("  invId: %s  sampleId: %s" % (str(invId), str(sampleId)))
         
             elif len(dbInvestigations) == 1:
                 investigation = dbInvestigations[0]
@@ -291,12 +287,12 @@ class IngestNexus():
                         newSample = False
             
                 if newSample == True:
-                    logging.info("New run: existing investigation, creating sample and run...")
+                    logging.debug("New run: existing investigation, creating sample and run...")
                     sample.investigation = investigation
                     sampleId = self._service.create(self._sessionId, sample)
                     sample.id = sampleId
                 else:
-                    logging.info("New run: existing investigation and sample, creating run...")
+                    logging.debug("New run: existing investigation and sample, creating run...")
             
             else:
                 logging.error("ERROR, there should be only one investigation per instrument per investigation name")
@@ -305,13 +301,13 @@ class IngestNexus():
             dataset.sample = sample
             dataset.investigation = investigation
             datasetId = self._service.create(self._sessionId, dataset)
-            logging.info("  datasetId: %s" % str(datasetId))
+            logging.debug("  datasetId: %s" % str(datasetId))
             
         elif len(dbDatasets) == 1:
-            logging.info("Run %s is already cataloged, updating catalog..." % dataset.name)
+            logging.debug("Run %s is already cataloged, updating catalog..." % dataset.name)
         
             dbDataset = dbDatasets[0]
-            logging.info("  datasetId: %s" % str(dbDataset.id))
+            logging.debug("  datasetId: %s" % str(dbDataset.id))
         
             # update "one to many" relationships
         
@@ -320,7 +316,7 @@ class IngestNexus():
                 self._service.deleteMany(self._sessionId, dfs)
             
             for df in datafiles:
-                 df.dataset = dbDataset
+                df.dataset = dbDataset
             self._service.createMany(self._sessionId, datafiles)
         
             # update "many to one" relationships
@@ -334,7 +330,6 @@ class IngestNexus():
                 if sa.name == sample.name:
                     sample = sa
                     updateSample = False
-                    logging.info("  sample: %s" % str(sample))
              
             if updateSample == True:
                 sample.id = ds.sample.id
@@ -350,21 +345,3 @@ class IngestNexus():
        
         else:
             logging.error("ERROR, there should be only one dataset per run number per type experiment_raw")       
-        
-        logging.info("INVESTIGATION:")
-        logging.info("  ID: %s" % str(investigation.id))
-        logging.info("  NAME: %s" % str(investigation.name))
-        
-        logging.info("DATASET:")
-        logging.info("  RUN NUMBER: %s" % str(dataset.name))
-        logging.info("  TITLE: %s" % str(dataset.description))
-        logging.info("  START TIME: %s" % str(dataset.startDate))
-        logging.info("  END TIME: %s" % str(dataset.endDate))
-        
-        for datafile in dataset.datafiles:
-            logging.info("DATAFILE:")
-            logging.info("  NAME: %s" % str(datafile.name))
-            logging.info("  LOCATION: %s" % str(datafile.location))
-        
-        logging.info("SAMPLE: ")
-        logging.info("  NAME: %s" % str(sample.name))

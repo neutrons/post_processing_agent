@@ -14,7 +14,6 @@ import logging, json, socket, os, sys, subprocess, time, glob, requests
 import re
 import string
 from Configuration import configuration
-from Configuration import StreamToLogger
 from ingest_nexus import IngestNexus
 from ingest_reduced import IngestReduced
 from stompest.config import StompConfig
@@ -22,7 +21,7 @@ from stompest.sync import Stomp
 
 class PostProcessAdmin:
     def __init__(self, data, conf):
-        logging.info("json data: %s [%s]" % (str(data), type(data)))
+        logging.debug("json data: %s [%s]" % (str(data), type(data)))
         if not type(data) == dict:
             raise ValueError, "PostProcessAdmin expects a data dictionary"
         data["information"] = socket.gethostname()
@@ -64,8 +63,6 @@ class PostProcessAdmin:
         else:
             raise ValueError("Run number is missing")
 
-        logging.info("Data: %s" % self.data_file)
-
     def reduce(self, remote=False):
         """
             Reduction process using job submission.
@@ -88,7 +85,7 @@ class PostProcessAdmin:
                 cmd = "python " + summary_script + " " + self.instrument + " " + self.data_file + " " + summary_output
                 logging.debug("Run summary subprocess started: " + cmd)
                 subprocess.call(cmd, shell=True)
-                logging.info("Run summary subprocess completed, see " + summary_output)
+                logging.debug("Run summary subprocess completed, see " + summary_output)
 
             # Look for auto-reduction script
             reduce_script_path = os.path.join(instrument_shared_dir, "reduce_%s.py" % self.instrument)
@@ -129,12 +126,12 @@ class PostProcessAdmin:
                             if e.startswith(os.extsep):
                                 e = e[len(os.extsep):]
                                 if e == "png" or e == "jpg":
-                                    logging.info("filepath=" + filepath)
                                     files={'file': open(filepath, 'rb')}
                                     #TODO: Max image size should be properly configured
                                     if len(files) != 0 and os.path.getsize(filepath) < 500000:
                                         request=requests.post(url, data=monitor_user, files=files, verify=False)
-                                        logging.info("Submitted reduced image file, https post status:" + str(request.status_code))
+                                        logging.info("Submitted %s [status: %s]" % (filepath,
+                                                                                   request.status_code))
             else:
                 # Go through each line and report the error message.
                 # If we can't fine the actual error, report the last line
@@ -174,8 +171,7 @@ class PostProcessAdmin:
         else:
             chunks = 1
             nodes_desired = 1
-        logging.info("Chunks: " + str(chunks))
-        logging.info("nodesDesired: " + str(nodes_desired))
+        logging.debug("Chunks: %s  / Nodes: %s" % (chunks, nodes_desired))
         
         # Build qsub command
         #TODO: Pass in the reduction script path directly instead of rebuilding it inside the job script.
@@ -191,9 +187,9 @@ class PostProcessAdmin:
             return
         
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True).stdout.read()
-        list = proc.split(".")
-        if len(list) > 0:
-            pid = list[0].rstrip()
+        toks = proc.split(".")
+        if len(toks) > 0:
+            pid = toks[0].rstrip()
 
         qstat_pid = "qstat: Unknown Job Id " + pid
         logging.debug("qstat_pid: " + qstat_pid)
@@ -300,7 +296,6 @@ if __name__ == "__main__":
                         sep_toks = ipts_toks[1].split('/')
                         if len(sep_toks)>1:
                             data["ipts"] = sep_toks[1]
-                logging.info("Reconstructed dict: %s" % str(data))
             else:
                 raise RuntimeError, "Expected a JSON object or a file path"
         else:
@@ -309,7 +304,6 @@ if __name__ == "__main__":
         # Process the data
         try:
             pp = PostProcessAdmin(data, configuration)
-            logging.info("Processing: %s" % namespace.queue)
             if namespace.queue == '/queue/%s' % configuration.reduction_data_ready:
                 pp.reduce(configuration.remote_execution)
             elif namespace.queue == '/queue/%s' % configuration.catalog_data_ready:

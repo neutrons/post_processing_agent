@@ -36,5 +36,7 @@ from twisted.internet import reactor
 logging.info("Starting post-processing listener %s" % postprocessing.__version__)
 configuration.log_configuration()
 
-Consumer(configuration).run()
+consumer = Consumer(configuration)
+consumer.heartbeat()
+consumer.run()
 reactor.run()

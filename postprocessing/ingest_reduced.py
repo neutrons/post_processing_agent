@@ -3,13 +3,15 @@
     Cataloging process for reduced data files.
     
     The original code for this class was take from https://github.com/mantidproject/autoreduce
+    This code is a slightly cleaned up version of the original code.
+
     @copyright: 2014 Oak Ridge National Laboratory
 """
 VERSION = "1.4.2"
 
 from suds.client import Client
 
-import nxs, os, numpy, sys, posixpath, glob, logging
+import os, glob, logging
 import xml.utils.iso8601, ConfigParser
 from datetime import datetime
 
@@ -73,7 +75,7 @@ class IngestReduced():
             listing = glob.glob(os.path.join(dirpath, pattern))
             for filepath in listing:
                 filename =os.path.basename(filepath)
-                logging.info("filename: %s" % filename)
+                logging.info("Filename: %s" % filename)
                 datafile = self._factory.create("datafile")
                 datafile.location = filepath 
                 datafile.name = filename
@@ -104,17 +106,15 @@ class IngestReduced():
                 if len(dbInvestigations)>1:
                     logging.error("Multiple investigation entries found: using the first.") 
 
-            logging.info("Creating dataset: %s" % datetime.now())
+            logging.debug("Creating dataset: %s" % datetime.now())
             dataset.investigation = investigation
             dataset.sample = investigation.samples[0]
             self._service.create(self._sessionId, dataset)
             
         elif len(dbDatasets) == 1:
-            logging.info("reduced dataset %s is already cataloged, updating reduced dataset... " % (dataset.name))
+            logging.debug("reduced dataset %s is already cataloged, updating reduced dataset... " % (dataset.name))
         
             dbDataset = dbDatasets[0]
-            logging.info("  dataset: %s" % str(dbDataset.id))
-        
             # update "one to many" relationships
             if hasattr(dbDataset, "datafiles"):
                 dfs = getattr(dbDataset, "datafiles")
@@ -126,14 +126,3 @@ class IngestReduced():
         
         else:
             logging.error("ERROR, there should be only one dataset per run number per type reduced")
-
-        logging.info("DATASET:")
-        logging.info("  RUN NUMBER: %s" % str(dataset.name))
-        logging.info("  TITLE: %s" % str(dataset.description))
-        logging.info("  START TIME: %s" % str(dataset.startDate))
-        logging.info("  END TIME: %s" % str(dataset.endDate))
-    
-        for datafile in dataset.datafiles:
-            logging.info("DATAFILE:")
-            logging.info("  NAME: %s" % str(datafile.name))
-            logging.info("  LOCATION: %s" %str(datafile.location))

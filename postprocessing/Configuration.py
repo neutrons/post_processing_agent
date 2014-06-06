@@ -103,6 +103,7 @@ class Configuration(object):
         logging.info("  - Installation dir: %s" % self.sw_dir)
         logging.info("  - Start script: %s" % self.start_script)
         logging.info("  - Task script: %s" % self.task_script)
+        logging.info("  - Image posting URL: %s" % self.web_monitor_url)
         
 # Set the log level for the Stomp client
 stomp_logger = logging.getLogger('stompest.sync.client')

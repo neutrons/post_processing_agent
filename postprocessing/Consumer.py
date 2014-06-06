@@ -29,7 +29,6 @@ class Consumer(object):
         """
             Run method to start listening
         """
-        self.heartbeat()
         client = yield async.Stomp(self.stompConfig).connect()
         headers = {
             # client-individual mode is necessary for concurrent processing
@@ -77,7 +76,7 @@ class Consumer(object):
             # Check whether the maximum number of processes has been reached
             max_procs_reached = len(self.procList) > self.config.max_procs
             if max_procs_reached:
-                logging.debug("Maxmimum number of sub-processes reached: %s" % len(self.procList))
+                logging.info("Maxmimum number of sub-processes reached: %s" % len(self.procList))
                 
             # If we have reached the max number of processes, block until we have
             # at least on free slot
@@ -86,7 +85,7 @@ class Consumer(object):
                 self.update_processes()
                 
             if max_procs_reached:
-                logging.debug("Resuming. Number of sub-processes: %s" % len(self.procList))
+                logging.info("Resuming. Number of sub-processes: %s" % len(self.procList))
             self.update_processes()
         except:
             logging.error(sys.exc_value)
@@ -101,8 +100,6 @@ class Consumer(object):
         """
         for i in self.procList:
             if i.poll() is not None:
-                logging.info(i.stdout.read())
-                logging.error(i.stderr.read())
                 self.procList.remove(i)
                 
     def heartbeat(self):
