@@ -168,6 +168,8 @@ class PostProcessAdmin:
             import mantid.simpleapi as api
             chunks = api.DetermineChunking(Filename=self.data_file,MaxChunkSize=self.conf.max_memory)
             nodes_desired = min(chunks.rowCount(), self.conf.max_nodes)
+            if nodes_desired == 0:
+                nodes_desired = 1
         else:
             chunks = 1
             nodes_desired = 1
@@ -178,7 +180,7 @@ class PostProcessAdmin:
         cmd_out = " -o " + out_log + " -e " + out_err
         cmd_l = " -l nodes=" + str(nodes_desired) + ":ppn=1"
         cmd_v = " -v data_file='" + self.data_file + "',n_nodes="+str(nodes_desired)+",facility='" + self.facility + "',instrument='" + self.instrument + "',proposal_shared_dir='" + output_dir + "'"
-        cmd_job = " " + self.conf.script_dir + "/remoteJob.sh"
+        cmd_job = " " + self.conf.remote_script
         cmd = "qsub" + cmd_out + cmd_l + cmd_v + cmd_job
         logging.info("Reduction process: " + cmd)
 
@@ -190,15 +192,15 @@ class PostProcessAdmin:
         toks = proc.split(".")
         if len(toks) > 0:
             pid = toks[0].rstrip()
-
-        qstat_pid = "qstat: Unknown Job Id " + pid
-        logging.debug("qstat_pid: " + qstat_pid)
+        logging.info("Job ID: %s" % pid)
         
         while True:
             qstat_cmd = "qstat " + pid
             ret = subprocess.Popen(qstat_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).stdout.read().rstrip()
             logging.debug("Popen return code: " + ret)
-            if ret.startswith(qstat_pid):
+            if ret.startswith("qstat: Unknown Job Id") or \
+               ret.endswith("C batch") or \
+               len(ret)==0:
                 break
             else:
                 time.sleep(30)

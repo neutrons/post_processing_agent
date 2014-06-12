@@ -69,7 +69,7 @@ class Configuration(object):
         self.start_script = config['start_script'] if 'start_script' in config else 'startJob.sh'
         self.task_script = config['task_script'] if 'task_script' in config else 'PostProcessAdmin.py'
         self.python_dir = config['python_dir'] if 'python_dir' in config else os.path.join(self.sw_dir, 'postprocessing')
-        self.script_dir = config['script_dir'] if 'script_dir' in config else os.path.join(self.sw_dir, 'scripts')
+        self.remote_script = config['remote_script'] if 'remote_script' in config else os.path.join(self.sw_dir, 'scripts', 'remoteJob.sh')
         self.mantid_path = config['mantid_path'] if 'mantid_path' in config else '/opt/Mantid/bin'
         self.dev_output_dir = config['dev_output_dir'] if 'dev_output_dir' in config else ''
         

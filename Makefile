@@ -1,4 +1,5 @@
-prefix := /opt/postprocessing
+#prefix := /opt/postprocessing
+prefix := /sw/fermi/autoreduce/postprocessing
 sysconfig := /etc/autoreduce
 bindir := /usr/bin
 
@@ -28,30 +29,33 @@ check:
 	@test -f configuration/icatclient.properties || echo -e "\n===> SET UP configuration/icatclient.properties BEFORE INSTALLATION\n";
 	@test -f configuration/post_process_consumer.conf || echo -e "\n===> SET UP configuration/post_process_consumer.conf BEFORE INSTALLATION\n";
 	
-install: postproc
+install: config postproc
 
-postproc: check
+config:
 	# Make sure the directories exist
 	@test -d $(sysconfig) || mkdir -m 0755 -p $(sysconfig)
-	@test -d /var/log/SNS_applications || mkdir -m 0755 /var/log/SNS_applications
+	install -m 664	configuration/icat4_dev.cfg $(sysconfig)/icat4.cfg
+	install -m 664	configuration/icatclient.properties $(sysconfig)/icatclient.properties
+	install -m 664	configuration/post_process_consumer.conf $(sysconfig)/post_process_consumer.conf
+	install -m 755	postprocessing/queueProcessor.py	$(bindir)/queueProcessor.py
+	
+postproc: check
+	# Make sure the directories exist
 	@test -d $(prefix) || mkdir -m 0755 $(prefix)
 	@test -d $(prefix)/postprocessing || mkdir -m 0755 $(prefix)/postprocessing
 	@test -d $(prefix)/log || mkdir -m 0755 $(prefix)/log
 	@test -d $(prefix)/scripts || mkdir -m 0755 $(prefix)/scripts
 	
 	# Install application code
-	install -m 664	configuration/icat4.cfg $(sysconfig)/icat4.cfg
-	install -m 664	configuration/icatclient.properties $(sysconfig)/icatclient.properties
-	install -m 664	configuration/post_process_consumer.conf $(sysconfig)/post_process_consumer.conf
 	install -m 755	postprocessing/__init__.py	 $(prefix)/postprocessing/__init__.py
 	install -m 755	postprocessing/Consumer.py	 $(prefix)/postprocessing/Consumer.py
-	install -m 755	postprocessing/queueProcessor.py	$(bindir)/queueProcessor.py
 	install -m 755	postprocessing/Configuration.py	 $(prefix)/postprocessing/Configuration.py
 	install -m 755	postprocessing/PostProcessAdmin.py	 $(prefix)/postprocessing/PostProcessAdmin.py
 	install -m 755	postprocessing/ingest_nexus.py	 $(prefix)/postprocessing/ingest_nexus.py
 	install -m 755	postprocessing/ingest_reduced.py	 $(prefix)/postprocessing/ingest_reduced.py
 	install -m 755	scripts/remoteJob.sh	 $(prefix)/scripts/remoteJob.sh
 	install -m 755	scripts/startJob.sh	 $(prefix)/scripts/startJob.sh
+	install -m 755	scripts/qsubJob.sh	 $(prefix)/scripts/qsubJob.sh
 
 rpm:
 	@echo "Creating RPMs"
