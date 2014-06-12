@@ -127,8 +127,8 @@ class PostProcessAdmin:
                                 e = e[len(os.extsep):]
                                 if e == "png" or e == "jpg":
                                     files={'file': open(filepath, 'rb')}
-                                    #TODO: Max image size should be properly configured
-                                    if len(files) != 0 and os.path.getsize(filepath) < 500000:
+                                    # Post the image if it's small enough
+                                    if len(files) != 0 and os.path.getsize(filepath) < self.conf.max_image_size:
                                         request=requests.post(url, data=monitor_user, files=files, verify=False)
                                         logging.info("Submitted %s [status: %s]" % (filepath,
                                                                                    request.status_code))
@@ -176,24 +176,33 @@ class PostProcessAdmin:
         logging.debug("Chunks: %s  / Nodes: %s" % (chunks, nodes_desired))
         
         # Build qsub command
-        #TODO: Pass in the reduction script path directly instead of rebuilding it inside the job script.
-        cmd_out = " -o " + out_log + " -e " + out_err
-        cmd_l = " -l nodes=" + str(nodes_desired) + ":ppn=1"
-        cmd_v = " -v data_file='" + self.data_file + "',n_nodes="+str(nodes_desired)+",facility='" + self.facility + "',instrument='" + self.instrument + "',proposal_shared_dir='" + output_dir + "'"
-        cmd_job = " " + self.conf.remote_script
-        cmd = "qsub" + cmd_out + cmd_l + cmd_v + cmd_job
+        cmd_out = " -o %s -e %s" % (out_log, out_err)
+        cmd_l = " -l nodes=%s:ppn=1" % nodes_desired
+        cmd_v = " -v data_file='%s',n_nodes=%s,reduce_script='%s',proposal_shared_dir='%s'" % (self.data_file, nodes_desired, script, output_dir)
+        cmd = "qsub %s %s %s %s" % (cmd_out, cmd_l, cmd_v, self.conf.remote_script)
         logging.info("Reduction process: " + cmd)
 
         # If we are only dry-running, return immediately
         if self.conf.comm_only is True:
             return
         
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True).stdout.read()
-        toks = proc.split(".")
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        
+        # Catch errors in the job submission and raise them as exception
+        proc_err = proc.stderr.read()
+        if len(proc_err)>0:
+            raise RuntimeError, proc_err
+            
+        # Read in the job ID
+        proc_out = proc.stdout.read()
+        toks = proc_out.split(".")
         if len(toks) > 0:
             pid = toks[0].rstrip()
         logging.info("Job ID: %s" % pid)
         
+        # Wait for the job to finish
+        t_0 = time.time()
+        t_cycle = t_0
         while True:
             qstat_cmd = "qstat " + pid
             ret = subprocess.Popen(qstat_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).stdout.read().rstrip()
@@ -204,6 +213,12 @@ class PostProcessAdmin:
                 break
             else:
                 time.sleep(30)
+            # If we've been waiting for more than a configured waiting time,
+            # log the event as information
+            if time.time()-t_cycle > self.conf.wait_notification_period:
+                wait_time = time.time()-t_0
+                t_cycle = time.time()
+                logging.info("Waiting for job ID %s for more than %g seconds" % (pid, wait_time))
     
     def local_reduction(self, script, output_dir, out_log, out_err):
         """
