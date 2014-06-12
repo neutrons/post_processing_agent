@@ -20,8 +20,8 @@ point for configuration. Here are the entries to pay attention to:
         "amq_queues": ["/queue/FERMI_REDUCTION.DATA_READY", "/queue/CATALOG.DATA_READY", "/queue/REDUCTION_CATALOG.DATA_READY"],
         "reduction_data_ready": "FERMI_REDUCTION.DATA_READY",
     
+        "sw_dir": "/opt/postprocessing",
         "python_dir": "/opt/postprocessing/postprocessing",
-        "script_dir": "/opt/postprocessing/scripts",
         "start_script": "python",
         "task_script": "PostProcessAdmin.py",
         "task_script_queue_arg": "-q",
@@ -32,9 +32,7 @@ point for configuration. Here are the entries to pay attention to:
         "mantid_nightly": "/opt/mantidnightly/bin",
         "mantid_unstable": "/opt/mantidunstable/bin",
     
-        "dev_output_dir": "/tmp/",
         "communication_only": 1,
-        "max_procs": 5,
         "remote_execution": 0
     }
 
