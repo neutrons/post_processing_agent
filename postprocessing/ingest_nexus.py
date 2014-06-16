@@ -221,10 +221,10 @@ class IngestNexus():
                         # do it here if we want to determine whether
                         # the sample is already in the DB.
                         sample.name = saxutils.unescape(file.getdata())
+                        sample.name = "test & ><"
                         file.closedata()
                     else:
                         sample.name = "NONE"
-                    logging.info("Has sample %s" % sample.name)
                     sampleParameters = []
                 
                     #set sample nature
@@ -279,12 +279,11 @@ class IngestNexus():
                 sample.investigation = investigation
                 sampleId = self._service.create(self._sessionId, sample)
                 sample.id = sampleId
-                logging.info("  invId: %s  sampleId: %s" % (str(invId), str(sampleId)))
+                logging.debug("  invId: %s  sampleId: %s" % (str(invId), str(sampleId)))
         
             elif len(dbInvestigations) == 1:
                 investigation = dbInvestigations[0]
                 dbSamples = investigation.samples
-                logging.info(investigation.samples)
             
                 newSample = True
                 for dbSample in dbSamples:
@@ -293,12 +292,12 @@ class IngestNexus():
                         newSample = False
             
                 if newSample == True:
-                    logging.info("New run: existing investigation, creating sample and run...")
+                    logging.debug("New run: existing investigation, creating sample and run...")
                     sample.investigation = investigation
                     sampleId = self._service.create(self._sessionId, sample)
                     sample.id = sampleId
                 else:
-                    logging.info("New run: existing investigation and sample, creating run...")
+                    logging.debug("New run: existing investigation and sample, creating run...")
             
             else:
                 logging.error("ERROR, there should be only one investigation per instrument per investigation name")
