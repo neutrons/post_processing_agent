@@ -13,6 +13,7 @@ from suds.client import Client
 
 import nxs, os, logging
 import xml.utils.iso8601, ConfigParser
+from xml.sax import saxutils
 
 class IngestNexus():
     def __init__(self, infilename):
@@ -215,11 +216,15 @@ class IngestNexus():
                     listSample = file.getentries()
                     if listSample.has_key('name'):
                         file.opendata('name')
-                        sample.name = file.getdata()
+                        # Text stored in the Nexus file is XML escaped
+                        # ICAT unescapes it automatically, so we need to
+                        # do it here if we want to determine whether
+                        # the sample is already in the DB.
+                        sample.name = saxutils.unescape(file.getdata())
                         file.closedata()
                     else:
                         sample.name = "NONE"
-                
+                    logging.info("Has sample %s" % sample.name)
                     sampleParameters = []
                 
                     #set sample nature
@@ -227,7 +232,7 @@ class IngestNexus():
                         file.opendata('nature')
                         nature = file.getdata()
                         file.closedata()
-                        if nature:       
+                        if nature:
                             parameterType = self._factory.create("parameterType")
                             parameterType.id = config.get('ParameterType', 'nature')
                             parameterType.applicableToSample = config.getboolean('ParameterType', 'nature_applicable_to_sample')
@@ -274,11 +279,12 @@ class IngestNexus():
                 sample.investigation = investigation
                 sampleId = self._service.create(self._sessionId, sample)
                 sample.id = sampleId
-                logging.debug("  invId: %s  sampleId: %s" % (str(invId), str(sampleId)))
+                logging.info("  invId: %s  sampleId: %s" % (str(invId), str(sampleId)))
         
             elif len(dbInvestigations) == 1:
                 investigation = dbInvestigations[0]
                 dbSamples = investigation.samples
+                logging.info(investigation.samples)
             
                 newSample = True
                 for dbSample in dbSamples:
@@ -287,12 +293,12 @@ class IngestNexus():
                         newSample = False
             
                 if newSample == True:
-                    logging.debug("New run: existing investigation, creating sample and run...")
+                    logging.info("New run: existing investigation, creating sample and run...")
                     sample.investigation = investigation
                     sampleId = self._service.create(self._sessionId, sample)
                     sample.id = sampleId
                 else:
-                    logging.debug("New run: existing investigation and sample, creating run...")
+                    logging.info("New run: existing investigation and sample, creating run...")
             
             else:
                 logging.error("ERROR, there should be only one investigation per instrument per investigation name")
@@ -344,4 +350,4 @@ class IngestNexus():
             self._service.update(self._sessionId, investigation)
        
         else:
-            logging.error("ERROR, there should be only one dataset per run number per type experiment_raw")       
+            logging.error("ERROR, there should be only one dataset per run number per type experiment_raw")
