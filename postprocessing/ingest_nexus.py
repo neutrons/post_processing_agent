@@ -221,7 +221,6 @@ class IngestNexus():
                         # do it here if we want to determine whether
                         # the sample is already in the DB.
                         sample.name = saxutils.unescape(file.getdata())
-                        sample.name = "test & ><"
                         file.closedata()
                     else:
                         sample.name = "NONE"
