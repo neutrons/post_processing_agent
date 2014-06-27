@@ -39,11 +39,17 @@ config:
 	install -m 664	configuration/post_process_consumer.conf $(sysconfig)/post_process_consumer.conf
 	install -m 755	postprocessing/queueProcessor.py	$(bindir)/queueProcessor.py
 	
+config/isolated:
+	# Simplified configuration for isolated installation - usually remote systems
+	@test -d $(prefix)/configuration || mkdir -m 0755 $(prefix)/configuration
+	install -m 664	configuration/post_process_consumer.conf $(prefix)/configuration/post_process.conf
+	install -m 755	postprocessing/queueProcessor.py	$(prefix)/queueProcessor.py
+	
 postproc: check
 	# Make sure the directories exist
 	@test -d $(prefix) || mkdir -m 0755 $(prefix)
 	@test -d $(prefix)/postprocessing || mkdir -m 0755 $(prefix)/postprocessing
-	@test -d $(prefix)/log || mkdir -m 0755 $(prefix)/log
+	@test -d $(prefix)/log || mkdir -m 0775 $(prefix)/log
 	@test -d $(prefix)/scripts || mkdir -m 0755 $(prefix)/scripts
 	
 	# Install application code
