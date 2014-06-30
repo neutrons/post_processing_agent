@@ -8,7 +8,7 @@
     "start_script": "/sw/fermi/autoreduce/postprocessing/scripts/startJob.sh",
     "remote_script": "/sw/fermi/autoreduce/postprocessing/scripts/qsubJob.sh",
     "task_script": "PostProcessAdmin.py",
-    "log_file": "/sw/fermi/autoreduce/postprocessing/log/postprocessing.log",
+    "log_file": "/lustre/snsfs/logs/SNS_applications/postprocessing.log",
     "postprocess_error": "POSTPROCESS.ERROR",
     "catalog_started": "CATALOG.STARTED",
     "catalog_complete": "CATALOG.COMPLETE",

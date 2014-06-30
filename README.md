@@ -74,6 +74,9 @@ point for configuration. Here are the entries to pay attention to:
      
 Installation
 ------------
+The typical installation is designed to be compatible with earlier versions of this
+service. Upgrades to this service should not require changes in the start/stop procedure.
+
    - Create the configuration files:
 
         cd configuration
@@ -89,3 +92,14 @@ Installation
    - Alternatively, you can package your configured installation as an RPM:
 
         make rpm
+
+   - To install on a compute node with limited access, you can also do the following:
+   
+        sudo make install/isolated
+   
+   - To run, simply call 
+   
+        python [installation path]/queueProcessor.py
+        
+   - Note: For python 2.6 and below, drop the argparse.py module under the "postprocessing" directory.
+     

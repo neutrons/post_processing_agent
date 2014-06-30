@@ -72,7 +72,7 @@ class Consumer(object):
             
             logging.info("Command: %s" % str(command_args))
             proc = subprocess.Popen(command_args, stderr=subprocess.PIPE, stdout=None)
-            err_output = proc.stdout.read().strip()
+            err_output = proc.stderr.read().strip()
             if len(err_output)>0:
                 logging.error(err_output)
             self.procList.append(proc)
