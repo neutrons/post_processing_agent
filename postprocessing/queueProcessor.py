@@ -12,12 +12,13 @@ configuration = read_configuration()
 sys.path.insert(0, configuration.sw_dir)
 
 from postprocessing.Consumer import Consumer
-from twisted.internet import reactor
+from twisted.internet import reactor, task
 
 logging.info("Starting post-processing listener %s" % postprocessing.__version__)
 configuration.log_configuration()
 
 consumer = Consumer(configuration)
-consumer.heartbeat()
+heartbeat = task.LoopingCall(consumer.heartbeat)
+heartbeat.start(30.0)
 consumer.run()
 reactor.run()

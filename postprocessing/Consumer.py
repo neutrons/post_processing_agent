@@ -70,11 +70,8 @@ class Consumer(object):
                 command_args.append(self.config.task_script_data_arg)
             command_args.append(str(data).replace(' ',''))
             
-            logging.info("Command: %s" % str(command_args))
-            proc = subprocess.Popen(command_args, stderr=subprocess.PIPE, stdout=None)
-            err_output = proc.stderr.read().strip()
-            if len(err_output)>0:
-                logging.error(err_output)
+            logging.debug("Command: %s" % str(command_args))
+            proc = subprocess.Popen(command_args)
             self.procList.append(proc)
             
             # Check whether the maximum number of processes has been reached
@@ -118,4 +115,3 @@ class Consumer(object):
             stomp.disconnect()
         except:
             logging.error("Could not send heartbeat: %s" % sys.exc_value)
-        reactor.callLater(30.0, self.heartbeat)
