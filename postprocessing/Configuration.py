@@ -112,18 +112,39 @@ class Configuration(object):
 stomp_logger = logging.getLogger('stompest.sync.client')
 stomp_logger.setLevel(logging.ERROR)
 
-def read_configuration(config_file):
+# Default locations for configurationss
+CONFIG_FILE = '/etc/autoreduce/post_processing.conf'
+CONFIG_FILE_ALTERNATE = '/sw/fermi/autoreduce/postprocessing/configuration/post_processing.conf'
+
+def read_configuration(config_file=None):
     """
         Returns a new configuration object for a given
         configuration file
         @param config_file: configuration file to process
     """
-    return Configuration(config_file)
+    if config_file is None:
+        # Make sure we have a configuration file to read
+        config_file = CONFIG_FILE
+        if os.access(config_file, os.R_OK) == False:
+            config_file = CONFIG_FILE_ALTERNATE
+            if os.access(config_file, os.R_OK) == False:
+                raise RuntimeError, "Configuration file doesn't exist or is not readable: %s" % CONFIG_FILE
+    
+    configuration = Configuration(config_file)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s/%(process)d %(message)s",
+        filename=configuration.log_file,
+        filemode='a'
+    )
 
-#stdout_logger = logging.getLogger('STDOUT')
-#sl = StreamToLogger(stdout_logger, logging.INFO)
-#sys.stdout = sl
+    #stdout_logger = logging.getLogger('STDOUT')
+    #sl = StreamToLogger(stdout_logger, logging.INFO)
+    #sys.stdout = sl
+    
+    stderr_logger = logging.getLogger('STDERR')
+    sl = StreamToLogger(stderr_logger, logging.ERROR)
+    sys.stderr = sl
 
-stderr_logger = logging.getLogger('STDERR')
-sl = StreamToLogger(stderr_logger, logging.ERROR)
-sys.stderr = sl
+    return configuration
+

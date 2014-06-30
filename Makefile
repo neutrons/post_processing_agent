@@ -42,7 +42,7 @@ config:
 config/isolated:
 	# Simplified configuration for isolated installation - usually remote systems
 	@test -d $(prefix)/configuration || mkdir -m 0755 $(prefix)/configuration
-	install -m 664	configuration/post_process_consumer.conf $(prefix)/configuration/post_process.conf
+	install -m 664	configuration/post_process_consumer.conf $(prefix)/configuration/post_processing.conf
 	install -m 755	postprocessing/queueProcessor.py	$(prefix)/queueProcessor.py
 	
 postproc: check

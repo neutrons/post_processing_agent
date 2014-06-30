@@ -70,7 +70,11 @@ class Consumer(object):
                 command_args.append(self.config.task_script_data_arg)
             command_args.append(str(data).replace(' ',''))
             
-            proc = subprocess.Popen(command_args, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            logging.info("Command: %s" % str(command_args))
+            proc = subprocess.Popen(command_args, stderr=subprocess.PIPE, stdout=None)
+            err_output = proc.stdout.read().strip()
+            if len(err_output)>0:
+                logging.error(err_output)
             self.procList.append(proc)
             
             # Check whether the maximum number of processes has been reached

@@ -4,7 +4,7 @@
 #PBS -V
 #PBS -W umask=022
 
-# module load mantid-mpi
+module load mantid-mpi
 export OMP_NUM_THREADS=16
 
 python $reduce_script $data_file $proposal_shared_dir

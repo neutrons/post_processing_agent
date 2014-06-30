@@ -13,9 +13,6 @@
 import logging, json, socket, os, sys, subprocess, time, glob, requests
 import re
 import string
-from Configuration import configuration
-from ingest_nexus import IngestNexus
-from ingest_reduced import IngestReduced
 from stompest.config import StompConfig
 from stompest.sync import Stomp
 
@@ -241,8 +238,9 @@ class PostProcessAdmin:
     def catalog_raw(self):
         """
             Catalog a nexus file containing raw data
-        """
+        """        
         try:
+            from ingest_nexus import IngestNexus
             self.send('/queue/'+self.conf.catalog_started, json.dumps(self.data))
             if self.conf.comm_only is False:
                 ingestNexus = IngestNexus(self.data_file)
@@ -259,6 +257,7 @@ class PostProcessAdmin:
             Catalog reduced data files for a given run
         """
         try:
+            from ingest_reduced import IngestReduced
             self.send('/queue/'+self.conf.reduction_catalog_started, json.dumps(self.data))
             if self.conf.comm_only is False:
                 ingestReduced = IngestReduced(self.facility, self.instrument, self.proposal, self.run_number)
@@ -295,6 +294,8 @@ if __name__ == "__main__":
         # Refresh configuration is we need to use an alternate configuration
         if namespace.config is not None:
             configuration = read_configuration(namespace.config)
+        else:
+            configuration = read_configuration()
     
         # If we have no data dictionary, try to create one
         if namespace.data is None:
