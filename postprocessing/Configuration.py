@@ -120,16 +120,6 @@ def read_configuration(config_file):
     """
     return Configuration(config_file)
 
-## Configuration object
-configuration = read_configuration(CONFIG_FILE)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s/%(process)d %(message)s",
-    filename=configuration.log_file,
-    filemode='a'
-)
-
 #stdout_logger = logging.getLogger('STDOUT')
 #sl = StreamToLogger(stdout_logger, logging.INFO)
 #sys.stdout = sl

@@ -9,21 +9,7 @@ import logging, json, sys, os
 CONFIG_FILE = '/etc/autoreduce/post_processing.conf'
 CONFIG_FILE_ALTERNATE = '/sw/fermi/autoreduce/postprocessing/configuration/post_processing.conf'
 
-try:
-    import argparse
-    parser = argparse.ArgumentParser(description='Post-processing agent')
-    parser.add_argument('-c', metavar='config', help='Configuration file', dest='config')
-    namespace = parser.parse_args()
-        
-    # Get the location of the software installation
-    if namespace.config is not None:
-        CONFIG_FILE = namespace.config
-except:
-    # We are probably running an older version of python.
-    # Just proceed with the default config file.
-    # This info will be logged by the configuration handler.
-    pass
-
+# Make sure we have a configuration file to read
 config_file = CONFIG_FILE
 if os.access(config_file, os.R_OK) == False:
     config_file = CONFIG_FILE_ALTERNATE
@@ -39,7 +25,16 @@ sys.path.insert(0, sw_dir)
 
 import postprocessing
 # The configuration includes setting up logging, which should be done first
-from postprocessing.Configuration import configuration
+from postprocessing.Configuration import read_configuration
+configuration = read_configuration(config_file)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s/%(process)d %(message)s",
+    filename=configuration.log_file,
+    filemode='a'
+)
+
 from postprocessing.Consumer import Consumer
 from twisted.internet import reactor
 
