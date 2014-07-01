@@ -2,18 +2,10 @@
 prefix := /sw/fermi/autoreduce/postprocessing
 sysconfig := /etc/autoreduce
 bindir := /usr/bin
+site_packages := `python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"`
 
-ifeq ($(OS),Windows_NT)
-UNAME_S=Windows
-else
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-ISLINUX = 1
-endif
-ifeq ($(UNAME_S),Darwin)
-ISOSX = 1
-endif
-endif
+# The installed prefix may be different from the prefix above while building an RPM
+installed_prefix = $(prefix)
 
 all: postproc
 	
@@ -40,6 +32,8 @@ config:
 	install -m 664	configuration/icatclient.properties $(sysconfig)/icatclient.properties
 	install -m 664	configuration/post_process_consumer.conf $(sysconfig)/post_processing.conf
 	install -m 755	postprocessing/queueProcessor.py	$(bindir)/queueProcessor.py
+	echo "$(installed_prefix)" > configuration/postprocessing.pth	
+	install -m 664 configuration/postprocessing.pth $(site_packages)/postprocessing.pth
 	
 config/isolated:
 	# Simplified configuration for isolated installation - usually remote systems
@@ -63,7 +57,6 @@ postproc: check
 	install -m 755	postprocessing/ingest_reduced.py	 $(prefix)/postprocessing/ingest_reduced.py
 	install -m 755	scripts/remoteJob.sh	 $(prefix)/scripts/remoteJob.sh
 	install -m 755	scripts/startJob.sh	 $(prefix)/scripts/startJob.sh
-	install -m 755	scripts/qsubJob.sh	 $(prefix)/scripts/qsubJob.sh
 
 rpm:
 	@echo "Creating RPMs"

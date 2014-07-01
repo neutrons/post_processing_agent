@@ -7,9 +7,6 @@
 """
 import logging, json, sys, os
 
-## Default configuration file location
-CONFIG_FILE = '/etc/autoreduce/post_process_consumer.conf'
-
 class StreamToLogger(object):
     """
         File-like stream object that redirects writes to a logger instance.
