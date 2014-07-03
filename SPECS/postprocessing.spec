@@ -46,8 +46,5 @@ chown snsdata %{prefix}
 %config %{_sysconfdir}/autoreduce/icat4.cfg
 %config %{_sysconfdir}/autoreduce/icatclient.properties
 %config %{_sysconfdir}/autoreduce/post_processing.conf
-%attr(755, -, -) %{prefix}/postprocessing/
-%attr(755, -, -) %{prefix}/scripts/remoteJob.sh
-%attr(755, -, -) %{prefix}/scripts/startJob.sh
-%attr(755, -, -) %{_bindir}/queueProcessor.py
+%attr(755, -, -) %{prefix}/
 %attr(755, -, -) %{site_packages}/postprocessing.pth

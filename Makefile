@@ -31,7 +31,7 @@ config:
 	install -m 664	configuration/icat4_dev.cfg $(sysconfig)/icat4.cfg
 	install -m 664	configuration/icatclient.properties $(sysconfig)/icatclient.properties
 	install -m 664	configuration/post_process_consumer.conf $(sysconfig)/post_processing.conf
-	install -m 755	postprocessing/queueProcessor.py	$(bindir)/queueProcessor.py
+	#install -m 755	postprocessing/queueProcessor.py	$(bindir)/queueProcessor.py
 	echo "$(installed_prefix)" > configuration/postprocessing.pth	
 	install -m 664 configuration/postprocessing.pth $(site_packages)/postprocessing.pth
 	
@@ -39,7 +39,6 @@ config/isolated:
 	# Simplified configuration for isolated installation - usually remote systems
 	@test -d $(prefix)/configuration || mkdir -m 0755 $(prefix)/configuration
 	install -m 664	configuration/post_process_consumer.conf $(prefix)/configuration/post_processing.conf
-	install -m 755	postprocessing/queueProcessor.py	$(prefix)/queueProcessor.py
 	
 postproc: check
 	# Make sure the directories exist
@@ -57,6 +56,7 @@ postproc: check
 	install -m 755	postprocessing/ingest_reduced.py	 $(prefix)/postprocessing/ingest_reduced.py
 	install -m 755	scripts/remoteJob.sh	 $(prefix)/scripts/remoteJob.sh
 	install -m 755	scripts/startJob.sh	 $(prefix)/scripts/startJob.sh
+	install -m 755	postprocessing/queueProcessor.py	$(prefix)/queueProcessor.py
 
 rpm:
 	@echo "Creating RPMs"
