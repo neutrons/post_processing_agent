@@ -1,7 +1,7 @@
 Summary: postprocessing
 Name: postprocessing
-Version: 2.0
-Release: 0
+Version: 2.1
+Release: 1
 Group: Applications/Engineering
 prefix: /opt/postprocessing
 BuildRoot: %{_tmppath}/%{name}
@@ -39,8 +39,8 @@ make prefix="%{buildroot}%{prefix}" installed_prefix="%{prefix}" site_packages="
 chgrp snswheel %{_sysconfdir}/autoreduce/icat4.cfg
 chgrp snswheel %{_sysconfdir}/autoreduce/icatclient.properties
 chgrp snswheel %{_sysconfdir}/autoreduce/post_processing.conf
-chown snsdata %{_sysconfdir}/autoreduce
-chown snsdata %{prefix}
+chown -R snsdata %{_sysconfdir}/autoreduce
+chown -R snsdata %{prefix}
 
 %files
 %config %{_sysconfdir}/autoreduce/icat4.cfg
