@@ -62,6 +62,7 @@ point for configuration. Here are the entries to pay attention to:
 
    - You need to create the following files:
 
+        configuration/icat4.cfg
         configuration/icatclient.properties
         configuration/post_process_consumer.conf
 
@@ -74,12 +75,13 @@ point for configuration. Here are the entries to pay attention to:
      
 Installation
 ------------
-The typical installation is designed to be compatible with earlier versions of this
-service. Upgrades to this service should not require changes in the start/stop procedure.
+The typical installation is designed to be similar to earlier versions of this service.
+You can modify where the software is installed by modifying the prefix at the top of the Makefile.
 
    - Create the configuration files:
 
         cd configuration
+        cp icat4_prod.cfg icat4.cfg
         cp icatclient.properties.developement icatclient.properties
         cp post_process_consumer.conf.developement post_process_consumer.conf
 

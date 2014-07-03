@@ -31,7 +31,6 @@ config:
 	install -m 664	configuration/icat4.cfg $(sysconfig)/icat4.cfg
 	install -m 664	configuration/icatclient.properties $(sysconfig)/icatclient.properties
 	install -m 664	configuration/post_process_consumer.conf $(sysconfig)/post_processing.conf
-	#install -m 755	postprocessing/queueProcessor.py	$(bindir)/queueProcessor.py
 	echo "$(installed_prefix)" > configuration/postprocessing.pth	
 	install -m 664 configuration/postprocessing.pth $(site_packages)/postprocessing.pth
 	
