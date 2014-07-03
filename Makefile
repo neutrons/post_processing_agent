@@ -28,7 +28,7 @@ install/isolated: config/isolated postproc
 config:
 	# Make sure the directories exist
 	@test -d $(sysconfig) || mkdir -m 0755 -p $(sysconfig)
-	install -m 664	configuration/icat4_dev.cfg $(sysconfig)/icat4.cfg
+	install -m 664	configuration/icat4.cfg $(sysconfig)/icat4.cfg
 	install -m 664	configuration/icatclient.properties $(sysconfig)/icatclient.properties
 	install -m 664	configuration/post_process_consumer.conf $(sysconfig)/post_processing.conf
 	#install -m 755	postprocessing/queueProcessor.py	$(bindir)/queueProcessor.py
