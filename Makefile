@@ -17,6 +17,7 @@ check:
 	@python -c "import stompest.async" || echo "ERROR: Need stompest.async: easy_install stompest.async"
 	@python -c "import suds" || echo "ERROR: Need suds: easy_install suds"
 	@python -c "import nxs" || echo "ERROR: Need nexus: http://download.nexusformat.org/kits/"
+	@python -c "import twisted" || echo "ERROR: Need twisted: easy_install twisted"
 
 	@test -f configuration/icatclient.properties || echo -e "\n===> SET UP configuration/icatclient.properties BEFORE INSTALLATION\n";
 	@test -f configuration/post_process_consumer.conf || echo -e "\n===> SET UP configuration/post_process_consumer.conf BEFORE INSTALLATION\n";
