@@ -20,7 +20,7 @@ class Consumer(object):
         ActiveMQ consumer
     """
     def __init__(self, config):
-        self.stompConfig = StompConfig(config.failover_uri, config.amq_user, config.amq_pwd)
+        self.stompConfig = StompConfig(config.failover_uri, config.amq_user, config.amq_pwd, version=StompSpec.VERSION_1_1)
         self.config = config
         self.procList = []
         
@@ -29,7 +29,7 @@ class Consumer(object):
         """
             Run method to start listening
         """
-        client = yield async.Stomp(self.stompConfig).connect()
+        client = yield async.Stomp(self.stompConfig).connect(heartBeats=(1000, 1000))
         headers = {
             # client-individual mode is necessary for concurrent processing
             # (requires ActiveMQ >= 5.2)
@@ -38,12 +38,14 @@ class Consumer(object):
             'activemq.prefetchSize': '1',
         }
         for q in self.config.queues:
+            headers[StompSpec.ID_HEADER] = 'post-proc-service-%s' % q
             client.subscribe(q, headers, listener=SubscriptionListener(self.consume, errorDestination=self.config.postprocess_error))
         try:
             client = yield client.disconnected
         except:
-            reactor.callLater(5, self.run)
-            
+            logging.error("Connection error: %s" % sys.exc_value)
+        reactor.callLater(5, self.run)
+        
     def consume(self, client, frame):
         """
             Consume an AMQ message.
