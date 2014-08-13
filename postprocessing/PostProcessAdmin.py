@@ -175,7 +175,7 @@ class PostProcessAdmin:
         # Build qsub command
         cmd_out = " -o %s -e %s" % (out_log, out_err)
         cmd_l = " -l nodes=%s:ppn=1" % nodes_desired
-        cmd_v = " -v data_file='%s',n_nodes=%s,reduce_script='%s',proposal_shared_dir='%s'" % (self.data_file, nodes_desired, script, output_dir)
+        cmd_v = " -v data_file='%s',n_nodes=%s,reduce_script='%s',proposal_shared_dir='%s/'" % (self.data_file, nodes_desired, script, output_dir)
         cmd = "qsub %s %s %s %s" % (cmd_out, cmd_l, cmd_v, self.conf.remote_script)
         logging.info("Reduction process: " + cmd)
 
@@ -225,7 +225,7 @@ class PostProcessAdmin:
             @param out_log: reduction log file
             @param out_err: reduction error file
         """
-        cmd = "python " + script + " " + self.data_file + " " + output_dir
+        cmd = "python %s %s %s/" % (script, self.data_file, output_dir)
         logFile=open(out_log, "w")
         errFile=open(out_err, "w")
         if self.conf.comm_only is False:
