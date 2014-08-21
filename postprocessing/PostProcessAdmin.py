@@ -69,6 +69,9 @@ class PostProcessAdmin:
             self.send('/queue/'+self.conf.reduction_started, json.dumps(self.data))
             instrument_shared_dir = os.path.join('/', self.facility, self.instrument, 'shared', 'autoreduce')
             proposal_shared_dir = os.path.join('/', self.facility, self.instrument, self.proposal, 'shared', 'autoreduce')
+            log_dir = os.path.join(proposal_shared_dir, "reduction_log")
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
 
             # Allow for an alternate output directory, if defined
             if len(self.conf.dev_output_dir.strip())>0:
@@ -90,12 +93,8 @@ class PostProcessAdmin:
                 self.send('/queue/' + self.conf.reduction_disabled, json.dumps(self.data))
                 return
             
-            log_dir = os.path.join(proposal_shared_dir, "reduction_log")
             monitor_user = {'username': self.conf.amq_user, 'password': self.conf.amq_pwd}
             
-            if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
-
             # Run the reduction
             out_log = os.path.join(log_dir, os.path.basename(self.data_file) + ".log")
             out_err = os.path.join(log_dir, os.path.basename(self.data_file) + ".err")
