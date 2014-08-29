@@ -24,6 +24,9 @@ class PostProcessAdmin:
         data["information"] = socket.gethostname()
         self.data = data
         self.conf = conf
+        
+        # List of error messages to be handled as information
+        self.exceptions = ["Error in logging framework"]
 
         stompConfig = StompConfig(self.conf.failover_uri, self.conf.amq_user, self.conf.amq_pwd)
         self.client = Stomp(stompConfig)
@@ -104,7 +107,32 @@ class PostProcessAdmin:
                 self.local_reduction(reduce_script_path, proposal_shared_dir, out_log, out_err)
                 
             # If the reduction succeeded, upload the images we might find in the reduction directory
-            if not os.path.isfile(out_err) or os.stat(out_err).st_size == 0:
+            success = not os.path.isfile(out_err) or os.stat(out_err).st_size == 0
+            if not success:
+                # Go through each line and report the error message.
+                # If we can't fine the actual error, report the last line
+                last_line = None
+                error_line = None
+                fp=file(out_err, "r")
+                for l in fp.readlines():
+                    if len(l.replace('-','').strip())>0:
+                        last_line = l.strip()
+                    result = re.search('Error: ([\w ]+)$',l)
+                    if result is not None:
+                        error_line = result.group(1)
+                if error_line is None:
+                    for item in exceptions:
+                        if re.search(item, last_line):
+                            success = True
+                            self.data["information"] = last_line
+                            logging.error("Reduction error ignored: %s" % last_line)
+                    error_line = last_line
+                
+                if not success:
+                    self.data["error"] = "REDUCTION: %s" % error_line
+                    self.send('/queue/'+self.conf.reduction_error , json.dumps(self.data))
+            
+            if success:
                 if os.path.isfile(out_err):
                     os.remove(out_err)
                 self.send('/queue/'+self.conf.reduction_complete , json.dumps(self.data))
@@ -128,23 +156,6 @@ class PostProcessAdmin:
                                         request=requests.post(url, data=monitor_user, files=files, verify=False)
                                         logging.info("Submitted %s [status: %s]" % (filepath,
                                                                                    request.status_code))
-            else:
-                # Go through each line and report the error message.
-                # If we can't fine the actual error, report the last line
-                last_line = None
-                error_line = None
-                fp=file(out_err, "r")
-                for l in fp.readlines():
-                    if len(l.replace('-','').strip())>0:
-                        last_line = l.strip()
-                    result = re.search('Error: ([\w ]+)$',l)
-                    if result is not None:
-                        error_line = result.group(1)
-                if error_line is None:
-                    error_line = last_line
-                    
-                self.data["error"] = "REDUCTION: %s" % error_line
-                self.send('/queue/'+self.conf.reduction_error , json.dumps(self.data))
         except:
             logging.error("reduce: %s" % sys.exc_value)
             self.data["error"] = "Reduction: %s " % sys.exc_value
