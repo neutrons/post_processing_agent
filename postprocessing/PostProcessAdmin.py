@@ -121,7 +121,7 @@ class PostProcessAdmin:
                     if result is not None:
                         error_line = result.group(1)
                 if error_line is None:
-                    for item in exceptions:
+                    for item in self.exceptions:
                         if re.search(item, last_line):
                             success = True
                             self.data["information"] = last_line
