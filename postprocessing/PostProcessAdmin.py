@@ -121,12 +121,12 @@ class PostProcessAdmin:
                     if result is not None:
                         error_line = result.group(1)
                 if error_line is None:
-                    for item in self.exceptions:
-                        if re.search(item, last_line):
-                            success = True
-                            self.data["information"] = last_line
-                            logging.error("Reduction error ignored: %s" % last_line)
                     error_line = last_line
+                for item in self.exceptions:
+                    if re.search(item, error_line):
+                        success = True
+                        self.data["information"] = error_line
+                        logging.error("Reduction error ignored: %s" % error_line)
                 
                 if not success:
                     self.data["error"] = "REDUCTION: %s" % error_line
