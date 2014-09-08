@@ -26,7 +26,7 @@ class PostProcessAdmin:
         self.conf = conf
         
         # List of error messages to be handled as information
-        self.exceptions = ["Error in logging framework"]
+        self.exceptions = self.conf.exceptions
 
         stompConfig = StompConfig(self.conf.failover_uri, self.conf.amq_user, self.conf.amq_pwd)
         self.client = Stomp(stompConfig)

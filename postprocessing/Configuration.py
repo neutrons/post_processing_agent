@@ -83,6 +83,7 @@ class Configuration(object):
         self.task_script_queue_arg = config['task_script_queue_arg'] if 'task_script_queue_arg' in config else None
         self.task_script_data_arg = config['task_script_data_arg'] if 'task_script_data_arg' in config else None
         
+        self.exceptions = config['exceptions'] if 'exceptions' in config else ["Error in logging framework"]
         sys.path.insert(0, self.sw_dir)
 
     def log_configuration(self):
@@ -104,6 +105,7 @@ class Configuration(object):
         logging.info("  - Start script: %s" % self.start_script)
         logging.info("  - Task script: %s" % self.task_script)
         logging.info("  - Image posting URL: %s" % self.web_monitor_url)
+        logging.info("  - Error exceptions: %s" % str(self.exceptions))
         
 # Set the log level for the Stomp client
 stomp_logger = logging.getLogger('stompest.sync.client')
