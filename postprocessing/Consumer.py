@@ -29,7 +29,7 @@ class Consumer(object):
         """
             Run method to start listening
         """
-        client = yield async.Stomp(self.stompConfig).connect(heartBeats=(1000, 1000))
+        client = yield async.Stomp(self.stompConfig).connect()
         headers = {
             # client-individual mode is necessary for concurrent processing
             # (requires ActiveMQ >= 5.2)

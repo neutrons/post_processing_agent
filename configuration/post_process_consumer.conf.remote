@@ -30,6 +30,6 @@
     "reduction_data_ready": "FERMI_REDUCTION.DATA_READY",
     "reduction_catalog_data_ready": "REDUCTION_CATALOG.DATA_READY",
     "communication_only": 0,
-    "max_procs": 5,
+    "max_procs": 50,
     "remote_execution": 1
 }
