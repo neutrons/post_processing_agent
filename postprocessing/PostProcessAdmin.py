@@ -36,6 +36,13 @@ class PostProcessAdmin:
         self.instrument = None
         self.proposal = None
         self.run_number = None
+        
+    def _process_data(self, data):
+        """
+            Retrieve run information from the data dictionary
+            provided with an incoming message.
+            @param data: data dictionary
+        """
         if data.has_key('data_file'):
             self.data_file = str(data['data_file'])
             if os.access(self.data_file, os.R_OK) == False:
@@ -68,6 +75,7 @@ class PostProcessAdmin:
             Reduction process using job submission.
             @param remote: If True, the job will be submitted to a compute node
         """
+        self._process_data(data)
         try:
             self.send('/queue/'+self.conf.reduction_started, json.dumps(self.data))
             instrument_shared_dir = os.path.join('/', self.facility, self.instrument, 'shared', 'autoreduce')
@@ -248,7 +256,8 @@ class PostProcessAdmin:
     def catalog_raw(self):
         """
             Catalog a nexus file containing raw data
-        """        
+        """
+        self._process_data(data)
         try:
             from ingest_nexus import IngestNexus
             self.send('/queue/'+self.conf.catalog_started, json.dumps(self.data))
@@ -266,6 +275,7 @@ class PostProcessAdmin:
         """
             Catalog reduced data files for a given run
         """
+        self._process_data(data)
         try:
             from ingest_reduced import IngestReduced
             self.send('/queue/'+self.conf.reduction_catalog_started, json.dumps(self.data))
@@ -279,6 +289,19 @@ class PostProcessAdmin:
             self.data["error"] = "Reduction catalog: %s" % sys.exc_value
             self.send('/queue/'+self.conf.reduction_catalog_error , json.dumps(self.data))
             
+    def create_reduction_script(self):
+        """
+            Create a new reduction script from a template
+        """
+        try:
+            import reduction_script_writer
+            writer = reduction_script_writer.ScriptWriter(self.data["instrument"])
+            writer.process_request(self.data,
+                                   configuration=self.conf,
+                                   send_function=self.send)
+        except:
+            logging.error("create_reduction_script: %s" % sys.exc_value)
+         
     def send(self, destination, data):
         """
             Send an AMQ message
@@ -338,6 +361,8 @@ if __name__ == "__main__":
                 pp.catalog_raw()
             elif namespace.queue == '/queue/%s' % configuration.reduction_catalog_data_ready:
                 pp.catalog_reduced()
+            elif namespace.queue == '/queue/%s' % configuration.create_reduction_script:
+                pp.create_reduction_script()
         except:
             # If we have a proper data dictionary, send it back with an error message
             if type(data) == dict:

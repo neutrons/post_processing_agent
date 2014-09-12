@@ -60,6 +60,9 @@ class Configuration(object):
         self.reduction_catalog_started = config['reduction_catalog_started']
         self.reduction_catalog_complete = config['reduction_catalog_complete']
         self.reduction_catalog_error = config['reduction_catalog_error']
+        # Reduction script writer
+        self.create_reduction_script = config['create_reduction_script'] if 'create_reduction_script' in config else 'REDUCTION.CREATE_SCRIPT'
+        self.service_status = config['service_status'] if 'service_status' in config else "/topic/SNS.${instrument}.STATUS.POSTPROCESS"
         
         self.heart_beat = config['heart_beat']
         self.log_file = config['log_file'] if 'log_file' in config else 'post_processing.log'

@@ -54,6 +54,7 @@ postproc: check
 	install -m 755	postprocessing/PostProcessAdmin.py	 $(prefix)/postprocessing/PostProcessAdmin.py
 	install -m 755	postprocessing/ingest_nexus.py	 $(prefix)/postprocessing/ingest_nexus.py
 	install -m 755	postprocessing/ingest_reduced.py	 $(prefix)/postprocessing/ingest_reduced.py
+	install -m 755	postprocessing/reduction_script_writer.py	 $(prefix)/postprocessing/reduction_script_writer.py
 	install -m 755	scripts/remoteJob.sh	 $(prefix)/scripts/remoteJob.sh
 	install -m 755	scripts/startJob.sh	 $(prefix)/scripts/startJob.sh
 	install -m 755	postprocessing/queueProcessor.py	$(prefix)/queueProcessor.py
