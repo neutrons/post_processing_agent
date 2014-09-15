@@ -1,8 +1,32 @@
 """
     Write reduction scripts using templates.
     
-    TODO: add option to revert back to a default.
-    TODO: send AMQ message on SNS.${instrument}.STATUS.POSTPROCESS
+    An ActiveMQ message received from the workflow manager contains
+    a dictionary of name-value pairs to fill an existing script template.
+    
+    The following files should be installed in the autoreduction 
+    directory of the instrument:
+    
+    /SNS/[instrument]/shared/autoreduce/reduce_[instrument].py.template
+    /SNS/[instrument]/shared/autoreduce/reduce_[instrument]_default.py
+    
+    The reduce_[instrument]_default.py file can be any script (not a template)
+    that can be used as a default script to revert to in order to bypass
+    the template system. 
+    
+    The dictionary is of the following form:
+    
+    { 'instrument': 'SEQ',
+      'use_default': False,
+      'template_data': { dictionary of template arguments }
+    }
+    
+    If 'use_default' is set to True, the 'template_data' will be
+    ignored and the reduce_[instrument]_default.py file will be copied
+    to reduce_[instrument].py.
+
+    The service sends updates and errors to ActiveMQ
+    (by default /topic/SNS.${instrument}.STATUS.POSTPROCESS)
     
     @copyright: 2014 Oak Ridge National Laboratory
 """
