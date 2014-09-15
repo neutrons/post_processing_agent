@@ -31,5 +31,6 @@
     "reduction_catalog_data_ready": "REDUCTION_CATALOG.DATA_READY",
     "communication_only": 0,
     "max_procs": 50,
-    "remote_execution": 1
+    "remote_execution": 1,
+    "exceptions": ["Error in logging framework", "Found no integrated charge value in gd_prtn_chrg"]
 }
