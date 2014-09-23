@@ -34,7 +34,6 @@ import os
 import re
 import sys
 import json
-import sets
 import shutil
 import string
 import logging
@@ -83,7 +82,7 @@ class ScriptWriter(object):
         
         tag_list = re.findall("\$(\w+)", self._template_content)
         tag_list.extend(re.findall("\${(\w+)}", self._template_content))
-        return sets.Set(tag_list)
+        return set(tag_list)
     
     def check_arguments(self, **template_args):
         """
