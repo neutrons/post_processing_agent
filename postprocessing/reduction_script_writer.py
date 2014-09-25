@@ -37,7 +37,7 @@ import json
 import shutil
 import string
 import logging
-
+import urllib
 
 class ScriptWriter(object):
     """
@@ -138,6 +138,10 @@ class ScriptWriter(object):
         try:
             # Verify that the dictionary of template arguments is complete
             if "template_data" in request_data:
+                template_data = {}
+                for key, value in request_data["template_data"].items():
+                    template_data[key]=urllib.unquote_plus(value)
+                    
                 # Check for a request to use the default script
                 if 'use_default' in request_data and request_data['use_default']==True:
                     # Copy the default script to the production script
@@ -152,8 +156,8 @@ class ScriptWriter(object):
                     if not os.path.isfile(self._template_path):
                         raise RuntimeError, "ScriptWriter: Could not find template %s" % self.template_name
 
-                    self.check_arguments(**request_data["template_data"])
-                    self.write_script(**request_data["template_data"])
+                    self.check_arguments(**template_data)
+                    self.write_script(**template_data)
                     amq_data['status'] = "Created %s reduction script" % request_data['instrument']
             else:
                 logging.error("Script writer: missing template data")
