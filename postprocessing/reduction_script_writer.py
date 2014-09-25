@@ -140,7 +140,10 @@ class ScriptWriter(object):
             if "template_data" in request_data:
                 template_data = {}
                 for key, value in request_data["template_data"].items():
-                    template_data[key]=urllib.unquote_plus(value)
+                    if isinstance(value, basestring):
+                        template_data[key]=urllib.unquote_plus(value)
+                    else:
+                        template_data[key]=value
                     
                 # Check for a request to use the default script
                 if 'use_default' in request_data and request_data['use_default']==True:
