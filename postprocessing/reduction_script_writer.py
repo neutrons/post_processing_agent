@@ -34,6 +34,7 @@ import os
 import re
 import sys
 import json
+import time
 import shutil
 import string
 import logging
@@ -51,6 +52,8 @@ class ScriptWriter(object):
     _default_script_name = "reduce_%s_default.py"
     ## Path of the autoreduction directory
     _autoreduction_dir = "/SNS/%s/shared/autoreduce"
+    ## Log file
+    _log_file = "reduction_parameters.txt"
     
     def __init__(self, instrument):
         """
@@ -119,6 +122,32 @@ class ScriptWriter(object):
         else:
             raise RuntimeError, "Script directory does not exist: %s" % script_dir
         
+    def log_entry(self, **template_args):
+        """
+            Log the template parameters in the reduction directory.
+            The log file is tab delimited.
+            
+            @param template_args: dictionary of arguments to fill the template
+        """
+        try:
+            file_path = os.path.join(self._autoreduction_dir % self.instrument, self._log_file)
+            template_keys = sorted(template_args.keys())
+            template_values = [ string.replace(str(template_args[k]), '\n', '; ') for k in template_keys]
+            template_keys.insert(0, "Time")
+            template_values.insert(0, "%s" % time.ctime())
+            log_entry = ""
+            # If the file doesn't exist, create it with a header line
+            if not os.path.isfile(file_path):
+                log_entry = '\t '.join(template_keys)
+                log_entry += '\n'
+            log_entry += '\t '.join(template_values)
+            log_entry += '\n'
+            log_file = open(file_path, 'a')
+            log_file.write(log_entry)
+            log_file.close()
+        except:
+            logging.error("ScriptWriter: Could not write log entry for %s: %s" % (self.script_name, sys.exc_value))
+
     def process_request(self, request_data, configuration, send_function):
         """
             Process a request to write a new reduction script from
@@ -162,6 +191,7 @@ class ScriptWriter(object):
                     self.check_arguments(**template_data)
                     self.write_script(**template_data)
                     amq_data['status'] = "Created %s reduction script" % request_data['instrument']
+                self.log_entry(**template_data)
             else:
                 logging.error("Script writer: missing template data")
                 amq_data['status'] = "Missing %s reduction template" % request_data['instrument']
