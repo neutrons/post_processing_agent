@@ -75,7 +75,7 @@ class PostProcessAdmin:
             Reduction process using job submission.
             @param remote: If True, the job will be submitted to a compute node
         """
-        self._process_data(data)
+        self._process_data(self.data)
         try:
             self.send('/queue/'+self.conf.reduction_started, json.dumps(self.data))
             instrument_shared_dir = os.path.join('/', self.facility, self.instrument, 'shared', 'autoreduce')
@@ -257,7 +257,7 @@ class PostProcessAdmin:
         """
             Catalog a nexus file containing raw data
         """
-        self._process_data(data)
+        self._process_data(self.data)
         try:
             from ingest_nexus import IngestNexus
             self.send('/queue/'+self.conf.catalog_started, json.dumps(self.data))
@@ -275,7 +275,7 @@ class PostProcessAdmin:
         """
             Catalog reduced data files for a given run
         """
-        self._process_data(data)
+        self._process_data(self.data)
         try:
             from ingest_reduced import IngestReduced
             self.send('/queue/'+self.conf.reduction_catalog_started, json.dumps(self.data))
