@@ -363,6 +363,24 @@ if __name__ == "__main__":
                 pp.catalog_reduced()
             elif namespace.queue == '/queue/%s' % configuration.create_reduction_script:
                 pp.create_reduction_script()
+                
+            # Check for registered processors
+            if type(configuration.processors)==list:
+                for p in configuration.processors:
+                    toks = p.split('.')
+                    if len(toks) == 2:
+                        processor_module = __import__("postprocessing.processors.%s" % toks[0], globals(), locals(), [toks[1],], -1)
+                        try:
+                            processor_class = eval("processor_module.%s" % toks[1])
+                            if namespace.queue == processor_class.get_input_queue_name():
+                                # Instantiate and call the processor
+                                proc = processor_class(data, configuration, send_function=pp.send)
+                                proc()
+                        except:
+                            logging.error("PostProcessAdmin: Error loading processor: %s" % sys.exc_value)
+                    else:
+                        logging.error("PostProcessAdmin: Processors can only be specified in the format module.Processor_class")
+
         except:
             # If we have a proper data dictionary, send it back with an error message
             if type(data) == dict:

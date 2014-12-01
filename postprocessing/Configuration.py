@@ -87,6 +87,22 @@ class Configuration(object):
         self.task_script_data_arg = config['task_script_data_arg'] if 'task_script_data_arg' in config else None
         
         self.exceptions = config['exceptions'] if 'exceptions' in config else ["Error in logging framework"]
+        
+        # Configure processor plugins
+        self.processors = config['processors'] if 'processors' in config else []
+        if type(self.processors)==list:
+            for p in self.processors:
+                toks = p.split('.')
+                if len(toks) == 2:
+                    processor_module = __import__("postprocessing.processors.%s" % toks[0], globals(), locals(), [toks[1],], -1)
+                    try:
+                        processor_class = eval("processor_module.%s" % toks[1])
+                        self.queues.append(processor_class.get_input_queue_name())
+                    except:
+                        logging.error("Configuration: Error loading processor: %s" % sys.exc_value)
+                else:
+                    logging.error("Configuration: Processors can only be specified in the format module.Processor_class")
+
         sys.path.insert(0, self.sw_dir)
 
     def log_configuration(self):

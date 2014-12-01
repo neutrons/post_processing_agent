@@ -44,6 +44,7 @@ postproc: check
 	# Make sure the directories exist
 	@test -d $(prefix) || mkdir -m 0755 $(prefix)
 	@test -d $(prefix)/postprocessing || mkdir -m 0755 $(prefix)/postprocessing
+	@test -d $(prefix)/postprocessing/processors || mkdir -m 0755 $(prefix)/postprocessing/processors
 	@test -d $(prefix)/log || mkdir -m 0775 $(prefix)/log
 	@test -d $(prefix)/scripts || mkdir -m 0755 $(prefix)/scripts
 	
@@ -58,6 +59,9 @@ postproc: check
 	install -m 755	scripts/remoteJob.sh	 $(prefix)/scripts/remoteJob.sh
 	install -m 755	scripts/startJob.sh	 $(prefix)/scripts/startJob.sh
 	install -m 755	postprocessing/queueProcessor.py	$(prefix)/queueProcessor.py
+	install -m 755	postprocessing/processors/__init__.py	$(prefix)/postprocessing/processors
+	install -m 755	postprocessing/processors/base_processor.py	$(prefix)/postprocessing/processors
+	install -m 755	postprocessing/processors/test_processor.py	$(prefix)/postprocessing/processors	
 
 rpm:
 	@echo "Creating RPMs"
