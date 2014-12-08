@@ -1,5 +1,5 @@
-#prefix := /opt/postprocessing
-prefix := /sw/fermi/autoreduce/postprocessing
+prefix := /opt/postprocessing
+#prefix := /sw/fermi/autoreduce/postprocessing
 sysconfig := /etc/autoreduce
 bindir := /usr/bin
 site_packages := `python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"`
@@ -62,7 +62,7 @@ postproc: check
 	install -m 755	postprocessing/processors/__init__.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/base_processor.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/test_processor.py	$(prefix)/postprocessing/processors	
-
+	install -m 755	postprocessing/processors/job_tree.py	$(prefix)/postprocessing/processors
 rpm:
 	@echo "Creating RPMs"
 	@rm -rf build

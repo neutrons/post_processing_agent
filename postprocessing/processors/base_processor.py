@@ -3,6 +3,7 @@
 import os
 import logging
 import json
+import subprocess
 
 class BaseProcessor(object):
     """
@@ -35,41 +36,18 @@ class BaseProcessor(object):
     @classmethod
     def get_input_queue_name(cls):
         return cls._message_queue
-    
-    def run_job(self, job_info, run_options, common_properties):
-        """
-            Run a job.
-            @param job_info: job description dictionary
-            @param run_options: options for running the job
-            @param common_properties: properties common to all jobs
 
-            job_info is a dictionary containing the following information:
-            job_info = {
-                        'algorithm': 'some mantid algorithm to run',
-                        'script': 'script to run if no algorithm is provided',
-                        'alg_properties': {},
-                        'predecessors': [list of IDs]
-                       }
-        """
-        # Check whether we need to run locally or remotely
-        is_remote = False
-        if 'remote' in run_options and run_options['remote'] is True:
-            is_remote = True
-            
-        if is_remote:
-            _run_remote_job(job_info, run_options, common_properties)
-        else:
-            _run_local_job(job_info, run_options, common_properties)
-    
     def _run_local_job(self, job_info, run_options, common_properties):
         """
-            Run a local job
+            Run a local job and wait for its completion.
+            
             @param job_info: job description dictionary
             @param run_options: options for running the job
             @param common_properties: properties common to all jobs
         """
         # Check for script information, or Mantid algorithm
         algorithm = ''
+        script = ''
         if 'script' in job_info:
             script = job_info['script']
         elif 'algorithm' in job_info:
@@ -78,19 +56,31 @@ class BaseProcessor(object):
             script = 'run_mantid_algorithm.py'
             algorithm = job_info['algorithm']
         
-        cmd = "python %s %s %s/" % (script, self.data_file, output_dir)
-        logFile=open(out_log, "w")
-        errFile=open(out_err, "w")
-        if self.conf.comm_only is False:
+        # Check that the script exists
+        if not os.path.isfile(script):
+            self.process_error(self.configuration.reduction_error, 
+                               "Script %s does not exist" % str(script))
+        cmd = "python %s %s %s/" % (script, self.data_file, self.output_dir)
+        
+        out_log = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".log")
+        out_err = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".err")
+        logFile=open(out_log, "a")
+        errFile=open(out_err, "a")
+        if self.configuration.comm_only is False:
             proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
                                     stdout=logFile, stderr=errFile, universal_newlines = True)
             proc.communicate()
         logFile.close()
         errFile.close()
+        errFile = open(out_err, 'r')
+        if len(errFile.read())>0:
+            self.process_error(self.configuration.reduction_error, 
+                               "Errors found")
         
-    def _run_remote_job(job_info, run_options, common_properties):
+    def _run_remote_jobs(self, job_info, run_options, common_properties):
         """
-            Run a remote job
+            Run a set of jobs with dependencies.
+            
             @param job_info: job description dictionary
             @param run_options: options for running the job
             @param common_properties: properties common to all jobs
@@ -130,6 +120,10 @@ class BaseProcessor(object):
         else:
             raise ValueError("Run number is missing")
         
+        self.proposal_shared_dir = os.path.join('/', self.facility, self.instrument, self.proposal, 'shared', 'autoreduce')
+        self.output_dir = self.proposal_shared_dir
+        self.log_dir = self.output_dir
+        
     def process_error(self, destination, message):
         """
             Log and send error message
@@ -140,6 +134,18 @@ class BaseProcessor(object):
         error_message = "%s: %s" % (type(self).__name__, message)
         logging.error(error_message)
         self.data["error"] = error_message
-        
-        if self.send_function is not None:
-            self.send_function('/queue/%s' % destination , json.dumps(self.data))
+        self.send('/queue/%s' % destination , json.dumps(self.data))
+        # Reset the error
+        del self.data["error"]
+
+    def send(self, destination, message):
+        """
+            Send an AMQ message
+
+            @param destination: queue to send the error to
+            @param message: error message
+        """
+        if self._send_function is not None:
+            self._send_function(destination, message)
+        else:
+            print "NOT SEND TO AMQ", destination, message

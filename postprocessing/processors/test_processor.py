@@ -27,9 +27,3 @@ class TestProcessor(BaseProcessor):
         """
         self.send('/queue/'+self.configuration.reduction_started, json.dumps(self.data))
         self.send('/queue/'+self.configuration.reduction_complete, json.dumps(self.data))
-
-    def send(self, destination, data):
-        if self._send_function is not None:
-            self._send_function(destination, data)
-        else:
-            print destination, data

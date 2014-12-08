@@ -348,7 +348,7 @@ if __name__ == "__main__":
                         if len(sep_toks)>1:
                             data["ipts"] = sep_toks[1]
             else:
-                raise RuntimeError, "Expected a JSON object or a file path"
+                logging.error("PostProcessAdmin: Expected a JSON object or a file path")
         else:
             data = json.loads(namespace.data)
             
@@ -377,7 +377,7 @@ if __name__ == "__main__":
                                 proc = processor_class(data, configuration, send_function=pp.send)
                                 proc()
                         except:
-                            logging.error("PostProcessAdmin: Error loading processor: %s" % sys.exc_value)
+                            logging.error("PostProcessAdmin: Processor error: %s" % sys.exc_value)
                     else:
                         logging.error("PostProcessAdmin: Processors can only be specified in the format module.Processor_class")
 
