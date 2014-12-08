@@ -1,5 +1,5 @@
-prefix := /opt/postprocessing
-#prefix := /sw/fermi/autoreduce/postprocessing
+#prefix := /opt/postprocessing
+prefix := /sw/fermi/autoreduce/postprocessing
 sysconfig := /etc/autoreduce
 bindir := /usr/bin
 site_packages := `python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"`
