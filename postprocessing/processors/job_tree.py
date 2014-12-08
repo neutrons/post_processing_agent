@@ -68,7 +68,11 @@ class JobTreeProcessor(BaseProcessor):
                     # Loop through predecessors
                     can_submit = True
                     for pred in job['predecessors']:
-                        can_submit = can_submit and pred in job_submission
+                        if pred in config['jobs']:
+                            can_submit = can_submit and pred in job_submission
+                        else:
+                            self.process_error(self.configuration.reduction_error, 
+                                               "Predecessor '%s' does not exist" % pred)
                     if can_submit:
                         job_submission.append(name)
             
@@ -96,6 +100,14 @@ class JobTreeProcessor(BaseProcessor):
             @param run_options: general run options for submitting the jobs
             @param common_properties: common properties for the jobs
         """
+        # Remove old log files
+        out_log = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".log")
+        out_err = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".err")
+        if os.path.isfile(out_err):
+            os.remove(out_err)
+        if os.path.isfile(out_log):
+            os.remove(out_log)
+
         # Check whether we need to run locally or remotely
         if 'remote' in run_options and run_options['remote'] is True:
             self.process_error(self.configuration.reduction_error, "Remote jobs not yet implemented")
@@ -111,7 +123,7 @@ class JobTreeProcessor(BaseProcessor):
                 
                     self.data['information'] = "Job [%s] started on %s" % (item, socket.gethostname())
                     self.send('/queue/'+self.configuration.reduction_started, json.dumps(self.data))
-                    self._run_local_job(job_info[item], run_options, common_properties)
+                    self._run_local_job(item, job_info[item], run_options, common_properties)
                     self.send('/queue/'+self.configuration.reduction_complete, json.dumps(self.data))
                 else:
                     self.process_error(self.configuration.reduction_error, 

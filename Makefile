@@ -58,6 +58,7 @@ postproc: check
 	install -m 755	postprocessing/reduction_script_writer.py	 $(prefix)/postprocessing/reduction_script_writer.py
 	install -m 755	scripts/remoteJob.sh	 $(prefix)/scripts/remoteJob.sh
 	install -m 755	scripts/startJob.sh	 $(prefix)/scripts/startJob.sh
+	install -m 755	scripts/run_mantid_algorithm.py	 $(prefix)/scripts/run_mantid_algorithm.py
 	install -m 755	postprocessing/queueProcessor.py	$(prefix)/queueProcessor.py
 	install -m 755	postprocessing/processors/__init__.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/base_processor.py	$(prefix)/postprocessing/processors

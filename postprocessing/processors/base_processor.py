@@ -4,6 +4,7 @@ import os
 import logging
 import json
 import subprocess
+import string
 
 class BaseProcessor(object):
     """
@@ -37,10 +38,10 @@ class BaseProcessor(object):
     def get_input_queue_name(cls):
         return cls._message_queue
 
-    def _run_local_job(self, job_info, run_options, common_properties):
+    def _run_local_job(self, job_name,  job_info, run_options, common_properties):
         """
             Run a local job and wait for its completion.
-            
+            @param job_name: a name for the job
             @param job_info: job description dictionary
             @param run_options: options for running the job
             @param common_properties: properties common to all jobs
@@ -53,8 +54,20 @@ class BaseProcessor(object):
         elif 'algorithm' in job_info:
             # The following should be a standard script that runs the 
             # designated algorithm
-            script = 'run_mantid_algorithm.py'
-            algorithm = job_info['algorithm']
+            properties = common_properties
+            properties['Filename'] = self.data_file
+            properties.update(job_info['alg_properties'])
+            
+            script_template = os.path.join(self.configuration.sw_dir, 'scripts', 'run_mantid_algorithm.py')
+            template_content = open(script_template).read()
+            # Replace the dictionary entries
+            template = string.Template(template_content)
+            script_content = template.substitute({'algorithm': job_info['algorithm'],
+                                          'algorithm_properties': properties})
+            script = os.path.join(self.output_dir, "mantid_script_%s.py" % job_name)
+            script_file = open(script, 'w')
+            script_file.write(script_content)
+            script_file.close()
         
         # Check that the script exists
         if not os.path.isfile(script):
@@ -68,7 +81,8 @@ class BaseProcessor(object):
         errFile=open(out_err, "a")
         if self.configuration.comm_only is False:
             proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
-                                    stdout=logFile, stderr=errFile, universal_newlines = True)
+                                    stdout=logFile, stderr=errFile, universal_newlines = True,
+                                    cwd=self.output_dir)
             proc.communicate()
         logFile.close()
         errFile.close()
@@ -135,8 +149,11 @@ class BaseProcessor(object):
         logging.error(error_message)
         self.data["error"] = error_message
         self.send('/queue/%s' % destination , json.dumps(self.data))
-        # Reset the error
-        del self.data["error"]
+        # Reset the error and information
+        if "information" in self.data:
+            del self.data["information"]
+        if "error" in self.data:
+            del self.data["error"]
 
     def send(self, destination, message):
         """
