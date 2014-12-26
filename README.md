@@ -33,7 +33,8 @@ point for configuration. Here are the entries to pay attention to:
         "mantid_unstable": "/opt/mantidunstable/bin",
     
         "communication_only": 1,
-        "remote_execution": 0
+        "remote_execution": 0,
+        "jobs_per_instrument": 2
     }
 
 #### ActiveMQ settings
@@ -45,6 +46,24 @@ point for configuration. Here are the entries to pay attention to:
      "REDUCTION.DATA_READY" queue is replaced by special-purpose queue like 
      "FERMI_REDUCTION.DATA_READY", you should change the name of that queue 
      on the configuration file.
+     
+    - If "jobs_per_instrument" is set to an integer greater than zero, no more than
+      that number of jobs will run on a given node for a given instrument.
+      Set "jobs_per_instrument" to zero to turn this feature off.
+      
+      If this feature is used, you must add the following to activemq.xml:
+      
+            <plugins>
+              <redeliveryPlugin fallbackToDeadLetter="true" sendToDlqIfMaxRetriesExceeded="true">
+                <redeliveryPolicyMap>
+                  <redeliveryPolicyMap>
+                    <defaultEntry>
+                      <redeliveryPolicy maximumRedeliveries="4" initialRedeliveryDelay="5000" redeliveryDelay="10000" />
+                    </defaultEntry>
+                  </redeliveryPolicyMap>
+                </redeliveryPolicyMap>
+              </redeliveryPlugin>
+            </plugins>
 
 #### Installation settings
 

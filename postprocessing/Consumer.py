@@ -23,6 +23,7 @@ class Consumer(object):
         self.stompConfig = StompConfig(config.failover_uri, config.amq_user, config.amq_pwd, version=StompSpec.VERSION_1_1)
         self.config = config
         self.procList = []
+        self.instrument_jobs = {}
         
     @defer.inlineCallbacks
     def run(self):
@@ -39,7 +40,9 @@ class Consumer(object):
         }
         for q in self.config.queues:
             headers[StompSpec.ID_HEADER] = 'post-proc-service-%s' % q
-            client.subscribe(q, headers, listener=SubscriptionListener(self.consume, errorDestination=self.config.postprocess_error))
+            client.subscribe(q, headers, listener=SubscriptionListener(self.consume, 
+                                                                       ack=False,
+                                                                       errorDestination=self.config.postprocess_error))
         try:
             client = yield client.disconnected
         except:
@@ -49,6 +52,26 @@ class Consumer(object):
     def consume(self, client, frame):
         """
             Consume an AMQ message.
+            
+            Configuration note: 
+            The Configuration.limit_instrument_rate parameter can be set to a number
+            greater than zero to limit the number of jobs running for an instrument 
+            at any given time. When using this option, you MUST put the following in
+            your activemq.xml configuration. Otherwise, the rejected messages will 
+            not be redelivered (see http://activemq.apache.org/message-redelivery-and-dlq-handling.html)
+            
+            <plugins>
+              <redeliveryPlugin fallbackToDeadLetter="true" sendToDlqIfMaxRetriesExceeded="true">
+                <redeliveryPolicyMap>
+                  <redeliveryPolicyMap>
+                    <defaultEntry>
+                      <redeliveryPolicy maximumRedeliveries="4" initialRedeliveryDelay="5000" redeliveryDelay="10000" />
+                    </defaultEntry>
+                  </redeliveryPolicyMap>
+                </redeliveryPolicyMap>
+              </redeliveryPlugin>
+            </plugins>
+        
             @param client: Stomp connection object
             @param frame: StompFrame object
         """
@@ -58,6 +81,26 @@ class Consumer(object):
             data = frame.body
             logging.info("Received %s: %s" % (destination, data))
             
+            data_dict = json.loads(data)
+            instrument = None
+            if self.config.jobs_per_instrument>0 and "instrument" in data_dict:
+                instrument = data_dict["instrument"].upper()
+                if instrument in self.instrument_jobs:
+                    self.update_processes()
+                    if len(self.instrument_jobs[instrument])>=self.config.jobs_per_instrument:
+                        client.nack(frame)
+                        logging.error("Too many jobs for %s on %s: rejecting" % (instrument, os.getpid()))
+                        return
+                else:
+                    self.instrument_jobs[instrument] = []
+            client.ack(frame)
+        except:
+            logging.error(sys.exc_value)
+            # Raising an exception here may result in an ActiveMQ result being sent.
+            # We therefore pick a message that will mean someone to the users.
+            raise RuntimeError, "Error processing incoming message: contact post-processing expert"
+
+        try:
             # Put together the command to execute, including any optional arguments
             post_proc_script = os.path.join(self.config.python_dir, self.config.task_script)
             command_args = [self.config.start_script, post_proc_script]
@@ -75,6 +118,8 @@ class Consumer(object):
             logging.debug("Command: %s" % str(command_args))
             proc = subprocess.Popen(command_args)
             self.procList.append(proc)
+            if instrument is not None:
+                self.instrument_jobs[instrument].append(proc)
             
             # Check whether the maximum number of processes has been reached
             max_procs_reached = len(self.procList) > self.config.max_procs
@@ -94,7 +139,7 @@ class Consumer(object):
             logging.error(sys.exc_value)
             # Raising an exception here may result in an ActiveMQ result being sent.
             # We therefore pick a message that will mean someone to the users.
-            raise RuntimeError, "Error processing incoming message: contact post-processing expert"
+            raise RuntimeError, "Error processing message: contact post-processing expert"
         
     def update_processes(self):
         """
@@ -103,6 +148,9 @@ class Consumer(object):
         """
         for i in self.procList:
             if i.poll() is not None:
+                for instrument in self.instrument_jobs:
+                    if i in self.instrument_jobs[instrument]:
+                        self.instrument_jobs[instrument].remove(i)
                 self.procList.remove(i)
                 
     def heartbeat(self):

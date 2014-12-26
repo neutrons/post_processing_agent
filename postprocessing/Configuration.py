@@ -88,6 +88,7 @@ class Configuration(object):
         
         self.exceptions = config['exceptions'] if 'exceptions' in config else ["Error in logging framework"]
         
+        self.jobs_per_instrument = config['jobs_per_instrument'] if 'jobs_per_instrument' in config else 2
         # Configure processor plugins
         self.processors = config['processors'] if 'processors' in config else []
         if type(self.processors)==list:
