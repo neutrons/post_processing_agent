@@ -64,6 +64,7 @@ postproc: check
 	install -m 755	postprocessing/processors/base_processor.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/test_processor.py	$(prefix)/postprocessing/processors	
 	install -m 755	postprocessing/processors/job_tree.py	$(prefix)/postprocessing/processors
+	install -m 755	postprocessing/processors/job_handling.py	$(prefix)/postprocessing/processors
 rpm:
 	@echo "Creating RPMs"
 	@rm -rf build
