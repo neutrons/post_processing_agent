@@ -37,7 +37,7 @@ def remote_submission(configuration, script, input_file,
     
     # Build qsub command
     cmd_out = " -o %s -e %s" % (out_log, out_err)
-    cmd_l = " -l nodes=%s:ppn=1" % nodes_desired
+    cmd_l = " -l nodes=%s:ppn=%s" % (nodes_desired, configuration.processors_per_node)
     cmd_v = " -v data_file='%s',n_nodes=%s,reduce_script='%s',proposal_shared_dir='%s/'" % (input_file, nodes_desired, script, output_dir)
     cmd = "qsub %s %s %s %s" % (cmd_out, cmd_l, cmd_v, configuration.remote_script)
     if len(dependencies)>0:

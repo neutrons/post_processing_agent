@@ -76,6 +76,7 @@ class Configuration(object):
         self.max_nodes = config['max_nodes'] if 'max_nodes' in config else 32
         self.max_memory = config['max_memory'] if 'max_memory' in config else 8.0
         self.max_procs = config['max_procs'] if 'max_procs' in config else 5
+        self.processors_per_node = config['processors_per_node'] if 'processors_per_node' in config else 16
         self.wait_notification_period = config['wait_notification_period'] if 'wait_notification_period' in config else 900
         
         self.web_monitor_url = config['webmon_url_template'] if 'webmon_url_template' in config else "https://monitor.sns.gov/files/$instrument/$run_number/submit_reduced/"
