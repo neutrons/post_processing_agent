@@ -90,6 +90,8 @@ class Configuration(object):
         self.exceptions = config['exceptions'] if 'exceptions' in config else ["Error in logging framework"]
         
         self.jobs_per_instrument = config['jobs_per_instrument'] if 'jobs_per_instrument' in config else 2
+        
+        sys.path.insert(0, self.sw_dir)
         # Configure processor plugins
         self.processors = config['processors'] if 'processors' in config else []
         if type(self.processors)==list:
@@ -104,8 +106,6 @@ class Configuration(object):
                         logging.error("Configuration: Error loading processor: %s" % sys.exc_value)
                 else:
                     logging.error("Configuration: Processors can only be specified in the format module.Processor_class")
-
-        sys.path.insert(0, self.sw_dir)
 
     def log_configuration(self):
         """
