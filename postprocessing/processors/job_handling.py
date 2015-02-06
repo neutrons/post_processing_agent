@@ -9,7 +9,7 @@ import time
 
 def remote_submission(configuration, script, input_file, 
                       output_dir, out_log, out_err, wait=True,
-                      dependencies=[]):
+                      dependencies=[], node_request=None):
     """
         Run a script remotely
         @param configuration: configuration object
@@ -20,10 +20,18 @@ def remote_submission(configuration, script, input_file,
         @param out_err: reduction error file
         @param wait: if True, we will wait for the job to finish before returning
         @param dependencies: list of job dependencies
+        @param node_request: None, or the number of nodes we want mpi to run on
     """
+    # Check whether we requested a specific number of nodes:
+    if node_request is not None:
+        try:
+            nodes_desired = min(int(node_request), configuration.max_nodes)
+        except:
+            nodes_desired = 1
+            logging.error("Could not process node request: %s" % node_request)
     #MaxChunkSize is set to 8G specifically for the jobs run on fermi, which has 32 nodes and 64GB/node
     #We would like to get MaxChunkSize from an env variable in the future
-    if configuration.comm_only is False:
+    elif configuration.comm_only is False:
         import mantid.simpleapi as api
         chunks = api.DetermineChunking(Filename=input_file,
                                        MaxChunkSize=configuration.max_memory)
@@ -31,9 +39,8 @@ def remote_submission(configuration, script, input_file,
         if nodes_desired == 0:
             nodes_desired = 1
     else:
-        chunks = 1
         nodes_desired = 1
-    logging.debug("Chunks: %s / Nodes: %s" % (chunks, nodes_desired))
+    logging.debug("Nodes: %s" % nodes_desired)
     
     # Build qsub command
     cmd_out = " -o %s -e %s" % (out_log, out_err)

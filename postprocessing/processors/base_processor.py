@@ -102,9 +102,12 @@ class BaseProcessor(object):
         out_err = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".err")
         
         if 'remote' in run_options and run_options['remote'] is True:
+            node_request = None
+            if "node_request" in job_info:
+                node_request = job_info["node_request"]
             job_id = job_handling.remote_submission(self.configuration, script, self.data_file, 
                                                     self.output_dir, out_log, out_err, 
-                                                    wait, dependencies)
+                                                    wait, dependencies, node_request=node_request)
         else:
             job_id = job_handling.local_submission(self.configuration, script, self.data_file, 
                                                    self.output_dir, out_log, out_err)
