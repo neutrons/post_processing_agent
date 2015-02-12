@@ -38,6 +38,8 @@ class Consumer(object):
             # the maximal number of messages the broker will let you work on at the same time
             'activemq.prefetchSize': '1',
         }
+        if self.config.heartbeat_ping not in self.config.queues:
+            self.config.queues.append(self.config.heartbeat_ping)
         for q in self.config.queues:
             headers[StompSpec.ID_HEADER] = 'post-proc-service-%s' % q
             client.subscribe(q, headers, listener=SubscriptionListener(self.consume, 
