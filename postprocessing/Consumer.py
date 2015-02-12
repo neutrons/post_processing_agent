@@ -82,6 +82,11 @@ class Consumer(object):
             logging.info("Received %s: %s" % (destination, data))
             
             data_dict = json.loads(data)
+            # If we received a ping request, just ack
+            if self.config.heartbeat_ping in destination:
+                self.ack_ping(data_dict)
+                client.ack(frame)
+                return
             instrument = None
             if self.config.jobs_per_instrument>0 and "instrument" in data_dict:
                 instrument = data_dict["instrument"].upper()
@@ -153,15 +158,35 @@ class Consumer(object):
                         self.instrument_jobs[instrument].remove(i)
                 self.procList.remove(i)
                 
-    def heartbeat(self):
+    def heartbeat(self, destination=None, data_dict={}):
         """
             Send heartbeats at a regular time interval
+            @param: destination where to send the heartbeat 
+            @param data_dict: optional dictionary to pass along
         """
         try:
+            if destination is None:
+                destination = self.config.heart_beat
             stomp = sync.Stomp(self.stompConfig)
             stomp.connect()
-            data_dict = {"src_name": socket.gethostname(), "status": "0", "pid": str(os.getpid())}
-            stomp.send(self.config.heart_beat, json.dumps(data_dict))
+            if not type(data_dict) == dict:
+                logging.error("Heartbeat argument data_dict was not a dict")
+                data_dict = {}
+            data_dict.update({"src_name": socket.gethostname(), 
+                              "role": "postprocessing",
+                              "status": "0", "pid": str(os.getpid())})
+            stomp.send(destination, json.dumps(data_dict))
             stomp.disconnect()
         except:
             logging.error("Could not send heartbeat: %s" % sys.exc_value)
+
+    def ack_ping(self, data):
+        """
+            Send an ACK message in response to a ping
+            @param data: data that was received with the ping request
+        """
+        if 'reply_to' in data:
+            self.heartbeat(data['reply_to'], data)
+        else:
+            logging.error("Incomplete ping request %s" % str(data))
+        

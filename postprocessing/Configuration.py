@@ -55,6 +55,7 @@ class Configuration(object):
         self.reduction_complete = config['reduction_complete']
         self.reduction_error = config['reduction_error']
         self.reduction_disabled = config['reduction_disabled']
+        self.heartbeat_ping = config['heartbeat_ping'] if 'heartbeat_ping' in config else '/topic/SNS.COMMON.STATUS.PING'
         # Reduction catalog AMQ queues
         self.reduction_catalog_data_ready = config['reduction_catalog_data_ready'] if 'reduction_catalog_data_ready' in config else 'REDUCTION_CATALOG.DATA_READY'
         self.reduction_catalog_started = config['reduction_catalog_started']
