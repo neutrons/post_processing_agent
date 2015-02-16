@@ -53,6 +53,10 @@ point for configuration. Here are the entries to pay attention to:
       
       If this feature is used, you must add the following to activemq.xml:
       
+            <broker xmlns="http://activemq.apache.org/schema/core" brokerName="localhost" ... schedulerSupport="true">
+            
+            ... 
+            
             <plugins>
               <redeliveryPlugin fallbackToDeadLetter="true" sendToDlqIfMaxRetriesExceeded="true">
                 <redeliveryPolicyMap>
