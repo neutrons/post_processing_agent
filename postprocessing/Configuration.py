@@ -55,6 +55,7 @@ class Configuration(object):
         self.reduction_complete = config['reduction_complete']
         self.reduction_error = config['reduction_error']
         self.reduction_disabled = config['reduction_disabled']
+        self.heartbeat_ping = config['heartbeat_ping'] if 'heartbeat_ping' in config else '/topic/SNS.COMMON.STATUS.PING'
         # Reduction catalog AMQ queues
         self.reduction_catalog_data_ready = config['reduction_catalog_data_ready'] if 'reduction_catalog_data_ready' in config else 'REDUCTION_CATALOG.DATA_READY'
         self.reduction_catalog_started = config['reduction_catalog_started']
@@ -76,6 +77,7 @@ class Configuration(object):
         self.max_nodes = config['max_nodes'] if 'max_nodes' in config else 32
         self.max_memory = config['max_memory'] if 'max_memory' in config else 8.0
         self.max_procs = config['max_procs'] if 'max_procs' in config else 5
+        self.processors_per_node = config['processors_per_node'] if 'processors_per_node' in config else 16
         self.wait_notification_period = config['wait_notification_period'] if 'wait_notification_period' in config else 900
         
         self.web_monitor_url = config['webmon_url_template'] if 'webmon_url_template' in config else "https://monitor.sns.gov/files/$instrument/$run_number/submit_reduced/"
@@ -89,6 +91,8 @@ class Configuration(object):
         self.exceptions = config['exceptions'] if 'exceptions' in config else ["Error in logging framework"]
         
         self.jobs_per_instrument = config['jobs_per_instrument'] if 'jobs_per_instrument' in config else 2
+        
+        sys.path.insert(0, self.sw_dir)
         # Configure processor plugins
         self.processors = config['processors'] if 'processors' in config else []
         if type(self.processors)==list:
@@ -103,8 +107,6 @@ class Configuration(object):
                         logging.error("Configuration: Error loading processor: %s" % sys.exc_value)
                 else:
                     logging.error("Configuration: Processors can only be specified in the format module.Processor_class")
-
-        sys.path.insert(0, self.sw_dir)
 
     def log_configuration(self):
         """

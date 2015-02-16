@@ -13,6 +13,7 @@
 import logging, json, socket, os, sys, subprocess, time, glob, requests
 import re
 import string
+import processors.job_handling as job_handling
 from stompest.config import StompConfig
 from stompest.sync import Stomp
 
@@ -110,9 +111,13 @@ class PostProcessAdmin:
             out_log = os.path.join(log_dir, os.path.basename(self.data_file) + ".log")
             out_err = os.path.join(log_dir, os.path.basename(self.data_file) + ".err")
             if remote:
-                self.remote_reduction(reduce_script_path, proposal_shared_dir, out_log, out_err)
+                job_handling.remote_submission(self.conf, reduce_script_path, 
+                                               self.data_file, proposal_shared_dir, 
+                                               out_log, out_err)
             else:
-                self.local_reduction(reduce_script_path, proposal_shared_dir, out_log, out_err)
+                job_handling.local_submission(self.conf, reduce_script_path, 
+                                              self.data_file, proposal_shared_dir, 
+                                              out_log, out_err)
                 
             # If the reduction succeeded, upload the images we might find in the reduction directory
             success = not os.path.isfile(out_err) or os.stat(out_err).st_size == 0
@@ -168,91 +173,7 @@ class PostProcessAdmin:
             logging.error("reduce: %s" % sys.exc_value)
             self.data["error"] = "Reduction: %s " % sys.exc_value
             self.send('/queue/'+self.conf.reduction_error , json.dumps(self.data))
-
-    def remote_reduction(self, script, output_dir, out_log, out_err):
-        """
-            Run auto-reduction remotely
-            @param script: full path to the reduction script to run
-            @param output_dir: reduction output directory
-            @param out_log: reduction log file
-            @param out_err: reduction error file
-        """
-        #MaxChunkSize is set to 8G specifically for the jobs run on fermi, which has 32 nodes and 64GB/node
-        #We would like to get MaxChunkSize from an env variable in the future
-        if self.conf.comm_only is False:
-            import mantid.simpleapi as api
-            chunks = api.DetermineChunking(Filename=self.data_file,MaxChunkSize=self.conf.max_memory)
-            nodes_desired = min(chunks.rowCount(), self.conf.max_nodes)
-            if nodes_desired == 0:
-                nodes_desired = 1
-        else:
-            chunks = 1
-            nodes_desired = 1
-        logging.debug("Chunks: %s  / Nodes: %s" % (chunks, nodes_desired))
-        
-        # Build qsub command
-        cmd_out = " -o %s -e %s" % (out_log, out_err)
-        cmd_l = " -l nodes=%s:ppn=1" % nodes_desired
-        cmd_v = " -v data_file='%s',n_nodes=%s,reduce_script='%s',proposal_shared_dir='%s/'" % (self.data_file, nodes_desired, script, output_dir)
-        cmd = "qsub %s %s %s %s" % (cmd_out, cmd_l, cmd_v, self.conf.remote_script)
-        logging.info("Reduction process: " + cmd)
-
-        # If we are only dry-running, return immediately
-        if self.conf.comm_only is True:
-            return
-        
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        
-        # Catch errors in the job submission and raise them as exception
-        proc_err = proc.stderr.read()
-        if len(proc_err)>0:
-            raise RuntimeError, proc_err
             
-        # Read in the job ID
-        proc_out = proc.stdout.read()
-        toks = proc_out.split(".")
-        if len(toks) > 0:
-            pid = toks[0].rstrip()
-        logging.info("Job ID: %s" % pid)
-        
-        # Wait for the job to finish
-        t_0 = time.time()
-        t_cycle = t_0
-        while True:
-            qstat_cmd = "qstat " + pid
-            ret = subprocess.Popen(qstat_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).stdout.read().rstrip()
-            logging.debug("Popen return code: " + ret)
-            if ret.startswith("qstat: Unknown Job Id") or \
-               ret.endswith("C batch") or \
-               len(ret)==0:
-                break
-            else:
-                time.sleep(30)
-            # If we've been waiting for more than a configured waiting time,
-            # log the event as information
-            if time.time()-t_cycle > self.conf.wait_notification_period:
-                wait_time = time.time()-t_0
-                t_cycle = time.time()
-                logging.info("Waiting for job ID %s for more than %g seconds" % (pid, wait_time))
-    
-    def local_reduction(self, script, output_dir, out_log, out_err):
-        """
-            Run auto-reduction locally
-            @param script: full path to the reduction script to run
-            @param output_dir: reduction output directory
-            @param out_log: reduction log file
-            @param out_err: reduction error file
-        """
-        cmd = "python %s %s %s/" % (script, self.data_file, output_dir)
-        logFile=open(out_log, "w")
-        errFile=open(out_err, "w")
-        if self.conf.comm_only is False:
-            proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
-                                    stdout=logFile, stderr=errFile, universal_newlines = True)
-            proc.communicate()
-        logFile.close()
-        errFile.close()
-
     def catalog_raw(self):
         """
             Catalog a nexus file containing raw data

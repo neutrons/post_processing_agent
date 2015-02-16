@@ -1,13 +1,19 @@
 """
+    The base processor defines a base class to be used to process jobs.
+    An input AMQ queue is defined. The post-processing client will 
+    automatically register with that queue upon starting.
+    
+    @copyright: 2014-2015 Oak Ridge National Laboratory
 """
 import os
 import logging
 import json
-import subprocess
 import string
+import job_handling
 
 class BaseProcessor(object):
     """
+        Base class for job processor
     """
     data = {}
     configuration = None
@@ -28,6 +34,7 @@ class BaseProcessor(object):
             
             @param data: data dictionary from the incoming message
             @param conf: configuration object
+            @param send_function: function to call to send an AMQ message
         """
         self.data = data
         self.configuration = conf
@@ -36,18 +43,20 @@ class BaseProcessor(object):
     
     @classmethod
     def get_input_queue_name(cls):
+        """
+            Returns the name of the queue to use to start a job
+        """
         return cls._message_queue
 
-    def _run_local_job(self, job_name,  job_info, run_options, common_properties):
+    def _get_script_path(self, job_name, job_info, run_options, common_properties):
         """
-            Run a local job and wait for its completion.
+            Determine which script to run.
             @param job_name: a name for the job
             @param job_info: job description dictionary
             @param run_options: options for running the job
             @param common_properties: properties common to all jobs
         """
         # Check for script information, or Mantid algorithm
-        algorithm = ''
         script = ''
         if 'script' in job_info:
             script = job_info['script']
@@ -68,38 +77,47 @@ class BaseProcessor(object):
             script_file = open(script, 'w')
             script_file.write(script_content)
             script_file.close()
+        return script
+            
+    def _run_job(self, job_name,  job_info, run_options, common_properties, 
+                 wait=True, dependencies=[]):
+        """
+            Run a local job and wait for its completion.
+            @param job_name: a name for the job
+            @param job_info: job description dictionary
+            @param run_options: options for running the job
+            @param common_properties: properties common to all jobs
+            @param wait: if True, we will wait for the job to finish before returning
+            @param dependencies: list of job dependencies
+        """
+        # Check for script information, or Mantid algorithm
+        script = self._get_script_path(job_name, job_info, run_options, common_properties)
         
         # Check that the script exists
         if not os.path.isfile(script):
             self.process_error(self.configuration.reduction_error, 
                                "Script %s does not exist" % str(script))
-        cmd = "python %s %s %s/" % (script, self.data_file, self.output_dir)
         
         out_log = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".log")
         out_err = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".err")
-        logFile=open(out_log, "a")
-        errFile=open(out_err, "a")
-        if self.configuration.comm_only is False:
-            proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
-                                    stdout=logFile, stderr=errFile, universal_newlines = True,
-                                    cwd=self.output_dir)
-            proc.communicate()
-        logFile.close()
-        errFile.close()
-        errFile = open(out_err, 'r')
-        if len(errFile.read())>0:
-            self.process_error(self.configuration.reduction_error, 
-                               "Errors found")
         
-    def _run_remote_jobs(self, job_info, run_options, common_properties):
-        """
-            Run a set of jobs with dependencies.
-            
-            @param job_info: job description dictionary
-            @param run_options: options for running the job
-            @param common_properties: properties common to all jobs
-        """
-        print "Not yet implemented"
+        if 'remote' in run_options and run_options['remote'] is True:
+            node_request = None
+            if "node_request" in job_info:
+                node_request = job_info["node_request"]
+            job_id = job_handling.remote_submission(self.configuration, script, self.data_file, 
+                                                    self.output_dir, out_log, out_err, 
+                                                    wait, dependencies, node_request=node_request)
+        else:
+            job_id = job_handling.local_submission(self.configuration, script, self.data_file, 
+                                                   self.output_dir, out_log, out_err)
+        
+        if os.path.isfile(out_err):
+            errFile = open(out_err, 'r')
+            if len(errFile.read())>0:
+                self.process_error(self.configuration.reduction_error, 
+                                   "Errors found")
+        return job_id
         
     def _process_data(self, data):
         """

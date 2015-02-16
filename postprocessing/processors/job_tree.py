@@ -1,4 +1,9 @@
 """
+    Job tree processor. A series of jobs are defined in 
+    /SNS/[instrument]/shared/autoreduce/reduce_[instrument].config.
+    
+    When a message is sent to the appropriate AMQ queue, those jobs
+    will be ordered according to their dependencies and executed.
     
     @copyright: 2014 Oak Ridge National Laboratory
 """
@@ -8,7 +13,9 @@ import json
 import socket
 
 class JobTreeProcessor(BaseProcessor):
-    
+    """
+        Process used to execute a list of inter-dependent jobs.
+    """
     ## Input queue
     _message_queue = "/queue/REDUCTION.JOBTREE.DATA_READY"
     
@@ -18,8 +25,7 @@ class JobTreeProcessor(BaseProcessor):
             
             @param data: data dictionary from the incoming message
             @param conf: configuration object
-            
-            TODO: Read in configuration
+             @param send_function: function to call to send an AMQ message
         """
         super(JobTreeProcessor, self).__init__(data, conf, send_function)
         self.log_dir = os.path.join(self.proposal_shared_dir, "reduction_log")
@@ -108,38 +114,40 @@ class JobTreeProcessor(BaseProcessor):
         if os.path.isfile(out_log):
             os.remove(out_log)
 
-        # Check whether we need to run locally or remotely
-        if 'remote' in run_options and run_options['remote'] is True:
-            self.process_error(self.configuration.reduction_error, "Remote jobs not yet implemented")
-        else:
-            # Run each job, one at a time, in order
-            for item in job_order:
-                if item in job_info:
-                    # Check for completeness
-                    if 'script' not in job_info[item] and 'algorithm' not in job_info[item]:
-                        self.process_error(self.configuration.reduction_error, 
-                                           "JobTreeProcessor: no job to run for [%s]" % item)
-                        continue
-                
-                    self.data['information'] = "Job [%s] started on %s" % (item, socket.gethostname())
-                    self.send('/queue/'+self.configuration.reduction_started, json.dumps(self.data))
-                    self._run_local_job(item, job_info[item], run_options, common_properties)
-                    self.send('/queue/'+self.configuration.reduction_complete, json.dumps(self.data))
-                else:
+        # Run each job, one at a time, in order
+        job_ids = {}
+        for i in range(len(job_order)):
+            item = job_order[i]
+            
+            # For remote jobs, only wait on the last job and let the scheduling system
+            # take care of the dependencies
+            wait = 'remote' in run_options and run_options['remote'] is True and i == len(job_order)-1
+            
+            if item in job_info:
+                # Check for completeness
+                if 'script' not in job_info[item] and 'algorithm' not in job_info[item]:
                     self.process_error(self.configuration.reduction_error, 
-                                       "JobTreeProcessor: job %s does not exist in job dictionary" % item)
-
-if __name__ == "__main__":
-    data = {'data_file':__file__,
-            'facility':'SNS',
-            'instrument':'SEQ',
-            'ipts':'TEST',
-            'run_number':1234}
-    
-    class Configuration(object):
-        reduction_error = 'ERROR'
-        reduction_started = 'STARTED'
-    conf = Configuration()
-    
-    proc = JobTreeProcessor(data, conf, None)
-    print proc()
+                                       "JobTreeProcessor: no job to run for [%s]" % item)
+                    continue
+                
+                self.data['information'] = "Job [%s] started on %s" % (item, socket.gethostname())
+                self.send('/queue/'+self.configuration.reduction_started, json.dumps(self.data))
+                
+                # Sort out the job dependencies
+                deps = []
+                if 'predecessors' in job_info[item]:
+                    for dep in job_info[item]['predecessors']:
+                        if dep in job_ids:
+                            deps.append(str(job_ids[dep]))
+                        else:
+                            self.process_error(self.configuration.reduction_error, 
+                                               "JobTreeProcessor: no job id for dependency [%s]" % dep)
+                            
+                job_ids[item] = self._run_job(item, job_info[item], run_options, common_properties, 
+                                              wait, dependencies=deps)
+                if wait:
+                    self.data['information'] = "Last job [%s] ended on %s" % (item, socket.gethostname())
+                    self.send('/queue/'+self.configuration.reduction_complete, json.dumps(self.data))
+            else:
+                self.process_error(self.configuration.reduction_error, 
+                                   "JobTreeProcessor: job %s does not exist in job dictionary" % item)
