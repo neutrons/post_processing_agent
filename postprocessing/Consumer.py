@@ -81,14 +81,13 @@ class Consumer(object):
             headers = frame.headers
             destination = headers['destination']
             data = frame.body
-            logging.info("Received %s: %s" % (destination, data))
-            
             data_dict = json.loads(data)
             # If we received a ping request, just ack
             if self.config.heartbeat_ping in destination:
                 self.ack_ping(data_dict)
                 client.ack(frame)
                 return
+            logging.info("Received %s: %s" % (destination, data))
             instrument = None
             if self.config.jobs_per_instrument>0 and "instrument" in data_dict:
                 instrument = data_dict["instrument"].upper()
