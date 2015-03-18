@@ -222,8 +222,8 @@ class IngestNexus():
                         # ICAT unescapes it automatically, so we need to
                         # do it here if we want to determine whether
                         # the sample is already in the DB.
-                        sample_name = saxutils.unescape(file.getdata())
-                        sample.name = sample_name.encode('ascii', 'replace')
+                        sample_name = file.getdata()
+                        sample.name = saxutils.unescape(sample_name.encode('ascii', 'replace'))
                         file.closedata()
                     else:
                         sample.name = "NONE"
