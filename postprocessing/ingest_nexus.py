@@ -75,7 +75,7 @@ class IngestNexus():
                 #investigation title
                 if listing.has_key('title'):
                     file.opendata('title')
-                    investigation_title = file.getdata()
+                    investigation_title = unicode(file.getdata(), errors='replace')
                     investigation.title = investigation_title.encode('ascii', 'replace')
                     file.closedata()
                 else:
@@ -100,7 +100,7 @@ class IngestNexus():
                 #dataset title
                 if listing.has_key('title'): 
                     file.opendata('title')
-                    dataset_description = file.getdata()
+                    dataset_description = unicode(file.getdata(), errors='replace')
                     dataset.description = dataset_description.encode('ascii', 'replace')
                     file.closedata()
             
@@ -222,7 +222,7 @@ class IngestNexus():
                         # ICAT unescapes it automatically, so we need to
                         # do it here if we want to determine whether
                         # the sample is already in the DB.
-                        sample_name = file.getdata()
+                        sample_name = unicode(file.getdata(), errors='replace')
                         sample.name = saxutils.unescape(sample_name.encode('ascii', 'replace'))
                         file.closedata()
                     else:
