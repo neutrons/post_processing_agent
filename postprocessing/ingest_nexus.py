@@ -57,7 +57,15 @@ class IngestNexus():
         invType = self._factory.create("investigationType")
         invType.id = config.get('InvestigationType', 'experiment')
         investigation.type = invType 
-    
+   
+        totalCounts=0
+        protonCharge=0
+        duration=0
+        entry_count=0
+
+        sample = self._factory.create("sample")
+        sample.name = 'NONE'
+ 
         #open nexus file
         file = nxs.open(self._infilename, 'r')
         for name, nxclass in file.entries():
@@ -111,28 +119,34 @@ class IngestNexus():
                 #set dataset start time
                 if listing.has_key('start_time'):
                     file.opendata('start_time')
-                    dataset.startDate = file.getdata()
+                    if entry_count == 0:
+                        dataset.startDate = file.getdata()
+                    elif dataset.startDate > file.getdata():
+                        dataset.startDate = file.getdata()
                     file.closedata()
         
                 #set dataset end time
                 if listing.has_key('end_time'): 
                     file.opendata('end_time')
-                    dataset.endDate = file.getdata()
+                    if entry_count == 0:
+                        dataset.endDate = file.getdata()
+                    elif dataset.endDate < file.getdata():
+                        dataset.endDate = file.getdata()
                     file.closedata()
             
                 #dataset proton_charge 
                 file.opendata('proton_charge')
-                protonCharge = file.getdata()
+                protonCharge = protonCharge + file.getdata()
                 file.closedata()
             
                 #dataset total_counts 
                 file.opendata('total_counts')
-                totalCounts = file.getdata()
+                totalCounts = totalCounts + file.getdata()
                 file.closedata()
             
                 #dataset duration 
                 file.opendata('duration')
-                duration = file.getdata()
+                duration = duration + file.getdata()
                 file.closedata()
             
                 #investigation instrument 
@@ -147,72 +161,6 @@ class IngestNexus():
                 file.closedata()
                 file.closegroup()
             
-                #set dataset parameters
-                parameters = []
-            
-                #1) parameter proton_charge 
-                if protonCharge:
-                    parameterType = self._factory.create("parameterType")
-                    parameterType.id = config.get('ParameterType', 'proton_charge')
-                    parameterType.applicableToDataset = config.getboolean('ParameterType', 'proton_charge_applicable_to_dataset')
-                    datasetParameter = self._factory.create("datasetParameter")
-                    datasetParameter.type = parameterType
-                    datasetParameter.stringValue = protonCharge 
-                    parameters.append(datasetParameter)
-            
-                #2) parameter total_counts 
-                if totalCounts:
-                    parameterType = self._factory.create("parameterType")
-                    parameterType.id = config.get('ParameterType', 'total_counts')
-                    parameterType.applicableToDataset = config.getboolean('ParameterType', 'total_counts_applicable_to_dataset')
-                    datasetParameter = self._factory.create("datasetParameter")
-                    datasetParameter.type = parameterType 
-                    datasetParameter.numericValue = totalCounts
-                    parameters.append(datasetParameter)
-            
-                #3) parameter duration 
-                if duration:
-                    parameterType = self._factory.create("parameterType")
-                    parameterType.id = config.get('ParameterType', 'duration')
-                    parameterType.applicableToDataset = config.getboolean('ParameterType', 'duration_applicable_to_dataset')
-                    datasetParameter = self._factory.create("datasetParameter")
-                    datasetParameter.type = parameterType 
-                    datasetParameter.numericValue = duration 
-                    parameters.append(datasetParameter)
-                        
-                dataset.parameters = parameters
-                dataset.location = self._infilename 
-            
-                datafiles = []
-            
-                token=self._infilename.split("/")
-                proposalDir = "/" + token[1] + "/" + token[2] + "/" + token[3]
-                for dirpath, dirnames, filenames in os.walk(proposalDir):
-                    if dirpath.find("shared") == -1 and dirpath.find("data") == -1:
-                        for filename in [f for f in filenames]:
-                            #if dataset.name in filename and os.path.islink(filename) != False:
-                            if dataset.name in filename:
-                                logging.info("Filename: %s" % filename)
-                                datafile = self._factory.create("datafile")
-                                filepath = os.path.join(dirpath,filename)
-                                extension = os.path.splitext(filename)[1][1:]
-                                datafile.name = filename
-                                datafile.location = filepath
-                                dfFormat = self._factory.create("datafileFormat")
-                                dfFormat.id = config.get('DatafileFormat', extension)
-                                datafile.datafileFormat = dfFormat 
-                                modTime = os.path.getmtime(filepath)
-                                datafile.datafileCreateTime = xml.utils.iso8601.tostring(modTime)
-                                datafile.fileSize = os.path.getsize(filepath)
-                                datafiles.append(datafile)
-                
-                dataset.datafiles = datafiles
-                
-                samples = []
-                
-                sample = self._factory.create("sample")
-                sample.name = 'NONE'
-                
                 if listing.has_key('sample'):
                     file.opengroup('sample')
                     listSample = file.getentries()
@@ -261,11 +209,70 @@ class IngestNexus():
                         sample.parameters = sampleParameters
                 
                     file.closegroup()
-                samples.append(sample)
-                break 
         
         file.close()
         
+        #set dataset parameters
+        parameters = []
+    
+        #1) parameter proton_charge 
+        if protonCharge:
+            parameterType = self._factory.create("parameterType")
+            parameterType.id = config.get('ParameterType', 'proton_charge')
+            parameterType.applicableToDataset = config.getboolean('ParameterType', 'proton_charge_applicable_to_dataset')
+            datasetParameter = self._factory.create("datasetParameter")
+            datasetParameter.type = parameterType
+            datasetParameter.stringValue = protonCharge 
+            parameters.append(datasetParameter)
+    
+        #2) parameter total_counts 
+        if totalCounts:
+            parameterType = self._factory.create("parameterType")
+            parameterType.id = config.get('ParameterType', 'total_counts')
+            parameterType.applicableToDataset = config.getboolean('ParameterType', 'total_counts_applicable_to_dataset')
+            datasetParameter = self._factory.create("datasetParameter")
+            datasetParameter.type = parameterType 
+            datasetParameter.numericValue = totalCounts
+            parameters.append(datasetParameter)
+    
+        #3) parameter duration 
+        if duration:
+            parameterType = self._factory.create("parameterType")
+            parameterType.id = config.get('ParameterType', 'duration')
+            parameterType.applicableToDataset = config.getboolean('ParameterType', 'duration_applicable_to_dataset')
+            datasetParameter = self._factory.create("datasetParameter")
+            datasetParameter.type = parameterType 
+            datasetParameter.numericValue = duration 
+            parameters.append(datasetParameter)
+                
+        dataset.parameters = parameters
+        dataset.location = self._infilename 
+    
+        datafiles = []
+    
+        token=self._infilename.split("/")
+        proposalDir = "/" + token[1] + "/" + token[2] + "/" + token[3]
+        for dirpath, dirnames, filenames in os.walk(proposalDir):
+            if dirpath.find("shared") == -1 and dirpath.find("data") == -1:
+                for filename in [f for f in filenames]:
+                    #if dataset.name in filename and os.path.islink(filename) != False:
+                    if dataset.name in filename:
+                        logging.info("Filename: %s" % filename)
+                        datafile = self._factory.create("datafile")
+                        filepath = os.path.join(dirpath,filename)
+                        extension = os.path.splitext(filename)[1][1:]
+                        datafile.name = filename
+                        datafile.location = filepath
+                        dfFormat = self._factory.create("datafileFormat")
+                        dfFormat.id = config.get('DatafileFormat', extension)
+                        datafile.datafileFormat = dfFormat 
+                        modTime = os.path.getmtime(filepath)
+                        datafile.datafileCreateTime = xml.utils.iso8601.tostring(modTime)
+                        datafile.fileSize = os.path.getsize(filepath)
+                        datafiles.append(datafile)
+        
+        dataset.datafiles = datafiles
+
         dbDatasets = self._service.search(self._sessionId, "Dataset INCLUDE Datafile [name = '" + str(dataset.name) + "'] <-> Investigation <-> Instrument [name = '" + str(instrument.name) + "'] <-> DatasetType [name = 'experiment_raw']")
 
         if len(dbDatasets) == 0:
