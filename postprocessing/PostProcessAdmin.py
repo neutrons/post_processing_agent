@@ -162,7 +162,7 @@ class PostProcessAdmin:
                             f, e = os.path.splitext(filepath)
                             if e.startswith(os.extsep):
                                 e = e[len(os.extsep):]
-                                if e == "png" or e == "jpg" or filepath.endswith("plot_data.dat"):
+                                if e == "png" or e == "jpg" or filepath.endswith("plot_data.dat") or filepath.endswith("plot_data.json"):
                                     files = {'file': open(filepath, 'rb')}
                                     # Post the file if it's small enough
                                     if len(files) != 0 and os.path.getsize(filepath) < self.conf.max_image_size:
