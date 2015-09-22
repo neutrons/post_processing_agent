@@ -73,6 +73,7 @@ class Configuration(object):
         self.remote_script = config['remote_script'] if 'remote_script' in config else os.path.join(self.sw_dir, 'scripts', 'remoteJob.sh')
         self.mantid_path = config['mantid_path'] if 'mantid_path' in config else '/opt/Mantid/bin'
         self.dev_output_dir = config['dev_output_dir'] if 'dev_output_dir' in config else ''
+        self.python_executable = config['python_exec'] if 'python_exec' in config else 'python'
         
         self.max_nodes = config['max_nodes'] if 'max_nodes' in config else 32
         self.max_memory = config['max_memory'] if 'max_memory' in config else 8.0

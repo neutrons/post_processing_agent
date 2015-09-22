@@ -100,7 +100,7 @@ def local_submission(configuration, script, input_file, output_dir, out_log, out
         @param out_log: reduction log file
         @param out_err: reduction error file
     """
-    cmd = "python %s %s %s/" % (script, input_file, output_dir)
+    cmd = "%s %s %s %s/" % (configuration.python_executable, script, input_file, output_dir)
     logFile=open(out_log, "w")
     errFile=open(out_err, "w")
     if configuration.comm_only is False:
