@@ -31,14 +31,15 @@ for line in reductionScript:
     if mantidpath is not None:
         break
 if mantidpath is None:
-    raise RuntimeError("Failed to determine mantid version from script: %s" \
-                       % sys.argv[1])
+    print "Failed to determine mantid version from script: '%s'" \
+        % sys.argv[1]
+    print "Defaulting to system python"
+    mantidpython='python'
+else:
+    mantidpython=os.path.join(mantidpath, "mantidpython")
+    if not os.path.exists(mantidpython):
+        raise RuntimeError("Failed to find launcher: '%s'" % mantidpython)
 
-mantidpython=os.path.join(mantidpath, "mantidpython")
-if not os.path.exists(mantidpython):
-    raise RuntimeError("Failed to find launcher: '%s'" % mantidpython)
-
-print mantidpython
 cmd=sys.argv[1:]
 cmd.insert(0,mantidpython)
 subprocess.call(cmd)
