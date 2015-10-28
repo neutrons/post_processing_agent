@@ -42,5 +42,6 @@ else:
 
 cmd=sys.argv[1:]
 cmd.insert(0,mantidpython)
-cmd.insert(1,"--classic")
+if mantidpath is not None:
+    cmd.insert(1,"--classic")
 subprocess.call(cmd)
