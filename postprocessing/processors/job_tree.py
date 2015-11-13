@@ -122,6 +122,8 @@ class JobTreeProcessor(BaseProcessor):
             # For remote jobs, only wait on the last job and let the scheduling system
             # take care of the dependencies
             wait = 'remote' in run_options and run_options['remote'] is True and i == len(job_order)-1
+            if not 'remote' in run_options or run_options['remote'] is False:
+                wait = i == len(job_order)-1
             
             if item in job_info:
                 # Check for completeness
