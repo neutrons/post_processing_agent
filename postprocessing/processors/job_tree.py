@@ -29,6 +29,8 @@ class JobTreeProcessor(BaseProcessor):
         """
         super(JobTreeProcessor, self).__init__(data, conf, send_function)
         self.log_dir = os.path.join(self.proposal_shared_dir, "reduction_log")
+        if not os.path.exists(self.log_dir):
+                os.makedirs(self.log_dir)
     
     def __call__(self):
         """
