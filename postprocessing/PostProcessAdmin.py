@@ -105,8 +105,6 @@ class PostProcessAdmin:
                 self.send('/queue/' + self.conf.reduction_disabled, json.dumps(self.data))
                 return
 
-            monitor_user = {'username': self.conf.amq_user, 'password': self.conf.amq_pwd}
-
             # Run the reduction
             out_log = os.path.join(log_dir, os.path.basename(self.data_file) + ".log")
             out_err = os.path.join(log_dir, os.path.basename(self.data_file) + ".err")
@@ -149,26 +147,6 @@ class PostProcessAdmin:
                 if os.path.isfile(out_err):
                     os.remove(out_err)
                 self.send('/queue/' + self.conf.reduction_complete , json.dumps(self.data))
-
-                # Send image to the web monitor
-                if len(self.conf.web_monitor_url.strip()) > 0:
-                    url_template = string.Template(self.conf.web_monitor_url)
-                    url = url_template.substitute(instrument=self.instrument, run_number=self.run_number)
-
-                    pattern = self.instrument + "_" + self.run_number + "*"
-                    for dirpath, dirnames, filenames in os.walk(proposal_shared_dir):
-                        listing = glob.glob(os.path.join(dirpath, pattern))
-                        for filepath in listing:
-                            f, e = os.path.splitext(filepath)
-                            if e.startswith(os.extsep):
-                                e = e[len(os.extsep):]
-                                if e == "png" or e == "jpg" or filepath.endswith("plot_data.dat") or filepath.endswith("plot_data.json"):
-                                    files = {'file': open(filepath, 'rb')}
-                                    # Post the file if it's small enough
-                                    if len(files) != 0 and os.path.getsize(filepath) < self.conf.max_image_size:
-                                        request = requests.post(url, data=monitor_user, files=files, verify=False)
-                                        logging.info("Submitted %s [status: %s]" % (filepath,
-                                                                                    request.status_code))
         except:
             logging.error("reduce: %s" % sys.exc_value)
             self.data["error"] = "Reduction: %s " % sys.exc_value
@@ -200,7 +178,31 @@ class PostProcessAdmin:
         try:
             from ingest_reduced import IngestReduced
             self.send('/queue/' + self.conf.reduction_catalog_started, json.dumps(self.data))
+
             if self.conf.comm_only is False:
+                # Send image to the web monitor
+                if len(self.conf.web_monitor_url.strip()) > 0:
+                    monitor_user = {'username': self.conf.amq_user, 'password': self.conf.amq_pwd}
+                    proposal_shared_dir = os.path.join('/', self.facility, self.instrument, self.proposal, 'shared', 'autoreduce')
+
+                    url_template = string.Template(self.conf.web_monitor_url)
+                    url = url_template.substitute(instrument=self.instrument, run_number=self.run_number)
+
+                    pattern = self.instrument + "_" + self.run_number + "*"
+                    for dirpath, dirnames, filenames in os.walk(proposal_shared_dir):
+                        listing = glob.glob(os.path.join(dirpath, pattern))
+                        for filepath in listing:
+                            f, e = os.path.splitext(filepath)
+                            if e.startswith(os.extsep):
+                                e = e[len(os.extsep):]
+                                if e == "png" or e == "jpg" or filepath.endswith("plot_data.dat") or filepath.endswith("plot_data.json"):
+                                    files = {'file': open(filepath, 'rb')}
+                                    # Post the file if it's small enough
+                                    if len(files) != 0 and os.path.getsize(filepath) < self.conf.max_image_size:
+                                        request = requests.post(url, data=monitor_user, files=files, verify=False)
+                                        logging.info("Submitted %s [status: %s]" % (filepath,
+                                                                                    request.status_code))
+
                 ingestReduced = IngestReduced(self.facility, self.instrument, self.proposal, self.run_number)
                 ingestReduced.execute()
                 ingestReduced.logout()
