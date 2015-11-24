@@ -117,36 +117,15 @@ class PostProcessAdmin:
                                               self.data_file, proposal_shared_dir,
                                               out_log, out_err)
 
-            # If the reduction succeeded, upload the images we might find in the reduction directory
-            success = not os.path.isfile(out_err) or os.stat(out_err).st_size == 0
-            if not success:
-                # Go through each line and report the error message.
-                # If we can't fine the actual error, report the last line
-                last_line = None
-                error_line = None
-                fp = file(out_err, "r")
-                for l in fp.readlines():
-                    if len(l.replace('-', '').strip()) > 0:
-                        last_line = l.strip()
-                    result = re.search('Error: ([\w ]+)$', l)
-                    if result is not None:
-                        error_line = result.group(1)
-                if error_line is None:
-                    error_line = last_line
-                for item in self.exceptions:
-                    if re.search(item, error_line):
-                        success = True
-                        self.data["information"] = error_line
-                        logging.error("Reduction error ignored: %s" % error_line)
-
-                if not success:
-                    self.data["error"] = "REDUCTION: %s" % error_line
-                    self.send('/queue/' + self.conf.reduction_error , json.dumps(self.data))
-
+            # Determine error condition
+            success, status_data = job_handling.determine_success_local(self.conf, out_err)
+            self.data.update(status_data)
             if success:
                 if os.path.isfile(out_err):
                     os.remove(out_err)
-                self.send('/queue/' + self.conf.reduction_complete , json.dumps(self.data))
+                self.send('/queue/' + self.conf.reduction_complete, json.dumps(self.data))
+            else:
+                self.send('/queue/' + self.conf.reduction_error, json.dumps(self.data))
         except:
             logging.error("reduce: %s" % sys.exc_value)
             self.data["error"] = "Reduction: %s " % sys.exc_value

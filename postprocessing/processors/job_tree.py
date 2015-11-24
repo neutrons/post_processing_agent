@@ -1,16 +1,17 @@
 """
     Job tree processor. A series of jobs are defined in 
     /SNS/[instrument]/shared/autoreduce/reduce_[instrument].config.
-    
+
     When a message is sent to the appropriate AMQ queue, those jobs
     will be ordered according to their dependencies and executed.
-    
+
     @copyright: 2014 Oak Ridge National Laboratory
 """
 from base_processor import BaseProcessor
 import os
 import json
 import socket
+import job_handling
 
 class JobTreeProcessor(BaseProcessor):
     """
@@ -18,11 +19,11 @@ class JobTreeProcessor(BaseProcessor):
     """
     ## Input queue
     _message_queue = "/queue/REDUCTION.JOBTREE.DATA_READY"
-    
+
     def __init__(self, data, conf, send_function):
         """
             Initialize the processor
-            
+
             @param data: data dictionary from the incoming message
             @param conf: configuration object
              @param send_function: function to call to send an AMQ message
@@ -31,11 +32,11 @@ class JobTreeProcessor(BaseProcessor):
         self.log_dir = os.path.join(self.proposal_shared_dir, "reduction_log")
         if not os.path.exists(self.log_dir):
                 os.makedirs(self.log_dir)
-    
+
     def __call__(self):
         """
             Determines what jobs we need to submit
-            
+
             config['jobs'] = {'some ID': {
                                           'algorithm': 'some mantid algorithm to run',
                                           'script': 'script to run if no algorithm is provided',
@@ -45,7 +46,7 @@ class JobTreeProcessor(BaseProcessor):
                              }
         """
         self.send('/queue/'+self.configuration.reduction_started, json.dumps(self.data))
-        
+
         instrument_shared_dir = os.path.join('/', self.facility, self.instrument, 'shared', 'autoreduce')
 
         # Find the reduce_*.config file
@@ -53,7 +54,7 @@ class JobTreeProcessor(BaseProcessor):
         if not os.path.isfile(config_file):
             self.process_error(self.configuration.reduction_error, "%s does not exist" % config_file)
             return
-        
+
         # Process the config file
         content = open(config_file, 'r').read()
         config = json.loads(content)
@@ -83,18 +84,18 @@ class JobTreeProcessor(BaseProcessor):
                                                "Predecessor '%s' does not exist" % pred)
                     if can_submit:
                         job_submission.append(name)
-            
+
             jobs_sorted = len(job_submission) >= len(config['jobs'].keys())
-            
+
         # Run the jobs in order
         self.run_jobs(job_submission, config['jobs'], config['run_options'], config['common_properties'])
-        
+
         return job_submission
-        
+
     def run_jobs(self, job_order, job_info, run_options, common_properties):
         """
             Run a list of jobs
-            
+
             job_info is a dictionary containing the following information:
             job_info = {
                         'algorithm': 'some mantid algorithm to run',
@@ -120,23 +121,23 @@ class JobTreeProcessor(BaseProcessor):
         job_ids = {}
         for i in range(len(job_order)):
             item = job_order[i]
-            
+
             # For remote jobs, only wait on the last job and let the scheduling system
             # take care of the dependencies
             wait = 'remote' in run_options and run_options['remote'] is True and i == len(job_order)-1
             if not 'remote' in run_options or run_options['remote'] is False:
                 wait = i == len(job_order)-1
-            
+
             if item in job_info:
                 # Check for completeness
                 if 'script' not in job_info[item] and 'algorithm' not in job_info[item]:
                     self.process_error(self.configuration.reduction_error, 
                                        "JobTreeProcessor: no job to run for [%s]" % item)
                     continue
-                
+
                 self.data['information'] = "Job [%s] started on %s" % (item, socket.gethostname())
                 self.send('/queue/'+self.configuration.reduction_started, json.dumps(self.data))
-                
+
                 # Sort out the job dependencies
                 deps = []
                 if 'predecessors' in job_info[item]:
@@ -146,12 +147,19 @@ class JobTreeProcessor(BaseProcessor):
                         else:
                             self.process_error(self.configuration.reduction_error, 
                                                "JobTreeProcessor: no job id for dependency [%s]" % dep)
-                            
-                job_ids[item] = self._run_job(item, job_info[item], run_options, common_properties, 
-                                              wait, dependencies=deps)
+
+                _job_id, out_log, out_err = self._run_job(item, job_info[item], run_options, 
+                                                          common_properties, 
+                                                          wait, dependencies=deps)
+                job_ids[item] = _job_id
                 if wait:
-                    self.data['information'] = "Last job [%s] ended on %s" % (item, socket.gethostname())
-                    self.send('/queue/'+self.configuration.reduction_complete, json.dumps(self.data))
+                    success, status_data = job_handling.determine_success_local(self.configuration, out_err)
+                    self.data.update(status_data)
+                    if success:
+                        self.data['information'] = "Last job [%s] ended on %s" % (item, socket.gethostname())
+                        self.send('/queue/'+self.configuration.reduction_complete, json.dumps(self.data))
+                    else:
+                        self.send('/queue/'+self.configuration.reduction_error, json.dumps(self.data))
             else:
                 self.process_error(self.configuration.reduction_error, 
                                    "JobTreeProcessor: job %s does not exist in job dictionary" % item)

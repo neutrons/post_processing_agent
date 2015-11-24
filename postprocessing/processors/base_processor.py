@@ -2,7 +2,7 @@
     The base processor defines a base class to be used to process jobs.
     An input AMQ queue is defined. The post-processing client will 
     automatically register with that queue upon starting.
-    
+
     @copyright: 2014-2015 Oak Ridge National Laboratory
 """
 import os
@@ -18,7 +18,6 @@ class BaseProcessor(object):
     data = {}
     configuration = None
     send_function = None
-    
     data_file = None
     facility = None
     instrument = None
@@ -31,7 +30,7 @@ class BaseProcessor(object):
     def __init__(self, data, conf, send_function):
         """
             Initialize the processor
-            
+
             @param data: data dictionary from the incoming message
             @param conf: configuration object
             @param send_function: function to call to send an AMQ message
@@ -40,7 +39,7 @@ class BaseProcessor(object):
         self.configuration = conf
         self._process_data(data)
         self._send_function = send_function
-    
+
     @classmethod
     def get_input_queue_name(cls):
         """
@@ -66,7 +65,7 @@ class BaseProcessor(object):
             properties = common_properties
             properties['Filename'] = self.data_file
             properties.update(job_info['alg_properties'])
-            
+
             script_template = os.path.join(self.configuration.sw_dir, 'scripts', 'run_mantid_algorithm.py')
             template_content = open(script_template).read()
             # Replace the dictionary entries
@@ -78,7 +77,7 @@ class BaseProcessor(object):
             script_file.write(script_content)
             script_file.close()
         return script
-            
+
     def _run_job(self, job_name,  job_info, run_options, common_properties, 
                  wait=True, dependencies=[]):
         """
@@ -92,15 +91,15 @@ class BaseProcessor(object):
         """
         # Check for script information, or Mantid algorithm
         script = self._get_script_path(job_name, job_info, run_options, common_properties)
-        
+
         # Check that the script exists
         if not os.path.isfile(script):
             self.process_error(self.configuration.reduction_error, 
                                "Script %s does not exist" % str(script))
-        
+
         out_log = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".log")
         out_err = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".err")
-        
+
         if 'remote' in run_options and run_options['remote'] is True:
             node_request = None
             if "node_request" in job_info:
@@ -111,14 +110,9 @@ class BaseProcessor(object):
         else:
             job_id = job_handling.local_submission(self.configuration, script, self.data_file, 
                                                    self.output_dir, out_log, out_err)
-        
-        if os.path.isfile(out_err):
-            errFile = open(out_err, 'r')
-            if len(errFile.read())>0:
-                self.process_error(self.configuration.reduction_error, 
-                                   "Errors found")
-        return job_id
-        
+
+        return job_id, out_log, out_err
+
     def _process_data(self, data):
         """
             Retrieve run information from the data dictionary
@@ -146,20 +140,20 @@ class BaseProcessor(object):
             self.proposal = str(data['ipts']).upper()
         else:
             raise ValueError("IPTS is missing")
-            
+
         if data.has_key('run_number'):
             self.run_number = str(data['run_number'])
         else:
             raise ValueError("Run number is missing")
-        
+
         self.proposal_shared_dir = os.path.join('/', self.facility, self.instrument, self.proposal, 'shared', 'autoreduce')
         self.output_dir = self.proposal_shared_dir
         self.log_dir = self.output_dir
-        
+
     def process_error(self, destination, message):
         """
             Log and send error message
-            
+
             @param destination: queue to send the error to
             @param message: error message
         """
