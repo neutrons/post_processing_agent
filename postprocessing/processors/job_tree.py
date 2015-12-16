@@ -109,14 +109,6 @@ class JobTreeProcessor(BaseProcessor):
             @param run_options: general run options for submitting the jobs
             @param common_properties: common properties for the jobs
         """
-        # Remove old log files
-        out_log = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".log")
-        out_err = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".err")
-        if os.path.isfile(out_err):
-            os.remove(out_err)
-        if os.path.isfile(out_log):
-            os.remove(out_log)
-
         # Run each job, one at a time, in order
         job_ids = {}
         for i in range(len(job_order)):
@@ -147,6 +139,14 @@ class JobTreeProcessor(BaseProcessor):
                         else:
                             self.process_error(self.configuration.reduction_error, 
                                                "JobTreeProcessor: no job id for dependency [%s]" % dep)
+
+                # Remove old log files
+                out_log = os.path.join(self.log_dir, "%s.%s.log" % (os.path.basename(self.data_file), item))
+                out_err = os.path.join(self.log_dir, "%s.%s.err" % (os.path.basename(self.data_file), item))
+                if os.path.isfile(out_err):
+                    os.remove(out_err)
+                if os.path.isfile(out_log):
+                    os.remove(out_log)
 
                 _job_id, out_log, out_err = self._run_job(item, job_info[item], run_options, 
                                                           common_properties, 
