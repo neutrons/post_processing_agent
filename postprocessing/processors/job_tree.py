@@ -159,8 +159,8 @@ class JobTreeProcessor(BaseProcessor):
                         self.data['information'] = "Last job [%s] ended on %s" % (item, socket.gethostname())
                         # Make sure we send the success message to the right place
                         success_queue = self.configuration.reduction_complete
-                        if 'success_queue' in job_info['item']:
-                            success_queue = job_info['item']['success_queue']
+                        if 'success_queue' in job_info[item]:
+                            success_queue = job_info[item]['success_queue']
                         self.send('/queue/'+success_queue, json.dumps(self.data))
                     else:
                         self.send('/queue/'+self.configuration.reduction_error, json.dumps(self.data))
