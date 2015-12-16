@@ -97,8 +97,13 @@ class BaseProcessor(object):
             self.process_error(self.configuration.reduction_error, 
                                "Script %s does not exist" % str(script))
 
-        out_log = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".log")
-        out_err = os.path.join(self.log_dir, os.path.basename(self.data_file) + ".err")
+        # Remove old log files
+        out_log = os.path.join(self.log_dir, "%s.%s.log" % (os.path.basename(self.data_file), job_name))
+        out_err = os.path.join(self.log_dir, "%s.%s.err" % (os.path.basename(self.data_file), job_name))
+        if os.path.isfile(out_err):
+            os.remove(out_err)
+        if os.path.isfile(out_log):
+            os.remove(out_log)
 
         if 'remote' in run_options and run_options['remote'] is True:
             node_request = None

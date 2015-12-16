@@ -140,14 +140,6 @@ class JobTreeProcessor(BaseProcessor):
                             self.process_error(self.configuration.reduction_error, 
                                                "JobTreeProcessor: no job id for dependency [%s]" % dep)
 
-                # Remove old log files
-                out_log = os.path.join(self.log_dir, "%s.%s.log" % (os.path.basename(self.data_file), item))
-                out_err = os.path.join(self.log_dir, "%s.%s.err" % (os.path.basename(self.data_file), item))
-                if os.path.isfile(out_err):
-                    os.remove(out_err)
-                if os.path.isfile(out_log):
-                    os.remove(out_log)
-
                 _job_id, out_log, out_err = self._run_job(item, job_info[item], run_options, 
                                                           common_properties, 
                                                           wait, dependencies=deps)
