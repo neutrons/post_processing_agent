@@ -101,7 +101,8 @@ class JobTreeProcessor(BaseProcessor):
                         'algorithm': 'some mantid algorithm to run',
                         'script': 'script to run if no algorithm is provided',
                         'alg_properties': {},
-                        'predecessors': [list of IDs]
+                        'predecessors': [list of IDs],
+                        'success_queue': active_mq_queue_for_success [optional]
                        }
 
             @param job_order: ordered list of job names
@@ -111,6 +112,7 @@ class JobTreeProcessor(BaseProcessor):
         """
         # Run each job, one at a time, in order
         job_ids = {}
+        has_errors = False
         for i in range(len(job_order)):
             item = job_order[i]
 
@@ -140,22 +142,26 @@ class JobTreeProcessor(BaseProcessor):
                             self.process_error(self.configuration.reduction_error, 
                                                "JobTreeProcessor: no job id for dependency [%s]" % dep)
 
-                _job_id, out_log, out_err = self._run_job(item, job_info[item], run_options, 
-                                                          common_properties, 
-                                                          wait, dependencies=deps)
+                _job_id, _, out_err = self._run_job(item, job_info[item], run_options, 
+                                                    common_properties, 
+                                                    wait, dependencies=deps)
                 job_ids[item] = _job_id
-                if wait:
-                    success, status_data = job_handling.determine_success_local(self.configuration, out_err)
-                    self.data.update(status_data)
-                    if success:
-                        self.data['information'] = "Last job [%s] ended on %s" % (item, socket.gethostname())
-                        # Make sure we send the success message to the right place
-                        success_queue = self.configuration.reduction_complete
-                        if 'success_queue' in job_info[item]:
-                            success_queue = job_info[item]['success_queue']
-                        self.send('/queue/'+success_queue, json.dumps(self.data))
-                    else:
-                        self.send('/queue/'+self.configuration.reduction_error, json.dumps(self.data))
+
+                # Send error messages as appropriate
+                success, status_data = job_handling.determine_success_local(self.configuration, out_err)
+                self.data.update(status_data)
+                if not success:
+                    has_errors = True
+                    self.send('/queue/'+self.configuration.reduction_error, json.dumps(self.data))
+
+                # When all the jobs are done, send the final success message
+                if wait and not has_errors:
+                    self.data['information'] = "Last job [%s] ended on %s" % (item, socket.gethostname())
+                    # Make sure we send the success message to the right place
+                    success_queue = self.configuration.reduction_complete
+                    if 'success_queue' in job_info[item]:
+                        success_queue = job_info[item]['success_queue']
+                    self.send('/queue/'+success_queue, json.dumps(self.data))
             else:
                 self.process_error(self.configuration.reduction_error, 
                                    "JobTreeProcessor: job %s does not exist in job dictionary" % item)
