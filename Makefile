@@ -60,6 +60,7 @@ postproc: check
 	install -m 755	scripts/startJob.sh	 $(prefix)/scripts/startJob.sh
 	install -m 755	scripts/mantidpython.py	 $(prefix)/scripts/mantidpython.py
 	install -m 755	scripts/run_mantid_algorithm.py	 $(prefix)/scripts/run_mantid_algorithm.py
+	install -m 755	scripts/ar-report.py	 $(prefix)/scripts/ar-report.py
 	install -m 755	postprocessing/queueProcessor.py	$(prefix)/queueProcessor.py
 	install -m 755	postprocessing/processors/__init__.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/base_processor.py	$(prefix)/postprocessing/processors
