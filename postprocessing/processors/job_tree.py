@@ -150,7 +150,10 @@ class JobTreeProcessor(BaseProcessor):
                 # Send error messages as appropriate
                 success, status_data = job_handling.determine_success_local(self.configuration, out_err)
                 self.data.update(status_data)
-                if not success:
+                if success:
+                    if os.path.isfile(out_err):
+                        os.remove(out_err)
+                else:
                     has_errors = True
                     self.send('/queue/'+self.configuration.reduction_error, json.dumps(self.data))
 
