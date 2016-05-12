@@ -85,7 +85,6 @@ class ReductionLogFile(GenericFile):
 
         self.__findLongestDuration()
         self.longestDuration = "%.1f" % self.longestDuration
-        # self.longestDuration = __class__.durationToHuman(self.longestDuration)
 
         self.__findLoadNexusTotal(eventfilename)
         self.loadEventNexusDuration = "%.1f" % self.loadEventNexusDuration
@@ -149,8 +148,7 @@ class ReductionLogFile(GenericFile):
         if len(duration) == 2:  # only seconds
             duration = float(duration[0])
         elif len(duration) == 4:  # minutes and seconds
-            duration = float(duration[0]) * 60. \
-                       + float(duration[2])
+            duration = float(duration[0]) * 60. + float(duration[2])
         else:
             print(duration)
             raise RuntimeError("Don't know how to parse duration")
@@ -175,7 +173,8 @@ class ReductionLogFile(GenericFile):
             for line in handle:
                 line = line.strip()
                 if "This is Mantid version" in line:
-                    self.mantidVersion = line.split("This is Mantid version")[-1]
+                    self.mantidVersion \
+                        = line.split("This is Mantid version")[-1]
                     self.mantidVersion = self.mantidVersion.strip().split()[0]
                 if 'running on' in line and "starting" in line:
                     line = line.split('running on')[-1].strip()
@@ -235,7 +234,7 @@ class ARstatus:
         if len(times) <= 0:
             return ''
 
-        oldest=THE_FUTURE
+        oldest = THE_FUTURE
         for time in times:
             if len(time) > 0 and time < oldest:
                 oldest = time
@@ -243,7 +242,6 @@ class ARstatus:
             return oldest
         else:
             return ""
-
 
     @property
     def logstarted(self):
@@ -273,7 +271,8 @@ class ARstatus:
     def header():
         return ("runID", "runStart", "runStop", "runCTime", "eventSizeMiB",
                 "host", "numReduced", "version", "reduxStart",
-                "logCTime", "longAlgo", "algoSec", "loadSecTotal", "loadNexusSecTotal")
+                "logCTime", "longAlgo", "algoSec", "loadSecTotal",
+                "loadNexusSecTotal")
 
     def report(self):
         return (str(self.eventfile),
@@ -296,7 +295,8 @@ class EventFile(GenericFile):
 
         with h5py.File(self.filename, 'r') as handle:
             entry = handle.get("entry")
-            self.timeStart = entry.get("start_time").value[0].decode('utf-8')[:16]
+            self.timeStart \
+                = entry.get("start_time").value[0].decode('utf-8')[:16]
             self.timeStop = entry.get("end_time").value[0].decode('utf-8')[:16]
 
     def __str__(self):
@@ -307,6 +307,7 @@ class EventFile(GenericFile):
 
     def isThisRun(self, filename):
         return filename.startswith(self.prefix)
+
 
 def getPropDir(descr):
     # if this points to a runfile, guess the proposal directory
@@ -322,16 +323,18 @@ def getPropDir(descr):
     if not os.path.isdir(fullpath):
         raise RuntimeError("%s is not a directory" % fullpath)
     if not (fullpath.startswith("/SNS/") and ("IPTS" in fullpath)):
-        raise RuntimeError("%s does not appear to be a proposal directory" % fullpath)
+        raise RuntimeError("%s does not appear to be a proposal directory" %
+                           fullpath)
 
     return fullpath
+
 
 def getRuns(propdir):
     # find the data directory
     datadirs = [os.path.join(propdir, subdir) for subdir in ['data', 'nexus']]
     datadirs = [direc for direc in datadirs if os.path.isdir(direc)]
     if len(datadirs) != 1:
-        raise RuntimeError("Expected only one data directory, found " \
+        raise RuntimeError("Expected only one data directory, found "
                            + ','.join(datadirs))
 
     # get a list of event files in that directory
@@ -351,20 +354,21 @@ def getOutFilename(propdir):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description='Report information on ' \
-                                                 + 'auto-reduction in a proposal')
-    # parser.add_argument('-p', '--propdir', metavar="IPTSDIR",
-                        # help="proposal directory to report on")
+    parser = argparse.ArgumentParser(description='Report information on auto-'
+                                     + 'reduction in a proposal')
     parser.add_argument('runfile', metavar="NEXUSFILE",
-                        help="path to a nexus file, changes to append or proposal directory")
+                        help="path to a nexus file, changes to append "
+                        + "or proposal directory")
     parser.add_argument('outputdir',
-                        help="directory to write csv to, " \
+                        help="directory to write csv to, "
                              + "defaults to instrument shared")
     args = parser.parse_args()
 
     runfile = os.path.abspath(args.runfile)
     propdir = getPropDir(runfile)
-    # one mode is to append a single run, the other is to parse an entire proposal
+
+    # one mode is to append a single run,
+    # the other is to parse an entire proposal
     if runfile == propdir:
         runfile = None
 
