@@ -224,12 +224,10 @@ class ARstatus:
                    if choice != 'UNKNOWN']
         choices = set(choices)
 
-        if len(choices) == 0:
-            return 'UNKNOWN'
-        elif len(choices) == 1:
+        if len(choices) == 1:
             return choices.pop()
         else:
-            raise RuntimeError("Too many mantid versions: " + str(choices))
+            return 'UNKNOWN'  # just give up
 
     @staticmethod
     def findOldest(times):
