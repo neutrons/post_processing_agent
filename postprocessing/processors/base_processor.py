@@ -66,7 +66,7 @@ class BaseProcessor(object):
             properties['Filename'] = self.data_file
             properties.update(job_info['alg_properties'])
 
-            script_template = os.path.join(self.configuration.sw_dir, 'scripts', 'run_mantid_algorithm.py')
+            script_template = os.path.join(self.configuration.sw_dir, 'scripts', 'run_mantid_algorithm.py_template')
             template_content = open(script_template).read()
             # Replace the dictionary entries
             template = string.Template(template_content)
