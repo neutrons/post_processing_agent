@@ -8,10 +8,9 @@ site_packages := `python -c "from distutils.sysconfig import get_python_lib; pri
 installed_prefix = $(prefix)
 
 all: postproc
-	
+
 check:
 	# Check dependencies
-	@python -c "import xml.utils.iso8601" || echo "ERROR: Need PyXML: easy_install PyXML"
 	@python -c "import requests" || echo "ERROR: Need requests: easy_install requests"
 	@python -c "import stompest" || echo "ERROR: Need stompest: easy_install stompest"
 	@python -c "import stompest.async" || echo "ERROR: Need stompest.async: easy_install stompest.async"
@@ -21,7 +20,7 @@ check:
 
 	@test -f configuration/icatclient.properties || echo -e "\n===> SET UP configuration/icatclient.properties BEFORE INSTALLATION\n";
 	@test -f configuration/post_process_consumer.conf || echo -e "\n===> SET UP configuration/post_process_consumer.conf BEFORE INSTALLATION\n";
-	
+
 install: config postproc
 
 install/isolated: config/isolated postproc
@@ -32,14 +31,14 @@ config:
 	install -m 664	configuration/icat4.cfg $(sysconfig)/icat4.cfg
 	install -m 664	configuration/icatclient.properties $(sysconfig)/icatclient.properties
 	install -m 664	configuration/post_process_consumer.conf $(sysconfig)/post_processing.conf
-	echo "$(installed_prefix)" > configuration/postprocessing.pth	
+	echo "$(installed_prefix)" > configuration/postprocessing.pth
 	install -m 664 configuration/postprocessing.pth $(site_packages)/postprocessing.pth
-	
+
 config/isolated:
 	# Simplified configuration for isolated installation - usually remote systems
 	@test -d $(prefix)/configuration || mkdir -m 0755 $(prefix)/configuration
 	install -m 664	configuration/post_process_consumer.conf $(prefix)/configuration/post_processing.conf
-	
+
 postproc: check
 	# Make sure the directories exist
 	@test -d $(prefix) || mkdir -m 0755 $(prefix)
@@ -47,7 +46,7 @@ postproc: check
 	@test -d $(prefix)/postprocessing/processors || mkdir -m 0755 $(prefix)/postprocessing/processors
 	@test -d $(prefix)/log || mkdir -m 0775 $(prefix)/log
 	@test -d $(prefix)/scripts || mkdir -m 0755 $(prefix)/scripts
-	
+
 	# Install application code
 	install -m 755	postprocessing/__init__.py	 $(prefix)/postprocessing/__init__.py
 	install -m 755	postprocessing/Consumer.py	 $(prefix)/postprocessing/Consumer.py
@@ -64,7 +63,7 @@ postproc: check
 	install -m 755	postprocessing/queueProcessor.py	$(prefix)/queueProcessor.py
 	install -m 755	postprocessing/processors/__init__.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/base_processor.py	$(prefix)/postprocessing/processors
-	install -m 755	postprocessing/processors/test_processor.py	$(prefix)/postprocessing/processors	
+	install -m 755	postprocessing/processors/test_processor.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/job_tree.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/job_handling.py	$(prefix)/postprocessing/processors
 rpm:
@@ -79,7 +78,7 @@ rpm:
 
 	cd build;tar -czf ~/rpmbuild/SOURCES/postprocessing.tgz postprocessing
 	rpmbuild -ba ./SPECS/postprocessing.spec
-	
+
 .PHONY: check
 .PHONY: install
 .PHONY: postproc
