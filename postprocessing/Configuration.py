@@ -1,11 +1,15 @@
+#pylint: disable=line-too-long, too-many-statements, too-few-public-methods, too-many-instance-attributes, invalid-name
 """
     Post-processing, ActiveMQ, and logging configuration
-    
+
     The original code for this class was take from https://github.com/mantidproject/autoreduce
 
     @copyright: 2014 Oak Ridge National Laboratory
 """
-import logging, json, sys, os
+import sys
+import os
+import json
+import logging
 
 class StreamToLogger(object):
     """
@@ -15,9 +19,11 @@ class StreamToLogger(object):
         self.logger = logger
         self.log_level = log_level
         self.linebuf = ''
- 
+
     def write(self, buf):
-        # Write the message to stdout so we can see it when running interactively
+        """
+            Write a message to stdout so we can see it when running interactively
+        """
         sys.stdout.write(buf)
         for line in buf.rstrip().splitlines():
             self.logger.log(self.log_level, line.rstrip())
@@ -64,7 +70,7 @@ class Configuration(object):
         # Reduction script writer
         self.create_reduction_script = config['create_reduction_script'] if 'create_reduction_script' in config else 'REDUCTION.CREATE_SCRIPT'
         self.service_status = config['service_status'] if 'service_status' in config else "/topic/SNS.${instrument}.STATUS.POSTPROCESS"
-        
+
         self.heart_beat = config['heart_beat']
         self.log_file = config['log_file'] if 'log_file' in config else 'post_processing.log'
         self.start_script = config['start_script'] if 'start_script' in config else 'startJob.sh'
@@ -74,29 +80,34 @@ class Configuration(object):
         self.mantid_path = config['mantid_path'] if 'mantid_path' in config else '/opt/Mantid/bin'
         self.dev_output_dir = config['dev_output_dir'] if 'dev_output_dir' in config else ''
         self.python_executable = config['python_exec'] if 'python_exec' in config else 'python'
-        
+
         self.max_nodes = config['max_nodes'] if 'max_nodes' in config else 32
         self.max_memory = config['max_memory'] if 'max_memory' in config else 8.0
         self.max_procs = config['max_procs'] if 'max_procs' in config else 5
         self.processors_per_node = config['processors_per_node'] if 'processors_per_node' in config else 16
         self.wait_notification_period = config['wait_notification_period'] if 'wait_notification_period' in config else 900
-        
+
         self.web_monitor_url = config['webmon_url_template'] if 'webmon_url_template' in config else "https://monitor.sns.gov/files/$instrument/$run_number/submit_reduced/"
         self.max_image_size = config['max_image_size'] if 'max_image_size' in config else 500000
         self.comm_only = config['communication_only']==1 if 'communication_only' in config else False
         self.remote_execution = config['remote_execution']==1 if 'remote_execution' in config else False
-        
+
         self.task_script_queue_arg = config['task_script_queue_arg'] if 'task_script_queue_arg' in config else None
         self.task_script_data_arg = config['task_script_data_arg'] if 'task_script_data_arg' in config else None
-        
+
         self.exceptions = config['exceptions'] if 'exceptions' in config else ["Error in logging framework"]
-        
+
         self.jobs_per_instrument = config['jobs_per_instrument'] if 'jobs_per_instrument' in config else 2
-        
+
+        # plot publishing
+        self.publish_url = config['publish_url_template'] if 'publish_url_template' in config else ''
+        self.publisher_username = config['publisher_username'] if 'publisher_username' in config else ''
+        self.publisher_password = config['publisher_password'] if 'publisher_password' in config else ''
+
         sys.path.insert(0, self.sw_dir)
         # Configure processor plugins
         self.processors = config['processors'] if 'processors' in config else []
-        if type(self.processors)==list:
+        if isinstance(self.processors, list):
             for p in self.processors:
                 toks = p.split('.')
                 if len(toks) == 2:
@@ -105,7 +116,7 @@ class Configuration(object):
                         processor_class = eval("processor_module.%s" % toks[1])
                         self.queues.append(processor_class.get_input_queue_name())
                     except:
-                        logging.error("Configuration: Error loading processor: %s" % sys.exc_value)
+                        logging.error("Configuration: Error loading processor: %s", sys.exc_value)
                 else:
                     logging.error("Configuration: Processors can only be specified in the format module.Processor_class")
 
@@ -113,23 +124,23 @@ class Configuration(object):
         """
             Log the current configuration
         """
-        logging.info("Using %s" % self.config_file)
+        logging.info("Using %s", self.config_file)
         if self.comm_only:
             logging.info("  - Running in COMMUNICATION ONLY mode: no post-processing will be performed")
         if self.remote_execution:
             logging.info("  - REMOTE execution")
-            logging.info("    Max chunk memory: %s" % self.max_memory)
-            logging.info("    Max nodes: %s" % self.max_nodes)
+            logging.info("    Max chunk memory: %s", self.max_memory)
+            logging.info("    Max nodes: %s", self.max_nodes)
         else:
             logging.info("  - LOCAL execution")
-        logging.info("  - Max number of processes: %s" % self.max_procs)
-        logging.info("  - Input queues: %s" % self.queues)
-        logging.info("  - Installation dir: %s" % self.sw_dir)
-        logging.info("  - Start script: %s" % self.start_script)
-        logging.info("  - Task script: %s" % self.task_script)
-        logging.info("  - Image posting URL: %s" % self.web_monitor_url)
-        logging.info("  - Error exceptions: %s" % str(self.exceptions))
-        
+        logging.info("  - Max number of processes: %s", self.max_procs)
+        logging.info("  - Input queues: %s", self.queues)
+        logging.info("  - Installation dir: %s", self.sw_dir)
+        logging.info("  - Start script: %s", self.start_script)
+        logging.info("  - Task script: %s", self.task_script)
+        logging.info("  - Image posting URL: %s", self.web_monitor_url)
+        logging.info("  - Error exceptions: %s", str(self.exceptions))
+
 # Set the log level for the Stomp client
 stomp_logger = logging.getLogger('stompest.sync.client')
 stomp_logger.setLevel(logging.ERROR)
@@ -150,8 +161,8 @@ def read_configuration(config_file=None):
         if os.access(config_file, os.R_OK) == False:
             config_file = CONFIG_FILE_ALTERNATE
             if os.access(config_file, os.R_OK) == False:
-                raise RuntimeError, "Configuration file doesn't exist or is not readable: %s" % CONFIG_FILE
-    
+                raise RuntimeError("Configuration file doesn't exist or is not readable: %s" % CONFIG_FILE)
+
     configuration = Configuration(config_file)
     logging.basicConfig(
         level=logging.INFO,
@@ -163,10 +174,9 @@ def read_configuration(config_file=None):
     #stdout_logger = logging.getLogger('STDOUT')
     #sl = StreamToLogger(stdout_logger, logging.INFO)
     #sys.stdout = sl
-    
+
     stderr_logger = logging.getLogger('STDERR')
     sl = StreamToLogger(stderr_logger, logging.ERROR)
     sys.stderr = sl
 
     return configuration
-
