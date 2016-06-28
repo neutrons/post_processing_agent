@@ -3,8 +3,10 @@
 """
 from __future__ import print_function
 from postprocessing.Configuration import Configuration, CONFIG_FILE
-import requests
 import string
+import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 def get_user(config_file=None):
     """
