@@ -1,3 +1,4 @@
+#pylint: disable=too-many-arguments, too-many-locals
 """
     Utility functions to post plot data
 """
@@ -37,3 +38,58 @@ def publish_plot(instrument, run_number, files, config_file=None):
     if status_code != 200:
         raise RuntimeError("post returned %d" % status_code)
     return request
+
+def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
+           x_log=False, y_log=False, instrument=''):
+    """
+        Produce a 1D plot
+        @param data_list: list of traces [ [x1, y1], [x2, y2], ...]
+        @param data_names: name for each trace, for the legend
+    """
+    from plotly.offline import plot
+    import plotly.graph_objs as go
+
+    # Create traces
+    if not isinstance(data_list, list):
+        raise RuntimeError("plot1d: data_list parameter is expected to be a list")
+
+    # Catch the case where the list is in the format [x y]
+    data = []
+    show_legend = False
+    if len(data_list) == 2 and not isinstance(data_list[0], list):
+        label = ''
+        if isinstance(data_names, list) and len(data_names) == 1:
+            label = data_names[0]
+            show_legend = True
+        data = [go.Scatter(name=label, x=data_list[0], y=data_list[1])]
+    else:
+        for i in range(len(data_list)):
+            label = ''
+            if isinstance(data_names, list) and len(data_names) == len(data_list):
+                label = data_names[i]
+                show_legend = True
+            data.append(go.Scatter(name=label, x=data_list[i][0], y=data_list[i][1]))
+
+
+    x_layout = {'title': x_title, "zeroline": True}
+    if x_log:
+        x_layout['type'] = 'log'
+    y_layout = {'title': y_title, "zeroline": True}
+    if y_log:
+        y_layout['type'] = 'log'
+
+    layout = go.Layout(
+        showlegend=show_legend,
+        autosize=True,
+        width=600,
+        height=400,
+        margin=dict(t=40, b=40, l=40, r=40),
+        hovermode='closest',
+        bargap=0,
+        xaxis=x_layout,
+        yaxis=y_layout
+    )
+
+    fig = go.Figure(data=data, layout=layout)
+    plot_div = plot(fig, output_type='div', include_plotlyjs=False, show_link=False)
+    return publish_plot(instrument, run_number, files={'file': plot_div})
