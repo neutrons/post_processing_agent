@@ -47,9 +47,9 @@ class PostProcessAdmin:
         if data.has_key('data_file'):
             self.data_file = str(data['data_file'])
             if os.access(self.data_file, os.R_OK) == False:
-                raise ValueError("Data file does not exist or is not readable")
+                raise ValueError("Data file does not exist or is not readable: %s" % self.data_file)
         else:
-            raise ValueError("data_file is missing")
+            raise ValueError("data_file is missing: %s" % self.data_file)
 
         if data.has_key('facility'):
             self.facility = str(data['facility']).upper()
