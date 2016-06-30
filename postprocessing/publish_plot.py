@@ -75,7 +75,7 @@ def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
             if len(data_list[i]) >= 4:
                 err_x = dict(type='data', array=data_list[i][3], visible=True)
                 if show_dx is False:
-                    err_x['color'] = 'white'
+                    err_x['thickness'] = 0
             data.append(go.Scatter(name=label, x=data_list[i][0], y=data_list[i][1],
                                    error_x=err_x, error_y=err_y))
 
