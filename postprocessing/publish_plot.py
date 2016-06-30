@@ -40,7 +40,7 @@ def publish_plot(instrument, run_number, files, config_file=None):
     return request
 
 def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
-           x_log=False, y_log=False, instrument=''):
+           x_log=False, y_log=False, instrument='', show_dx=True):
     """
         Produce a 1D plot
         @param data_list: list of traces [ [x1, y1], [x2, y2], ...]
@@ -72,7 +72,7 @@ def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
             err_y = {}
             if len(data_list[i]) >= 3:
                 err_y = dict(type='data', array=data_list[i][2], visible=True)
-            if len(data_list[i]) >= 4:
+            if len(data_list[i]) >= 4 and show_dx:
                 err_x = dict(type='data', array=data_list[i][3], visible=True)
             data.append(go.Scatter(name=label, x=data_list[i][0], y=data_list[i][1],
                                    error_x=err_x, error_y=err_y))
@@ -90,7 +90,7 @@ def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
         autosize=True,
         width=600,
         height=400,
-        margin=dict(t=40, b=40, l=40, r=40),
+        margin=dict(t=40, b=40, l=80, r=40),
         hovermode='closest',
         bargap=0,
         xaxis=x_layout,
