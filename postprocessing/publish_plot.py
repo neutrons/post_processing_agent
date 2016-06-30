@@ -68,7 +68,14 @@ def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
             if isinstance(data_names, list) and len(data_names) == len(data_list):
                 label = data_names[i]
                 show_legend = True
-            data.append(go.Scatter(name=label, x=data_list[i][0], y=data_list[i][1]))
+            err_x = {}
+            err_y = {}
+            if len(data_list[i]) >= 3:
+                err_y = dict(type='data', array=data_list[i][2], visible=True)
+            if len(data_list[i]) >= 4:
+                err_x = dict(type='data', array=data_list[i][3], visible=True)
+            data.append(go.Scatter(name=label, x=data_list[i][0], y=data_list[i][1],
+                                   error_x=err_x, error_y=err_y))
 
 
     x_layout = {'title': x_title, "zeroline": True}
