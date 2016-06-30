@@ -80,10 +80,14 @@ def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
                                    error_x=err_x, error_y=err_y))
 
 
-    x_layout = {'title': x_title, "zeroline": True, "exponentformat": "power"}
+    x_layout = dict(title=x_title, zeroline=False, exponentformat="power",
+                    showexponent="all", showgrid=True,
+                    showline=True, mirror="all", ticks="inside")
     if x_log:
         x_layout['type'] = 'log'
-    y_layout = {'title': y_title, "zeroline": True, "exponentformat": "power"}
+    y_layout = dict(title=y_title, zeroline=False, exponentformat="power",
+                    showexponent="all", showgrid=True,
+                    showline=True, mirror="all", ticks="inside")
     if y_log:
         y_layout['type'] = 'log'
 
