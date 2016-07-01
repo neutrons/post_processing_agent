@@ -1,4 +1,4 @@
-#pylint: disable=too-many-arguments, too-many-locals
+#pylint: disable=too-many-arguments, too-many-locals, invalid-name
 """
     Utility functions to post plot data
 """
@@ -40,7 +40,7 @@ def publish_plot(instrument, run_number, files, config_file=None):
     return request
 
 def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
-           x_log=False, y_log=False, instrument='', show_dx=True):
+           x_log=False, y_log=False, instrument='', show_dx=True, publish=True):
     """
         Produce a 1D plot
         @param data_list: list of traces [ [x1, y1], [x2, y2], ...]
@@ -105,4 +105,53 @@ def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
 
     fig = go.Figure(data=data, layout=layout)
     plot_div = plot(fig, output_type='div', include_plotlyjs=False, show_link=False)
-    return publish_plot(instrument, run_number, files={'file': plot_div})
+    if publish:
+        return publish_plot(instrument, run_number, files={'file': plot_div})
+    else:
+        return plot_div
+
+def plot_heatmap(run_number, x, y, z, x_title='', y_title='',
+                 x_log=False, y_log=False, instrument='', publish=True):
+    """
+        Produce a 2D plot
+    """
+    from plotly.offline import plot
+    import plotly.graph_objs as go
+
+
+    x_layout = dict(title=x_title, zeroline=False, exponentformat="power",
+                    showexponent="all", showgrid=True,
+                    showline=True, mirror="all", ticks="inside")
+    if x_log:
+        x_layout['type'] = 'log'
+
+    y_layout = dict(title=y_title, zeroline=False, exponentformat="power",
+                    showexponent="all", showgrid=True,
+                    showline=True, mirror="all", ticks="inside")
+    if y_log:
+        y_layout['type'] = 'log'
+
+    layout = go.Layout(
+        showlegend=False,
+        autosize=True,
+        width=600,
+        height=500,
+        margin=dict(t=40, b=40, l=80, r=40),
+        hovermode='closest',
+        bargap=0,
+        xaxis=x_layout,
+        yaxis=y_layout
+    )
+
+    colorscale=[
+    [0, "rgb(0,0,131)"], [0.125, "rgb(0,60,170)"], [0.375, "rgb(5,255,255)"],
+    [0.625, "rgb(255,255,0)"], [0.875, "rgb(250,0,0)"], [1, "rgb(128,0,0)"]
+    ]
+    trace = go.Heatmap(z=z, x=x, y=y, autocolorscale=False,
+                     hoverinfo="none", colorscale=colorscale, layout=layout)
+    fig = go.Figure(data=[trace], layout=layout)
+    plot_div = plot(fig, output_type='div', include_plotlyjs=False, show_link=False)
+    if publish:
+        return publish_plot(instrument, run_number, files={'file': plot_div})
+    else:
+        return plot_div
