@@ -257,7 +257,10 @@ if __name__ == "__main__":
         # Process the data
         try:
             pp = PostProcessAdmin(data, configuration)
-            if namespace.queue == '/queue/%s' % configuration.reduction_data_ready:
+            if isinstance(configuration.reduction_data_ready, list) and \
+                namespace.queue in ['/queue/%s' % q for q in configuration.reduction_data_ready]:
+                pp.reduce(configuration.remote_execution)
+            elif namespace.queue == '/queue/%s' % configuration.reduction_data_ready:
                 pp.reduce(configuration.remote_execution)
             elif namespace.queue == '/queue/%s' % configuration.catalog_data_ready:
                 pp.catalog_raw()
