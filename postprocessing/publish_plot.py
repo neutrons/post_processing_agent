@@ -3,6 +3,8 @@
     Utility functions to post plot data
 """
 from __future__ import print_function
+import sys
+import logging
 from postprocessing.Configuration import Configuration, CONFIG_FILE
 import string
 import requests
@@ -106,11 +108,15 @@ def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
     fig = go.Figure(data=data, layout=layout)
     plot_div = plot(fig, output_type='div', include_plotlyjs=False, show_link=False)
     if publish:
-        return publish_plot(instrument, run_number, files={'file': plot_div})
+        try:
+            return publish_plot(instrument, run_number, files={'file': plot_div})
+        except:
+            logging.error("Publish plot failed: %s", sys.exc_value)
+            return None
     else:
         return plot_div
 
-def plot_heatmap(run_number, x, y, z, x_title='', y_title='',
+def plot_heatmap(run_number, x, y, z, x_title='', y_title='', surface=False,
                  x_log=False, y_log=False, instrument='', publish=True):
     """
         Produce a 2D plot
@@ -147,11 +153,23 @@ def plot_heatmap(run_number, x, y, z, x_title='', y_title='',
     [0, "rgb(0,0,131)"], [0.125, "rgb(0,60,170)"], [0.375, "rgb(5,255,255)"],
     [0.625, "rgb(255,255,0)"], [0.875, "rgb(250,0,0)"], [1, "rgb(128,0,0)"]
     ]
-    trace = go.Heatmap(z=z, x=x, y=y, autocolorscale=False,
+    plot_type = 'surface' if surface else 'heatmap'
+    trace = go.Heatmap(z=z, x=x, y=y, autocolorscale=False, type=plot_type,
                      hoverinfo="none", colorscale=colorscale)
     fig = go.Figure(data=[trace], layout=layout)
     plot_div = plot(fig, output_type='div', include_plotlyjs=False, show_link=False)
+
+    # The following would remove the hover options, which are not accessible through python
+    # https://github.com/plotly/plotly.js/blob/master/src/components/modebar/buttons.js
+    #plot_div = plot_div.replace('modeBarButtonsToRemove:[]',
+    #                            'modeBarButtonsToRemove:["hoverClosestCartesian",
+    #                                                     "hoverCompareCartesian"]')
+
     if publish:
-        return publish_plot(instrument, run_number, files={'file': plot_div})
+        try:
+            return publish_plot(instrument, run_number, files={'file': plot_div})
+        except:
+            logging.error("Publish plot failed: %s", sys.exc_value)
+            return None
     else:
         return plot_div
