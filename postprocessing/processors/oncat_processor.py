@@ -4,6 +4,7 @@
     @copyright: 2017 Oak Ridge National Laboratory
 """
 import os
+import logging
 import json
 from .base_processor import BaseProcessor
 from . import job_handling
@@ -43,10 +44,16 @@ class ONCatProcessor(BaseProcessor):
         success, status_data = job_handling.determine_success_local(self.configuration, out_err)
         self.data.update(status_data)
         if os.path.isfile(out_log):
-            os.remove(out_log)
+            try:
+                os.remove(out_log)
+            except:
+                logging.error("Error removing log file: %s", out_log)
         if success:
             if os.path.isfile(out_err):
-                os.remove(out_err)
+                try:
+                    os.remove(out_err)
+                except:
+                    logging.error("Error removing error log file: %s", out_err)
             self.send(self.COMPLETE_QUEUE, json.dumps(self.data))
         else:
             self.send(self.ERROR_QUEUE, json.dumps(self.data))
