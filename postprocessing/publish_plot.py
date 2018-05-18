@@ -42,7 +42,7 @@ def publish_plot(instrument, run_number, files, config_file=None):
     return request
 
 def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
-           x_log=False, y_log=False, instrument='', show_dx=True, publish=True):
+           x_log=False, y_log=False, instrument='', show_dx=True, title = '', publish=True):
     """
         Produce a 1D plot
         @param data_list: list of traces [ [x1, y1], [x2, y2], ...]
@@ -102,7 +102,8 @@ def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
         hovermode='closest',
         bargap=0,
         xaxis=x_layout,
-        yaxis=y_layout
+        yaxis=y_layout,
+        title=title
     )
 
     fig = go.Figure(data=data, layout=layout)
@@ -117,7 +118,7 @@ def plot1d(run_number, data_list, data_names=None, x_title='', y_title='',
         return plot_div
 
 def plot_heatmap(run_number, x, y, z, x_title='', y_title='', surface=False,
-                 x_log=False, y_log=False, instrument='', publish=True):
+                 x_log=False, y_log=False, instrument='', title = '', publish=True):
     """
         Produce a 2D plot
     """
@@ -146,7 +147,8 @@ def plot_heatmap(run_number, x, y, z, x_title='', y_title='', surface=False,
         hovermode='closest',
         bargap=0,
         xaxis=x_layout,
-        yaxis=y_layout
+        yaxis=y_layout,
+        title=title
     )
 
     colorscale=[
