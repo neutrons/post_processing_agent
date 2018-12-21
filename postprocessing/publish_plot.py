@@ -156,7 +156,7 @@ def plot_heatmap(run_number, x, y, z, x_title='', y_title='', surface=False,
     [0.625, "rgb(255,255,0)"], [0.875, "rgb(250,0,0)"], [1, "rgb(128,0,0)"]
     ]
     plot_type = 'surface' if surface else 'heatmap'
-    trace = go.Heatmap(z=z, x=x, y=y, autocolorscale=False, type=plot_type,
+    trace = go.Heatmap(z=z, x=x, y=y, autocolorscale=False,# type=plot_type,
                      hoverinfo="none", colorscale=colorscale)
     fig = go.Figure(data=[trace], layout=layout)
     plot_div = plot(fig, output_type='div', include_plotlyjs=False, show_link=False)
