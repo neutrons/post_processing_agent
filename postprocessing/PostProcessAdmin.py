@@ -149,48 +149,6 @@ class PostProcessAdmin:
             self.data["error"] = "Catalog: %s" % sys.exc_value
             self.send('/queue/' + self.conf.catalog_error, json.dumps(self.data))
 
-    def catalog_reduced(self):
-        """
-            Catalog reduced data files for a given run
-        """
-        self._process_data(self.data)
-        try:
-            from ingest_reduced import IngestReduced
-            self.send('/queue/' + self.conf.reduction_catalog_started, json.dumps(self.data))
-
-            if self.conf.comm_only is False:
-                # Send image to the web monitor
-                if len(self.conf.web_monitor_url.strip()) > 0:
-                    monitor_user = {'username': self.conf.amq_user, 'password': self.conf.amq_pwd}
-                    proposal_shared_dir = os.path.join('/', self.facility, self.instrument, self.proposal, 'shared', 'autoreduce')
-
-                    url_template = string.Template(self.conf.web_monitor_url)
-                    url = url_template.substitute(instrument=self.instrument, run_number=self.run_number)
-
-                    pattern = self.instrument + "_" + self.run_number + "*"
-                    for dirpath, dirnames, filenames in os.walk(proposal_shared_dir):
-                        listing = glob.glob(os.path.join(dirpath, pattern))
-                        for filepath in listing:
-                            f, e = os.path.splitext(filepath)
-                            if e.startswith(os.extsep):
-                                e = e[len(os.extsep):]
-                                if e == "png" or e == "jpg" or filepath.endswith("plot_data.dat") or filepath.endswith("plot_data.json"):
-                                    files = {'file': open(filepath, 'rb')}
-                                    # Post the file if it's small enough
-                                    if len(files) != 0 and os.path.getsize(filepath) < self.conf.max_image_size:
-                                        request = requests.post(url, data=monitor_user, files=files, verify=False)
-                                        logging.info("Submitted %s [status: %s]" % (filepath,
-                                                                                    request.status_code))
-
-                ingestReduced = IngestReduced(self.facility, self.instrument, self.proposal, self.run_number)
-                ingestReduced.execute()
-                ingestReduced.logout()
-            self.send('/queue/' + self.conf.reduction_catalog_complete , json.dumps(self.data))
-        except:
-            logging.error("catalog_reduced: %s" % sys.exc_value)
-            self.data["error"] = "Reduction catalog: %s" % sys.exc_value
-            self.send('/queue/' + self.conf.reduction_catalog_error , json.dumps(self.data))
-
     def create_reduction_script(self):
         """
             Create a new reduction script from a template
@@ -264,8 +222,6 @@ if __name__ == "__main__":
                 pp.reduce(configuration.remote_execution)
             elif namespace.queue == '/queue/%s' % configuration.catalog_data_ready:
                 pp.catalog_raw()
-            elif namespace.queue == '/queue/%s' % configuration.reduction_catalog_data_ready:
-                pp.catalog_reduced()
             elif namespace.queue == '/queue/%s' % configuration.create_reduction_script:
                 pp.create_reduction_script()
 
