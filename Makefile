@@ -53,7 +53,6 @@ postproc: check
 	install -m 755	postprocessing/Configuration.py	 $(prefix)/postprocessing/Configuration.py
 	install -m 755	postprocessing/PostProcessAdmin.py	 $(prefix)/postprocessing/PostProcessAdmin.py
 	install -m 755	postprocessing/ingest_nexus.py	 $(prefix)/postprocessing/ingest_nexus.py
-	install -m 755	postprocessing/ingest_reduced.py	 $(prefix)/postprocessing/ingest_reduced.py
 	install -m 755	postprocessing/reduction_script_writer.py	 $(prefix)/postprocessing/reduction_script_writer.py
 	install -m 755	postprocessing/publish_plot.py	$(prefix)/postprocessing/publish_plot.py
 	install -m 755	postprocessing/time_conversions.py	$(prefix)/postprocessing/time_conversions.py
