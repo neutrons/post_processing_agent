@@ -82,6 +82,10 @@ rpm:
 	cd build;tar -czf ~/rpmbuild/SOURCES/postprocessing.tgz postprocessing
 	rpmbuild -ba ./SPECS/postprocessing.spec
 
+links:
+	ln -sf /usr/local/sis/DataArchiving/scripts/oncat_datafile_ingest.py /opt/postprocessing/scripts/oncat_ingest.py
+	ln -sf /usr/local/sis/DataArchiving/scripts/oncat_reduction_ingest.py /opt/postprocessing/scripts/oncat_reduced_ingest.py
+
 .PHONY: check
 .PHONY: install
 .PHONY: postproc
