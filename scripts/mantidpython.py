@@ -34,7 +34,7 @@ if mantidpath is None:
     print "Failed to determine mantid version from script: '%s'" \
         % sys.argv[1]
     print "Defaulting to system python"
-    mantidpython='python'
+    mantidpython='python3'
 else:
     mantidpython=os.path.join(mantidpath, "mantidpython")
     if not os.path.exists(mantidpython):
