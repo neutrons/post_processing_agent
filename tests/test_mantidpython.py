@@ -1,6 +1,6 @@
 import pytest
 import os
-from scripts.mantidpython import generate_subprocess_command, get_mantid_loc, NSD_CONDA_WRAP
+from scripts.mantidpython import generate_subprocess_command, get_mantid_loc, get_nsd_conda_wrap
 
 
 def test_get_mantid_location():
@@ -15,21 +15,26 @@ def test_get_mantid_location():
     # new
     assert get_mantid_loc("MANTID_VERSION='nightly'")[0] == "/opt/mantidnightly/bin"
     assert get_mantid_loc("MANTID_VERSION='60'")[0] == "/opt/mantid60/bin"
+    assert get_mantid_loc("MANTID_VERSION ='60'")[0] == "/opt/mantid60/bin"
+    assert get_mantid_loc("MANTID_VERSION= '60'")[0] == "/opt/mantid60/bin"
     assert get_mantid_loc("MANTID_VERSION='stable'")[0] == "/opt/Mantid/bin"
+    assert get_mantid_loc("MANTID_VERSION = 'stable'")[0] == "/opt/Mantid/bin"
 
     # conda
     assert get_mantid_loc("CONDA_ENV='sasview'")[1] == 'sasview'
     assert get_mantid_loc("CONDA_ENV='imaging'")[1] == 'imaging'
+    assert get_mantid_loc("CONDA_ENV = 'jean'")[1] == 'jean'
 
 
-@pytest.mark.parametrize('auto_reduce_script, expected_command_arg0, expected_command_arg1',
-                         [('tests/reduce_EQSANS.py', '/opt/mantid50/bin/mantidpython', '--classic'),
-                          ('tests/reduce_HYS.py', 'python3', None),
-                          ('tests/reduce_REF_L.py', '/opt/mantidnightly/bin/mantidpython', '--classic'),
-                          ('tests/reduce_SNAP.py', '/opt/mantidnightly/bin/mantidpython', '--classic'),
-                          ('tests/reduce_CONDA.py', 'bash', '-i')],
-                         ids=('eqsans', 'hyspec', 'ref_l', 'snap', 'conda'))
-def test_mantid_python_location(auto_reduce_script, expected_command_arg0, expected_command_arg1):
+@pytest.mark.parametrize('auto_reduce_script, expected_command_args',
+                         [('tests/reduce_EQSANS.py', ['/opt/mantid50/bin/mantidpython', '--classic']),
+                          ('tests/reduce_HYS.py', ['python3']),
+                          ('tests/reduce_REF_L.py', ['/opt/mantidnightly/bin/mantidpython', '--classic']),
+                          ('tests/reduce_SNAP.py', ['/opt/mantidnightly/bin/mantidpython', '--classic']),
+                          # ('tests/reduce_CONDA.py', ['bash', '-i', get_nsd_conda_wrap(), 'sans-dev'])  conda
+                          ],
+                         ids=('eqsans', 'hyspec', 'ref_l', 'snap'))
+def test_mantid_python_location(auto_reduce_script, expected_command_args):
 
     # set up test cases
     auto_reduce_script = os.path.join(os.getcwd(), auto_reduce_script)
@@ -37,9 +42,7 @@ def test_mantid_python_location(auto_reduce_script, expected_command_arg0, expec
     output_dir = 'Any/Dir'
 
     # Construct the gold command
-    gold_command = [expected_command_arg0]
-    if expected_command_arg1:
-        gold_command.append(expected_command_arg1)
+    gold_command = expected_command_args[:]
     gold_command.extend([auto_reduce_script, nexus_file_name, output_dir])
 
     # Verify

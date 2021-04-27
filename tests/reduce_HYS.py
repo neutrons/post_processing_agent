@@ -1,7 +1,8 @@
-import sys,os,glob, subprocess, shutil
+import sys, glob, shutil
 import os
 import subprocess
 import datetime
+
 
 def do_reduction(path,outdir):
     reduction_files=glob.glob(os.path.join(outdir,'reduce_HYS_*.py'))
@@ -22,7 +23,6 @@ def do_reduction(path,outdir):
                             universal_newlines = True,
                             cwd=outdir)
     proc.communicate()
-
 
 
 if __name__ == "__main__":
