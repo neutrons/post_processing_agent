@@ -1,32 +1,6 @@
 import pytest
 import os
-from scripts import mantidpython
-from scripts.mantidpython import generate_subprocess_command, get_mantid_loc
-
-"""
-Expected test result
-
-(autoreduction) mac102648:post_processing_agent wzz$ python scripts/mantidpython.py tests/reduce_EQSANS.py aa bb
-command type: <class 'list'>
-command     : ['/opt/mantid50/bin/mantidpython', '--classic', 'tests/reduce_EQSANS.py', 'aa', 'bb']
-(autoreduction) mac102648:post_processing_agent wzz$ python scripts/mantidpython.py tests/reduce_HYS.py aa bb
-Failed to determine mantid version from script: 'tests/reduce_HYS.py'
-Defaulting to system python
-command type: <class 'list'>
-command     : ['python3', 'tests/reduce_HYS.py', 'aa', 'bb']
-(autoreduction) mac102648:post_processing_agent wzz$ python scripts/mantidpython.py tests/reduce_NOM.py aa bb
-Failed to determine mantid version from script: 'tests/reduce_NOM.py'
-Defaulting to system python
-command type: <class 'list'>
-command     : ['python3', 'tests/reduce_NOM.py', 'aa', 'bb']
-(autoreduction) mac102648:post_processing_agent wzz$ python scripts/mantidpython.py tests/reduce_REF_L.py aa bb
-command type: <class 'list'>
-command     : ['/opt/mantidnightly/bin/mantidpython', '--classic', 'tests/reduce_REF_L.py', 'aa', 'bb']
-(autoreduction) mac102648:post_processing_agent wzz$ python scripts/mantidpython.py tests/reduce_SNAP.py aa bb
-command type: <class 'list'>
-command     : ['/opt/mantidnightly/bin/mantidpython', '--classic', 'tests/reduce_SNAP.py', 'aa', 'bb']
-
-"""
+from scripts.mantidpython import generate_subprocess_command, get_mantid_loc, NSD_CONDA_WRAP
 
 
 def test_get_mantid_location():
@@ -52,8 +26,9 @@ def test_get_mantid_location():
                          [('tests/reduce_EQSANS.py', '/opt/mantid50/bin/mantidpython', '--classic'),
                           ('tests/reduce_HYS.py', 'python3', None),
                           ('tests/reduce_REF_L.py', '/opt/mantidnightly/bin/mantidpython', '--classic'),
-                          ('tests/reduce_SNAP.py', '/opt/mantidnightly/bin/mantidpython', '--classic')],
-                         ids=('eqsans', 'hyspec', 'ref_l', 'snap'))
+                          ('tests/reduce_SNAP.py', '/opt/mantidnightly/bin/mantidpython', '--classic'),
+                          ('tests/reduce_CONDA.py', 'bash', '-i')],
+                         ids=('eqsans', 'hyspec', 'ref_l', 'snap', 'conda'))
 def test_mantid_python_location(auto_reduce_script, expected_command_arg0, expected_command_arg1):
 
     # set up test cases
@@ -95,7 +70,8 @@ def verify_subprocess_command(reduce_script, nexus_file, output_dir, expected_ou
     # generate command
     sub_process_command = generate_subprocess_command(reduce_script, [nexus_file, output_dir], False)
 
-    assert sub_process_command == expected_output
+    assert sub_process_command == expected_output, 'Expected: {}.  But: {}' \
+                                                   ''.format(expected_output, sub_process_command)
 
 
 if __name__ == '__main__':

@@ -3,12 +3,13 @@ import os
 import re
 import subprocess
 import sys
-
+import tempfile
 
 mantidRegExp = re.compile(r'/opt/.antid.*/bin')
 
 MANDID_VERSION = 'MANTID_VERSION='
 CONDA_NAME = 'CONDA_ENV='
+NSD_CONDA_WRAP = '/SNS/users/wzz/Projects/AutoReduction/nsd-app-wrap/nsd-conda-wrap.sh'
 
 mantid_version_dict = {'nightly': "/opt/mantidnightly/bin",
                        'stable': "/opt/Mantid/bin"}
@@ -69,7 +70,25 @@ def main():
     reduction_commands = generate_subprocess_command(reductionScript, sys.argv[2:], True)
 
     # call
-    subprocess.call(reduction_commands)
+    file_out = tempfile.NamedTemporaryFile(delete=False)
+    file_err = tempfile.NamedTemporaryFile(delete=False)
+    out_name = file_out.name
+    err_name = file_err.name
+    return_code = subprocess.call(reduction_commands, stdout=file_out, stderr=file_err)
+    file_out.close()
+    file_err.close()
+
+    # read
+    fout = open(out_name, 'r')
+    print(fout.readlines())
+    fout.close()
+    os.remove(out_name)
+
+    ferr = open(err_name, 'r')
+    print(ferr.readlines())
+    ferr.close()
+    os.remove(err_name)
+    print('Return code: {}'.format(return_code))
 
 
 def generate_subprocess_command(reduce_script, reduction_params, verify_mantid_path=True):
@@ -112,28 +131,25 @@ def generate_subprocess_command(reduce_script, reduction_params, verify_mantid_p
     if len(mantid_paths) + len(conda_env_names) > 1:
         raise RuntimeError('Reduction script {} specifies multiple mantid python paths ({}) '
                            'and conda environments ({})'.format(reduce_script, mantid_paths, conda_env_names))
+    elif len(conda_env_names) == 1:
+        # conda environment
+        conda_env_name = conda_env_names[0]
+        cmd = ['bash', '-i', NSD_CONDA_WRAP, conda_env_name]
     elif len(mantid_paths) == 1:
         # user specified mantid python
         mantidpython = os.path.join(mantid_paths[0], "mantidpython")
         if not os.path.exists(mantidpython) and verify_mantid_path:
             raise RuntimeError("Failed to find launcher: '%s'" % mantidpython)
-    elif len(conda_env_names) == 1:
-        # conda environment
-        mantidpython = 'python'
-        conda_env_name = conda_env_names[0]
-        raise RuntimeError('Conda environment {} {} is not supported yet'.format(conda_env_name, mantidpython))
+        cmd = [mantidpython, "--classic"]
     else:
         # no mantid path is specified: use standard python3
         print("Failed to determine mantid version from script: '{}'\n"
               "Defaulting to system python".format(reduce_script))
-        mantidpython = 'python3'
+        cmd = ['python3']
 
     # construct sub process command
-    cmd = [reduce_script]
+    cmd.append(reduce_script)
     cmd.extend(reduction_params)
-    cmd.insert(0, mantidpython)
-    if len(mantid_paths) == 1:
-        cmd.insert(1, "--classic")
 
     return cmd
 
