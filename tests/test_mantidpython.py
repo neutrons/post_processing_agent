@@ -49,6 +49,25 @@ def test_mantid_python_location(auto_reduce_script, expected_command_args):
     verify_subprocess_command(auto_reduce_script, nexus_file_name, output_dir, gold_command)
 
 
+@pytest.mark.skipif(not os.path.exists('/SNS/users/'), reason='whatever')
+@pytest.mark.parametrize('auto_reduce_script, expected_command_args',
+                         [('tests/reduce_CONDA.py', ['bash', '-i', 'sans-dev'])])
+def test_conda_bash_command(auto_reduce_script, expected_command_args):
+
+    # set up test cases
+    auto_reduce_script = os.path.join(os.getcwd(), auto_reduce_script)
+    nexus_file_name = '/SNS/INS/IPTS-1234/nexus/INS_98765_events.nxs.h5'
+    output_dir = 'Any/Dir'
+
+    # Construct the gold command
+    gold_command = expected_command_args[:]
+    gold_command.insert(2, get_nsd_conda_wrap())  # insert to the right place.  cannot have it in the decorator
+    gold_command.extend([auto_reduce_script, nexus_file_name, output_dir])
+
+    # Verify
+    verify_subprocess_command(auto_reduce_script, nexus_file_name, output_dir, gold_command)
+
+
 def verify_subprocess_command(reduce_script, nexus_file, output_dir, expected_output):
     """Get subprocess command from auto reduction script
 

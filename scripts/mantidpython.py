@@ -83,7 +83,6 @@ def get_mantid_loc(line):
 
     elif line.startswith(CONDA_NAME):
         # CONDA name
-        # conda_name = line.split(CONDA_NAME)[1].split()[0].replace("'", '').replace('"', '')
         conda_name = parse_var_value(line, CONDA_NAME)
 
         if conda_name is None:
@@ -97,11 +96,10 @@ def get_mantid_loc(line):
 
 def main():
     # parse argument 1: reduction script
-    # reductionScript = open(sys.argv[1], 'r')
-    reductionScript = sys.argv[1]
+    reduction_script = sys.argv[1]
 
     # generate subprocess command to reduce data
-    reduction_commands = generate_subprocess_command(reductionScript, sys.argv[2:], True)
+    reduction_commands = generate_subprocess_command(reduction_script, sys.argv[2:], True)
 
     # call
     return_code = subprocess.call(reduction_commands)
