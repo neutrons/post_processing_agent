@@ -28,12 +28,12 @@ def test_get_mantid_location():
 
 @pytest.mark.parametrize('auto_reduce_script, expected_command_args',
                          [('tests/reduce_EQSANS.py', ['/opt/mantid50/bin/mantidpython', '--classic']),
+                          ('tests/reduce_Mantid50.py', ['/opt/mantid50/bin/mantidpython', '--classic']),
                           ('tests/reduce_HYS.py', ['python3']),
                           ('tests/reduce_REF_L.py', ['/opt/mantidnightly/bin/mantidpython', '--classic']),
                           ('tests/reduce_SNAP.py', ['/opt/mantidnightly/bin/mantidpython', '--classic']),
-                          # ('tests/reduce_CONDA.py', ['bash', '-i', get_nsd_conda_wrap(), 'sans-dev'])  conda
                           ],
-                         ids=('eqsans', 'hyspec', 'ref_l', 'snap'))
+                         ids=('eqsans', 'mantid50', 'hyspec', 'ref_l', 'snap'))
 def test_mantid_python_location(auto_reduce_script, expected_command_args):
 
     # set up test cases
