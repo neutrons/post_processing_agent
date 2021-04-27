@@ -62,30 +62,14 @@ def get_mantid_loc(line):
 
 
 def main():
-
+    # parse argument 1: reduction script
     reductionScript = open(sys.argv[1], 'r')
 
-    mantidpath=None
-    for line in reductionScript:
-        mantidpath = get_mantid_loc(line)
-        if mantidpath is not None:
-            break
-    if mantidpath is None:
-        print("Failed to determine mantid version from script: '%s'" % sys.argv[1])
-        print("Defaulting to system python")
-        mantidpython='python3'
-    else:
-        mantidpython = os.path.join(mantidpath, "mantidpython")
-        if not os.path.exists(mantidpython):
-            raise RuntimeError("Failed to find launcher: '%s'" % mantidpython)
-    reductionScript.close()
+    # generate subprocess command to reduce data
+    reduction_commands = generate_subprocess_command(reductionScript, sys.argv[2:], True)
 
-    cmd=sys.argv[1:]
-    cmd.insert(0,mantidpython)
-    if mantidpath is not None:
-        cmd.insert(1,"--classic")
-    print('Command: {}'.format(cmd))
-    subprocess.call(cmd)
+    # call
+    subprocess.call(reduction_commands)
 
 
 def generate_subprocess_command(reduce_script, reduction_params, verify_mantid_path=True):
@@ -137,6 +121,7 @@ def generate_subprocess_command(reduce_script, reduction_params, verify_mantid_p
         # conda environment
         mantidpython = 'python'
         conda_env_name = conda_env_names[0]
+        raise RuntimeError('Conda environment {} {} is not supported yet'.format(conda_env_name, mantidpython))
     else:
         # no mantid path is specified: use standard python3
         print("Failed to determine mantid version from script: '{}'\n"
@@ -151,3 +136,7 @@ def generate_subprocess_command(reduce_script, reduction_params, verify_mantid_p
         cmd.insert(1, "--classic")
 
     return cmd
+
+
+if __name__ == '__main__':
+    main()
