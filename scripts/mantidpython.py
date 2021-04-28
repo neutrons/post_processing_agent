@@ -16,8 +16,7 @@ mantid_version_dict = {'nightly': "/opt/mantidnightly/bin",
 # variable to specify conda environment name
 CONDA_NAME = 'CONDA_ENV'
 NSD_CONDA_WRAP = ['/usr/bin/nsd-conda-wrap.sh',
-                  '/SNS/software/bin/nsd-conda-wrap.sh',
-                  '/SNS/users/wzz/Projects/AutoReduction/nsd-app-wrap/nsd-conda-wrap.sh']
+                  '/SNS/software/bin/nsd-conda-wrap.sh']
 
 
 def get_nsd_conda_wrap():
