@@ -49,7 +49,7 @@ def test_mantid_python_location(auto_reduce_script, expected_command_args):
     verify_subprocess_command(auto_reduce_script, nexus_file_name, output_dir, gold_command)
 
 
-@pytest.mark.skipif(not os.path.exists('/SNS/users/'), reason='whatever')
+@pytest.mark.skipif(not os.path.exists('/SNS/users/'), reason='Test is not run on analysis cluster')
 @pytest.mark.parametrize('auto_reduce_script, expected_command_args',
                          [('tests/reduce_CONDA.py', ['bash', '-i', 'sans-dev'])])
 def test_conda_bash_command(auto_reduce_script, expected_command_args):
