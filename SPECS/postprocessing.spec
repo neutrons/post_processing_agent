@@ -1,6 +1,6 @@
 Summary: postprocessing
 Name: postprocessing
-Version: 2.3
+Version: 2.4
 Release: 65
 Group: Applications/Engineering
 prefix: /opt/postprocessing
@@ -9,11 +9,11 @@ License: Open
 Source: postprocessing.tgz
 Requires: libNeXus.so.0()(64bit) libc.so.6()(64bit) libc.so.6(GLIBC_2.2.5)(64bit)
 Requires: python-suds
-Requires: nexus-python 
+Requires: nexus-python
 Requires: python-twisted-core
 Requires: python-twisted-web
 Requires: python-twisted-words
-Requires: python-stompest 
+Requires: python-stompest
 Requires: python2-stompest-async
 Requires: python-requests
 %define debug_package %{nil}
