@@ -127,4 +127,31 @@ You can modify where the software is installed by modifying the prefix at the to
         python [installation path]/queueProcessor.py
         
    - Note: For python 2.6 and below, drop the argparse.py module under the "postprocessing" directory.
+   
+ 
+Running the tests
+-----------------
+
+The tests for this project are all written using `pytest <https://docs.pytest.org/en/latest>`_.
+
+   $ python -m pytest tests/
+
+This is one of the ways `pytest allows for selecting tests <https://docs.pytest.org/en/latest/usage.html#specifying-tests-selecting-tests>`_.
+Specifying a directory or file will run all tests within that directory (recursively) or file.
+Specifying a regular expression using ``-k`` will select all tests that match the regular expression independent of where they are defined
+
+
+Running manual tests for mantidpython.py
+----------------------------------------
+
+Manual tests can be executed as
+
+
+   $ python2 scripts/mantidpython.py /SNS/HYP/shared/auto_reduction/reduce_HYS.py [HYS nexus file] [Output Dir]
+
+or
+
+   $ python scripts/mantidpython.py tests/reduce_CONDA.py [Data file]  [Output dir]
+
+as an example for how to activating a specific conda environment for reduction.
      
