@@ -45,9 +45,6 @@ chown -R snsdata %{prefix}
 chown -R snsdata /var/log/SNS_applications
 
 %files
-%config %{_sysconfdir}/autoreduce/icat4.cfg
-%config %{_sysconfdir}/autoreduce/icatclient.properties
-%config %{_sysconfdir}/autoreduce/post_processing.conf
 %attr(755, -, -) %{prefix}/
 %attr(755, -, -) /var/log/SNS_applications
 %attr(755, -, -) %{site_packages}/postprocessing.pth
