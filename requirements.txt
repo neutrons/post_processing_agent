@@ -1,0 +1,7 @@
+h5py
+# mantidframework  # TODO: find the appropriate version
+git+git://github.com/nexusformat/python-nxs@master#egg=python-nxs
+plotly
+stompest
+suds
+twisted
