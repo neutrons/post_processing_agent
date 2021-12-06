@@ -99,6 +99,7 @@ class Configuration(object):
         self.publish_url = config['publish_url_template'] if 'publish_url_template' in config else ''
         self.publisher_username = config['publisher_username'] if 'publisher_username' in config else ''
         self.publisher_password = config['publisher_password'] if 'publisher_password' in config else ''
+        self.publisher_certificate = config.get('publisher_certificate', "")
 
         sys.path.insert(0, self.sw_dir)
         # Configure processor plugins
