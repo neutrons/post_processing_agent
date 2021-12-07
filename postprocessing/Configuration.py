@@ -96,10 +96,10 @@ class Configuration(object):
         self.jobs_per_instrument = config['jobs_per_instrument'] if 'jobs_per_instrument' in config else 2
 
         # plot publishing
-        self.publish_url = config['publish_url_template'] if 'publish_url_template' in config else ''
-        self.publisher_username = config['publisher_username'] if 'publisher_username' in config else ''
-        self.publisher_password = config['publisher_password'] if 'publisher_password' in config else ''
-        self.publisher_certificate = config.get('publisher_certificate', "")
+        self.publish_url = config.get('publish_url_template', '')
+        self.publisher_username = config.get('publisher_username', '')
+        self.publisher_password = config.get('publisher_password', '')
+        self.publisher_certificate = config.get('publisher_certificate', '')
 
         sys.path.insert(0, self.sw_dir)
         # Configure processor plugins
