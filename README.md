@@ -155,3 +155,11 @@ or
 
 as an example for how to activating a specific conda environment for reduction.
      
+
+Running with docker
+-------------------
+
+```shell
+docker build --tag postprocessing .
+docker run --network host postprocessing
+```

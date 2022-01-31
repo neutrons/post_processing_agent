@@ -1,8 +1,8 @@
 {
     "failover_uri": "failover:(tcp://localhost:61613)?randomize=false,startupMaxReconnectAttempts=100,initialReconnectDelay=1000,maxReconnectDelay=5000,maxReconnectAttempts=-1",
     "amq_queues": ["/queue/REDUCTION.DATA_READY"],
-    "amq_user": "",
-    "amq_pwd": "",
+    "amq_user": "icat",
+    "amq_pwd": "icat",
     "sw_dir": "/opt/postprocessing",
     "python_dir": "/opt/postprocessing/postprocessing",
     "start_script": "python",
