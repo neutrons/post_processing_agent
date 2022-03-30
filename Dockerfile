@@ -23,6 +23,7 @@ RUN make install
 
 RUN cp configuration/post_process_consumer.conf.development /etc/autoreduce/post_processing.conf
 # add a user for who things are running as
+RUN echo "USER ${users} or ${user}"
 RUN addgroup -S postprocer -g $(id -g ${users}) && adduser -u $(id -u ${users}) -G postprocer -D postprocer
 
 # This configuration allows it to run with docker-compose from https://github.com/neutrons/data_workflow
