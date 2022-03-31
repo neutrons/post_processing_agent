@@ -18,9 +18,26 @@ RUN yum install -y \
     numpy
 
 COPY . .
-USER postprocessing
+
+# setup the host user
+#ARG USER=postprocessing
+ARG DATA_TARBALL=/tmp/SNSdata.tar.gz
+#ARG UID=1000
+#ARG GID=1000
+#RUN echo "USER ${users} or ${user} or $(id -g) or $(id -u)"
+#RUN echo "UID ${UID} GID ${GID}"
+#RUN groupadd postprocessing --gid ${GID} && useradd -u ${UID} -G postprocessing -D postprocessing
+#USER ${UID}:${GID}
+USER ${USER}
+RUN echo "CURRENT_UID ${CURRENT_UID} or $(id -g) or $(id -u) or $(whoami)"
+# copy a test data image into place
 RUN mkdir /SNS
-RUN chown postprocessing:postprocessing /SNS
+#RUN chown postprocessing:postprocessing /SNS
+RUN echo "DATA_TARBALL ${DATA_TARBALL}"
+RUN ls /tmp
+RUN ls /*.gz
+RUN ls ${DATA_TARBALL}
+RUN test -f ${DATA_TARBALL} && tar xzf --directory=/SNS ${DATA_TARBALL}
 
 RUN make install
 
