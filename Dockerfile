@@ -18,6 +18,9 @@ RUN yum install -y \
     numpy
 
 COPY . .
+USER postprocessing
+RUN mkdir /SNS
+RUN chown postprocessing:postprocessing /SNS
 
 RUN make install
 
