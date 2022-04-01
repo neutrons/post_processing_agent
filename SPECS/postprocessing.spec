@@ -1,7 +1,7 @@
 Summary: postprocessing
 Name: postprocessing
-Version: 2.4
-Release: 65
+Version: 2.5
+Release: 1
 Group: Applications/Engineering
 prefix: /opt/postprocessing
 BuildRoot: %{_tmppath}/%{name}
