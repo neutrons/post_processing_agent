@@ -79,6 +79,11 @@ rpm:
 	cd build;tar -czf ~/rpmbuild/SOURCES/postprocessing.tgz postprocessing
 	rpmbuild -ba ./SPECS/postprocessing.spec
 
+wheel:
+	@echo "Creating wheel"
+	@rm -rf build dist
+	python -m build --wheel
+
 links:
 	ln -sf /usr/local/sis/DataArchiving/scripts/oncat_datafile_ingest.py /opt/postprocessing/scripts/oncat_ingest.py
 	ln -sf /usr/local/sis/DataArchiving/scripts/oncat_reduction_ingest.py /opt/postprocessing/scripts/oncat_reduced_ingest.py
@@ -86,3 +91,4 @@ links:
 .PHONY: check
 .PHONY: install
 .PHONY: postproc
+.PHONY: wheel
