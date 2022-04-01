@@ -5,7 +5,7 @@ Release: 1
 Group: Applications/Engineering
 prefix: /opt/postprocessing
 BuildRoot: %{_tmppath}/%{name}
-License: Open
+License: MIT
 Source: postprocessing.tgz
 Requires: libNeXus.so.0()(64bit) libc.so.6()(64bit) libc.so.6(GLIBC_2.2.5)(64bit)
 Requires: python-suds
