@@ -15,17 +15,8 @@ mantid_version_dict = {'nightly': "/opt/mantidnightly/bin",
 
 # variable to specify conda environment name
 CONDA_NAME = 'CONDA_ENV'
-NSD_CONDA_WRAP = ['/usr/bin/nsd-conda-wrap.sh',
-                  '/SNS/software/bin/nsd-conda-wrap.sh']
-
-
-def get_nsd_conda_wrap():
-    for wrap in NSD_CONDA_WRAP:
-        if os.path.exists(wrap):
-            return wrap
-
-    raise RuntimeError('Unable to locate conda wrap script in the following locations: {}'
-                       ''.format(NSD_CONDA_WRAP))
+# where the conda wrapper lives
+NSD_CONDA_WRAP = '/usr/bin/nsd-conda-wrap.sh'
 
 
 def get_mantid_loc(line):
@@ -62,8 +53,8 @@ def get_mantid_loc(line):
     if line.startswith("sys.path"):
         # backward compatible: sys.path.append or sys.path.insert
         mantidversion = mantidRegExp.findall(line)
-        print('Mantid version: {}'.format(mantidversion))
         if len(mantidversion) == 1:
+            print('Mantid version: {}'.format(mantidversion))
             return mantidversion[0], None
 
     elif line.startswith(MANDID_VERSION):
@@ -94,6 +85,10 @@ def get_mantid_loc(line):
 
 
 def main():
+    if len(sys.argv) < 4:
+        print('Usage: {} <reduction_script> <nexusfile> <outputdirectory>'.format(sys.argv[0]))
+        sys.exit(1)
+
     # parse argument 1: reduction script
     reduction_script = sys.argv[1]
 
@@ -101,6 +96,7 @@ def main():
     reduction_commands = generate_subprocess_command(reduction_script, sys.argv[2:], True)
 
     # call
+    print(' '.join(reduction_commands))
     return_code = subprocess.call(reduction_commands)
     sys.exit(return_code)
 
@@ -147,7 +143,8 @@ def generate_subprocess_command(reduce_script, reduction_params, verify_mantid_p
     elif len(conda_env_names) == 1:
         # conda environment
         conda_env_name = conda_env_names[0]
-        cmd = ['bash', '-i', get_nsd_conda_wrap(), conda_env_name]
+        print('Using {} conda environment'.format(conda_env_name))
+        cmd = [NSD_CONDA_WRAP, conda_env_name, "--classic"]
     elif len(mantid_paths) == 1:
         # user specified mantid python
         mantidpython = os.path.join(mantid_paths[0], "mantidpython")
