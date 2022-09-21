@@ -1,6 +1,6 @@
 Summary: postprocessing
 Name: postprocessing
-Version: 2.5
+Version: 2.6
 Release: 1
 Group: Applications/Engineering
 prefix: /opt/postprocessing
