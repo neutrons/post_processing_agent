@@ -5,3 +5,5 @@ plotly
 stompest
 suds
 twisted
+requests
+

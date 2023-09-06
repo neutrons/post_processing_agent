@@ -65,6 +65,7 @@ postproc: check
 	install -m 755	postprocessing/processors/job_tree.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/oncat_processor.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/oncat_reduced_processor.py	$(prefix)/postprocessing/processors
+    install -m 755	postprocessing/processors/ndip_processor.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/job_handling.py	$(prefix)/postprocessing/processors
 rpm:
 	@echo "Creating RPMs"
