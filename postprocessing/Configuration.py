@@ -102,7 +102,7 @@ class Configuration(object):
         self.publisher_certificate = config.get('publisher_certificate', '')
 
 
-        self.ndip_ingest_url = config.get('ndip_ingest_url',"")
+        self.calvera_ingest_url = config.get('calvera_ingest_url',"")
 
 
         sys.path.insert(0, self.sw_dir)
