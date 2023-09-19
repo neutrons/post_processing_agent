@@ -4,9 +4,13 @@ permissions:
   contents: write
 
 on:
-  push:
+  pull_request:
+    types:
+      - closed
     branches:
-      - package-build-in-github
+      - main
+  workflow_dispatch:
+
 
 jobs:
   build:
