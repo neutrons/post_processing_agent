@@ -10,7 +10,7 @@ COPY scripts /app/scripts
 COPY configuration /app/configuration
 COPY postprocessing /app/postprocessing
 COPY SPECS /app/SPECS
-COPY Makefile /app/
+COPY Makefile /app
 
 
 RUN mkdir -p /root/rpmbuild/SOURCES

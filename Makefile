@@ -73,6 +73,7 @@ rpm:
 
 	cd build;tar -czf ~/rpmbuild/SOURCES/postprocessing.tgz postprocessing
 	rpmbuild -ba ./SPECS/postprocessing.spec
+	rpmbuild -ba ./SPECS/snsrepo.spec
 
 wheel:
 	@echo "Creating wheel"
