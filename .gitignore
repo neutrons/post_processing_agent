@@ -3,3 +3,4 @@
 build
 dist
 postprocessing.egg-info
+.idea

@@ -101,6 +101,10 @@ class Configuration(object):
         self.publisher_password = config.get('publisher_password', '')
         self.publisher_certificate = config.get('publisher_certificate', '')
 
+
+        self.calvera_ingest_url = config.get('calvera_ingest_url',"")
+
+
         sys.path.insert(0, self.sw_dir)
         # Configure processor plugins
         self.processors = config['processors'] if 'processors' in config else []
