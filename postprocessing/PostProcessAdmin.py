@@ -71,10 +71,9 @@ class PostProcessAdmin:
         else:
             raise ValueError("Run number is missing")
 
-    def reduce(self, remote=False):
+    def reduce(self):
         """
             Reduction process using job submission.
-            @param remote: If True, the job will be submitted to a compute node
         """
         self._process_data(self.data)
         try:
@@ -108,14 +107,9 @@ class PostProcessAdmin:
             # Run the reduction
             out_log = os.path.join(log_dir, os.path.basename(self.data_file) + ".log")
             out_err = os.path.join(log_dir, os.path.basename(self.data_file) + ".err")
-            if remote:
-                job_handling.remote_submission(self.conf, reduce_script_path,
-                                               self.data_file, proposal_shared_dir,
-                                               out_log, out_err)
-            else:
-                job_handling.local_submission(self.conf, reduce_script_path,
-                                              self.data_file, proposal_shared_dir,
-                                              out_log, out_err)
+            job_handling.local_submission(self.conf, reduce_script_path,
+                                          self.data_file, proposal_shared_dir,
+                                          out_log, out_err)
 
             # Determine error condition
             success, status_data = job_handling.determine_success_local(self.conf, out_err)
@@ -130,24 +124,6 @@ class PostProcessAdmin:
             logging.error("reduce: %s" % sys.exc_value)
             self.data["error"] = "Reduction: %s " % sys.exc_value
             self.send('/queue/' + self.conf.reduction_error , json.dumps(self.data))
-
-    def catalog_raw(self):
-        """
-            Catalog a nexus file containing raw data
-        """
-        self._process_data(self.data)
-        try:
-            from ingest_nexus import IngestNexus
-            self.send('/queue/' + self.conf.catalog_started, json.dumps(self.data))
-            if self.conf.comm_only is False:
-                ingestNexus = IngestNexus(self.data_file)
-                ingestNexus.execute()
-                ingestNexus.logout()
-                self.send('/queue/' + self.conf.catalog_complete, json.dumps(self.data))
-        except:
-            logging.error("catalog_raw: %s" % sys.exc_value)
-            self.data["error"] = "Catalog: %s" % sys.exc_value
-            self.send('/queue/' + self.conf.catalog_error, json.dumps(self.data))
 
     def create_reduction_script(self):
         """
@@ -217,11 +193,9 @@ if __name__ == "__main__":
             pp = PostProcessAdmin(data, configuration)
             if isinstance(configuration.reduction_data_ready, list) and \
                 namespace.queue in ['/queue/%s' % q for q in configuration.reduction_data_ready]:
-                pp.reduce(configuration.remote_execution)
+                pp.reduce()
             elif namespace.queue == '/queue/%s' % configuration.reduction_data_ready:
-                pp.reduce(configuration.remote_execution)
-            elif namespace.queue == '/queue/%s' % configuration.catalog_data_ready:
-                pp.catalog_raw()
+                pp.reduce()
             elif namespace.queue == '/queue/%s' % configuration.create_reduction_script:
                 pp.create_reduction_script()
 
