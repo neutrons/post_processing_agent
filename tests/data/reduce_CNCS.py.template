@@ -90,7 +90,7 @@ def check_newer_script(instrument,folder):
     if newer_file_exists:
         new_filename=os.path.join(folder,"reduce_"+instrument+"_"+datetime.datetime.now().strftime('%Y.%m.%d_%H.%M.%S')+".py")
         shutil.copy2(master_filename,new_filename)
-    return newer_file_exists 
+    return newer_file_exists
 
 
 def preprocessVanadium(Raw,Processed,Parameters):
@@ -178,11 +178,11 @@ def fittingt0(Eguess,ws):
     TOF = s.readX(0)
     TOF = (TOF[:-1] + TOF[1:])*0.5
     I = s.readY(0)
-    
+
     for i, val in enumerate(TOF):
         if val > t_elastic_no_offset:
             break
-    
+
     I_sliced = I[i-int(250/int(microseconds_to_bin)):i+int(250/int(microseconds_to_bin))]
     TOF_sliced = TOF[i-int(250/int(microseconds_to_bin)):i+int(250/int(microseconds_to_bin))]
     if 0:
@@ -195,7 +195,7 @@ def fittingt0(Eguess,ws):
             initial_guess = (t_elastic_no_offset, 35.0, np.max(I), 0 )
             popt, pcov = opt.curve_fit(gaussian, TOF, I, p0=initial_guess)
             elastic_position_fitted = popt[0]
-            T0_fitted = elastic_position_fitted - t_elastic_no_offset       
+            T0_fitted = elastic_position_fitted - t_elastic_no_offset
     else:
         T0_fitted = TOF_sliced[np.argmax(I_sliced)] - t_elastic_no_offset
     return T0_fitted
@@ -264,7 +264,7 @@ def preprocessTIB(EGuess,ws):
             tibmin=5000
             tibmax=15000
         if (abs(EGuess-12)<0.1):
-            tibmin,tibmax=[21900.0,22580.0] 
+            tibmin,tibmax=[21900.0,22580.0]
     AddSampleLogMultiple(ws,"TIBmin,TIBmax",str(tibmin)+','+str(tibmax))
     return (tibmin,tibmax)
 
@@ -302,9 +302,9 @@ def get_colorscale_minimum(arr):
     xc=x[np.argsort(x)][int(len(x)*0.02)] #ignore the bottom 2%
     return xc
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
     #check number of arguments
-    if (len(sys.argv) != 3): 
+    if (len(sys.argv) != 3):
         print("autoreduction code requires a filename and an output directory")
         sys.exit()
     if not(os.path.isfile(sys.argv[1])):
@@ -314,12 +314,12 @@ if __name__ == "__main__":
     config['default.facility']="SNS"
     nexus_file=sys.argv[1]
     output_directory=sys.argv[2]
-    
+
     ar_changed=check_newer_script("CNCS",output_directory)
     # create the autoreduction plotting setup script
     copy_script.copy_gui_script('CNCS', output_directory)
     #DownloadInstrument(ForceUpdate=True)
-    
+
     cfgfile_path=os.path.join(output_directory,configfile)
     if not os.path.isfile(cfgfile_path):
         sub_directory=''
@@ -328,7 +328,7 @@ if __name__ == "__main__":
         cfg.set('Reduction config','subdirectory',sub_directory)
         with open(cfgfile_path,'w') as f:
             cfg.write(f)
-        change_permissions(cfgfile_path,0o664) 
+        change_permissions(cfgfile_path,0o664)
     else:
         if ar_changed:
             cfg = ConfigParser.ConfigParser()
@@ -336,13 +336,13 @@ if __name__ == "__main__":
             cfg.set('Reduction config','subdirectory',sub_directory)
             with open(cfgfile_path,'w') as f:
                 cfg.write(f)
-            change_permissions(cfgfile_path,0o664)    
+            change_permissions(cfgfile_path,0o664)
         else:
             cfg = ConfigParser.ConfigParser()
             cfg.read(cfgfile_path)
             sub_directory=cfg.get('Reduction config','subdirectory')
     sub_directory=sub_directory.strip()
-    
+
     DGSdict=preprocessVanadium(raw_vanadium,output_directory+processed_vanadium,MaskBTPParameters)
     datadict=preprocessData(nexus_file)
     groupdict=preprocessGrouping("__IWS",output_directory)
@@ -361,7 +361,7 @@ if __name__ == "__main__":
         CreateSingleValuedWorkspace(OutputWorkspace='__meanval',DataValue=meanval)
         Divide(LHSWorkspace='__VAN',RHSWorkspace='__meanval',OutputWorkspace='__VAN') #Divide the vanadium by the mean
         Multiply(LHSWorkspace='reduce',RHSWorkspace='__meanval',OutputWorkspace='reduce') #multiple by the mean of vanadium Normalized data = Data / (Van/meanvan) = Data *meanvan/Van
-        SaveNexus(InputWorkspace="__VAN", Filename= filename) 
+        SaveNexus(InputWorkspace="__VAN", Filename= filename)
         change_permissions(filename,0o664)
 
     if create_elastic_nxspe:
@@ -394,7 +394,7 @@ if __name__ == "__main__":
             change_permissions(nxspe_filename,0o664)
     else:
         nxspe_filename=os.path.join(output_directory, "inelastic",sub_directory,"CNCS_" + run_number + valuestringwithoutdot + ".nxspe")
-        SaveNXSPE(Filename=nxspe_filename, InputWorkspace="reduce", Psi=str(s1), KiOverKfScaling='1')     
+        SaveNXSPE(Filename=nxspe_filename, InputWorkspace="reduce", Psi=str(s1), KiOverKfScaling='1')
         change_permissions(nxspe_filename,0o664)
         if create_elastic_nxspe:
             nxspe_filename=os.path.join(output_directory, "elastic",sub_directory,"CNCS_" + run_number + valuestringwithoutdot + "_elastic.nxspe")
@@ -412,18 +412,18 @@ if __name__ == "__main__":
         DGSdict['OutputWorkspace']='reduce_ev'
         DGSdict['EnergyTransferRange']=preprocessEnergyTransfer(EGuess)
         DgsReduction(**DGSdict)
-        
+
         if mtd.doesExist('__VAN'):
             sa = mtd['__VAN']
         else:
             sa = None
-            
+
         plot_html += pu.create_plots(mtd['reduce_ev'], output_directory, solid_angle=sa)
         pu.publish_plot("CNCS", run_number, plot_html)
     except Exception as e:
         logger.error("Failed to publish plot\n"+str(e))
 
-       
+
     if create_MDnxs:
         try:
             SetUB("reduce",a=a,b=b,c=c,alpha=alpha,beta=beta,gamma=gamma,u=uVector,v=vVector)

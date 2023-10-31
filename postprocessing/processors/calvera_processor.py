@@ -14,12 +14,13 @@ from .base_processor import BaseProcessor
 
 class CalveraProcessor(BaseProcessor):
     """
-        Define post-processing task
+    Define post-processing task
     """
+
     ## Input queue
     _message_queue = "/queue/CALVERA.RAW.DATA_READY"
-    COMPLETE_QUEUE = '/queue/CALVERA.RAW.COMPLETE'
-    ERROR_QUEUE = '/queue/CALVERA.RAW.ERROR'
+    COMPLETE_QUEUE = "/queue/CALVERA.RAW.COMPLETE"
+    ERROR_QUEUE = "/queue/CALVERA.RAW.ERROR"
 
     def _prepare_send_data(self):
         to_send = copy.deepcopy(self.data)
@@ -30,7 +31,9 @@ class CalveraProcessor(BaseProcessor):
         res = {}
         try:
             data_to_send = self._prepare_send_data()
-            response = requests.post(self.configuration.calvera_ingest_url, json=data_to_send, timeout=3)
+            response = requests.post(
+                self.configuration.calvera_ingest_url, json=data_to_send, timeout=3
+            )
             if response.status_code == 200:
                 success = True
             else:
@@ -44,7 +47,7 @@ class CalveraProcessor(BaseProcessor):
 
     def __call__(self):
         """
-            Execute the job
+        Execute the job
         """
         success, status_data = self.send_to_calvera()
         self.data.update(status_data)
@@ -56,14 +59,15 @@ class CalveraProcessor(BaseProcessor):
 
 class CalveraReducedProcessor(CalveraProcessor):
     """
-        Defines post-processing task for reduced data
+    Defines post-processing task for reduced data
     """
+
     ## Input queue
     _message_queue = "/queue/CALVERA.REDUCED.DATA_READY"
-    COMPLETE_QUEUE = '/queue/CALVERA.REDUCED.COMPLETE'
-    ERROR_QUEUE = '/queue/CALVERA.REDUCED.ERROR'
+    COMPLETE_QUEUE = "/queue/CALVERA.REDUCED.COMPLETE"
+    ERROR_QUEUE = "/queue/CALVERA.REDUCED.ERROR"
 
-    def _read_reduced_data(self,filepath):
+    def _read_reduced_data(self, filepath):
         if not os.path.exists(filepath):
             logging.info("Could not find %s so will not send to Calvera", filepath)
             return None

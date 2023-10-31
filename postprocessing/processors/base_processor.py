@@ -1,20 +1,22 @@
 """
     The base processor defines a base class to be used to process jobs.
-    An input AMQ queue is defined. The post-processing client will 
+    An input AMQ queue is defined. The post-processing client will
     automatically register with that queue upon starting.
 
     @copyright: 2014-2015 Oak Ridge National Laboratory
 """
+from __future__ import print_function
 import os
 import logging
 import json
-import string
 import job_handling
+
 
 class BaseProcessor(object):
     """
-        Base class for job processor
+    Base class for job processor
     """
+
     data = {}
     configuration = None
     send_function = None
@@ -29,11 +31,11 @@ class BaseProcessor(object):
 
     def __init__(self, data, conf, send_function):
         """
-            Initialize the processor
+        Initialize the processor
 
-            @param data: data dictionary from the incoming message
-            @param conf: configuration object
-            @param send_function: function to call to send an AMQ message
+        @param data: data dictionary from the incoming message
+        @param conf: configuration object
+        @param send_function: function to call to send an AMQ message
         """
         self.data = data
         self.configuration = conf
@@ -43,85 +45,101 @@ class BaseProcessor(object):
     @classmethod
     def get_input_queue_name(cls):
         """
-            Returns the name of the queue to use to start a job
+        Returns the name of the queue to use to start a job
         """
         return cls._message_queue
 
     def _run_job(self, job_name, job_info):
         """
-            Run a local job.
-            @param job_name: a name for the job
-            @param job_info: job description dictionary
+        Run a local job.
+        @param job_name: a name for the job
+        @param job_info: job description dictionary
         """
         # Check for script information
-        script = job_info['script']
+        script = job_info["script"]
 
         # Check that the script exists
         if not os.path.isfile(script):
-            self.process_error(self.configuration.reduction_error, 
-                               "Script %s does not exist" % str(script))
+            self.process_error(
+                self.configuration.reduction_error,
+                "Script %s does not exist" % str(script),
+            )
 
         # Remove old log files
-        out_log = os.path.join(self.log_dir, "%s.%s.log" % (os.path.basename(self.data_file), job_name))
-        out_err = os.path.join(self.log_dir, "%s.%s.err" % (os.path.basename(self.data_file), job_name))
+        out_log = os.path.join(
+            self.log_dir, "%s.%s.log" % (os.path.basename(self.data_file), job_name)
+        )
+        out_err = os.path.join(
+            self.log_dir, "%s.%s.err" % (os.path.basename(self.data_file), job_name)
+        )
         if os.path.isfile(out_err):
             os.remove(out_err)
         if os.path.isfile(out_log):
             os.remove(out_log)
 
-        job_handling.local_submission(self.configuration, script, self.data_file,
-                                                self.output_dir, out_log, out_err)
+        job_handling.local_submission(
+            self.configuration,
+            script,
+            self.data_file,
+            self.output_dir,
+            out_log,
+            out_err,
+        )
 
         return out_log, out_err
 
     def _process_data(self, data):
         """
-            Retrieve run information from the data dictionary
-            provided with an incoming message.
-            @param data: data dictionary
+        Retrieve run information from the data dictionary
+        provided with an incoming message.
+        @param data: data dictionary
         """
-        if data.has_key('data_file'):
-            self.data_file = str(data['data_file'])
-            if os.access(self.data_file, os.R_OK) == False:
-                raise ValueError("Data file does not exist or is not readable: %s" % self.data_file)
+        if data.has_key("data_file"):
+            self.data_file = str(data["data_file"])
+            if os.access(self.data_file, os.R_OK) is False:
+                raise ValueError(
+                    "Data file does not exist or is not readable: %s" % self.data_file
+                )
         else:
             raise ValueError("data_file is missing: %s" % self.data_file)
 
-        if data.has_key('facility'):
-            self.facility = str(data['facility']).upper()
-        else: 
+        if data.has_key("facility"):
+            self.facility = str(data["facility"]).upper()
+        else:
             raise ValueError("Facility is missing")
 
-        if data.has_key('instrument'):
-            self.instrument = str(data['instrument']).upper()
+        if data.has_key("instrument"):
+            self.instrument = str(data["instrument"]).upper()
         else:
             raise ValueError("Instrument is missing")
 
-        if data.has_key('ipts'):
-            self.proposal = str(data['ipts']).upper()
+        if data.has_key("ipts"):
+            self.proposal = str(data["ipts"]).upper()
         else:
             raise ValueError("IPTS is missing")
 
-        if data.has_key('run_number'):
-            self.run_number = str(data['run_number'])
+        if data.has_key("run_number"):
+            self.run_number = str(data["run_number"])
         else:
             raise ValueError("Run number is missing")
 
-        self.proposal_shared_dir = os.path.join('/', self.facility, self.instrument, self.proposal, 'shared', 'autoreduce')
+        self.proposal_shared_dir = os.path.join(
+            "/", self.facility, self.instrument, self.proposal, "shared", "autoreduce"
+        )
         self.output_dir = self.proposal_shared_dir
         self.log_dir = self.output_dir
 
     def process_error(self, destination, message):
         """
-            Log and send error message
+        Log and send error message
 
-            @param destination: queue to send the error to
-            @param message: error message
+        @param destination: queue to send the error to
+        @param message: error message
         """
         error_message = "%s: %s" % (type(self).__name__, message)
         logging.error(error_message)
         self.data["error"] = error_message
-        self.send('/queue/%s' % destination , json.dumps(self.data))
+        self.send("/queue/%s" % destination, json.dumps(self.data))
         # Reset the error and information
         if "information" in self.data:
             del self.data["information"]
@@ -130,12 +148,12 @@ class BaseProcessor(object):
 
     def send(self, destination, message):
         """
-            Send an AMQ message
+        Send an AMQ message
 
-            @param destination: queue to send the error to
-            @param message: error message
+        @param destination: queue to send the error to
+        @param message: error message
         """
         if self._send_function is not None:
             self._send_function(destination, message)
         else:
-            print "NOT SEND TO AMQ", destination, message
+            print("NOT SEND TO AMQ", destination, message)

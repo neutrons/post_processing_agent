@@ -8,37 +8,38 @@
 """
 import sys
 import os
-import json
 import warnings
-warnings.simplefilter('ignore', RuntimeWarning)
+
+warnings.simplefilter("ignore", RuntimeWarning)
 
 
-if ("MANTIDPATH" in os.environ):
+if "MANTIDPATH" in os.environ:
     del os.environ["MANTIDPATH"]
-#sys.path.insert(0,"/opt/mantid50/bin")
-#sys.path.insert(1,"/opt/mantid50/lib")
-sys.path.insert(0,"/opt/mantidnightly/bin")
-sys.path.insert(1,"/opt/mantidnightly/lib")
+# sys.path.insert(0,"/opt/mantid50/bin")
+# sys.path.insert(1,"/opt/mantid50/lib")
+sys.path.insert(0, "/opt/mantidnightly/bin")
+sys.path.insert(1, "/opt/mantidnightly/lib")
 
-import mantid
 from mantid.simpleapi import *
 
 try:
-    from sf_calculator import ScalingFactor
     DIRECT_BEAM_CALC_AVAILABLE = True
     logger.notice("sf_calculator available")
-except:
+except:  # noqa: E722
     import scipy
-    logger.notice("Scaling factor calculation upgrade not available: scipy=%s" % scipy.__version__)
+
+    logger.notice(
+        "Scaling factor calculation upgrade not available: scipy=%s" % scipy.__version__
+    )
     DIRECT_BEAM_CALC_AVAILABLE = False
 
-event_file_path=sys.argv[1]
-output_dir=sys.argv[2]
+event_file_path = sys.argv[1]
+output_dir = sys.argv[2]
 
 event_file = os.path.split(event_file_path)[-1]
 # The legacy format is REF_L_xyz_event.nxs
 # The new format is REF_L_xyz.nxs.h5
-run_number = event_file.split('_')[2]
-run_number = run_number.replace('.nxs.h5', '')
+run_number = event_file.split("_")[2]
+run_number = run_number.replace(".nxs.h5", "")
 
-raise RuntimeError('Below is trimmed for testing')
+raise RuntimeError("Below is trimmed for testing")

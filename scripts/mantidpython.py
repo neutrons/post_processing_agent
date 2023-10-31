@@ -5,18 +5,17 @@ import subprocess
 import sys
 
 # reg expression to parse mantid python on analysis cluster
-mantidRegExp = re.compile(r'/opt/.antid.*/bin')
+mantidRegExp = re.compile(r"/opt/.antid.*/bin")
 
 # variable to specify mantid version
-MANDID_VERSION = 'MANTID_VERSION'
+MANDID_VERSION = "MANTID_VERSION"
 # mapping from mantid version to mantid library location on analysis cluster
-mantid_version_dict = {'nightly': "/opt/mantidnightly/bin",
-                       'stable': "/opt/Mantid/bin"}
+mantid_version_dict = {"nightly": "/opt/mantidnightly/bin", "stable": "/opt/Mantid/bin"}
 
 # variable to specify conda environment name
-CONDA_NAME = 'CONDA_ENV'
+CONDA_NAME = "CONDA_ENV"
 # where the conda wrapper lives
-NSD_CONDA_WRAP = '/usr/bin/nsd-conda-wrap.sh'
+NSD_CONDA_WRAP = "/usr/bin/nsd-conda-wrap.sh"
 
 
 def get_mantid_loc(line):
@@ -40,11 +39,18 @@ def get_mantid_loc(line):
         mantid python location (None for not found), conda env name (None for not found)
 
     """
+
     def parse_var_value(string, var_name):
         var_string = string.split(var_name)[1].strip()
-        if var_string.startswith('='):
+        if var_string.startswith("="):
             # split = and get first variable after =
-            var_string = var_string.split('=')[1].strip().split()[0].replace('"', '').replace("'", '')
+            var_string = (
+                var_string.split("=")[1]
+                .strip()
+                .split()[0]
+                .replace('"', "")
+                .replace("'", "")
+            )
             return var_string
 
         return None
@@ -54,7 +60,7 @@ def get_mantid_loc(line):
         # backward compatible: sys.path.append or sys.path.insert
         mantidversion = mantidRegExp.findall(line)
         if len(mantidversion) == 1:
-            print('Mantid version: {}'.format(mantidversion))
+            print("Mantid version: {}".format(mantidversion))
             return mantidversion[0], None
 
     elif line.startswith(MANDID_VERSION):
@@ -69,7 +75,7 @@ def get_mantid_loc(line):
             return mantid_version_dict[mantid_version], None
         else:
             # version number
-            return '/opt/mantid{}/bin'.format(mantid_version), None
+            return "/opt/mantid{}/bin".format(mantid_version), None
 
     elif line.startswith(CONDA_NAME):
         # CONDA name
@@ -86,22 +92,30 @@ def get_mantid_loc(line):
 
 def main():
     if len(sys.argv) < 4:
-        print('Usage: {} <reduction_script> <nexusfile> <outputdirectory>'.format(sys.argv[0]))
+        print(
+            "Usage: {} <reduction_script> <nexusfile> <outputdirectory>".format(
+                sys.argv[0]
+            )
+        )
         sys.exit(1)
 
     # parse argument 1: reduction script
     reduction_script = sys.argv[1]
 
     # generate subprocess command to reduce data
-    reduction_commands = generate_subprocess_command(reduction_script, sys.argv[2:], True)
+    reduction_commands = generate_subprocess_command(
+        reduction_script, sys.argv[2:], True
+    )
 
     # call
-    print(' '.join(reduction_commands))
+    print(" ".join(reduction_commands))
     return_code = subprocess.call(reduction_commands)
     sys.exit(return_code)
 
 
-def generate_subprocess_command(reduce_script, reduction_params, verify_mantid_path=True):
+def generate_subprocess_command(
+    reduce_script, reduction_params, verify_mantid_path=True
+):
     """Search reduction script for specific
     - mantid python version or
     - conda environment name
@@ -127,7 +141,7 @@ def generate_subprocess_command(reduce_script, reduction_params, verify_mantid_p
     mantid_paths = list()
     conda_env_names = list()
 
-    with open(reduce_script, 'r') as script_file:
+    with open(reduce_script, "r") as script_file:
         for line in script_file:
             # check mantid path with regular expression r'/opt/.antid.*/bin'
             mantid_path, conda_env_name = get_mantid_loc(line)
@@ -138,12 +152,16 @@ def generate_subprocess_command(reduce_script, reduction_params, verify_mantid_p
 
     # Convert new mantid script path
     if len(mantid_paths) + len(conda_env_names) > 1:
-        raise RuntimeError('Reduction script {} specifies multiple mantid python paths ({}) '
-                           'and conda environments ({})'.format(reduce_script, mantid_paths, conda_env_names))
+        raise RuntimeError(
+            "Reduction script {} specifies multiple mantid python paths ({}) "
+            "and conda environments ({})".format(
+                reduce_script, mantid_paths, conda_env_names
+            )
+        )
     elif len(conda_env_names) == 1:
         # conda environment
         conda_env_name = conda_env_names[0]
-        print('Using {} conda environment'.format(conda_env_name))
+        print("Using {} conda environment".format(conda_env_name))
         cmd = [NSD_CONDA_WRAP, conda_env_name, "--classic"]
     elif len(mantid_paths) == 1:
         # user specified mantid python
@@ -153,9 +171,11 @@ def generate_subprocess_command(reduce_script, reduction_params, verify_mantid_p
         cmd = [mantidpython, "--classic"]
     else:
         # no mantid path is specified: use standard python3
-        print("Failed to determine mantid version from script: '{}'\n"
-              "Defaulting to system python".format(reduce_script))
-        cmd = ['python3']
+        print(
+            "Failed to determine mantid version from script: '{}'\n"
+            "Defaulting to system python".format(reduce_script)
+        )
+        cmd = ["python3"]
 
     # construct sub process command
     cmd.append(reduce_script)
@@ -164,5 +184,5 @@ def generate_subprocess_command(reduce_script, reduction_params, verify_mantid_p
     return cmd
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

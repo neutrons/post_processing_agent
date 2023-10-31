@@ -1,3 +1,6 @@
-[build-system]
-requires = ["setuptools >= 40.6.0", "wheel", "toml"]
-build-backend = "setuptools.build_meta"
+[tool.ruff]
+line-length = 120
+# https://beta.ruff.rs/docs/rules/
+#select = ["A", "ARG", "BLE", "E", "F", "I", "PT"]
+ignore = ["E401", "E402", "F403", "F405" # issues with imports
+]
