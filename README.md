@@ -28,10 +28,6 @@ point for configuration. Here are the entries to pay attention to:
         "task_script_data_arg": "-d",
         "log_file": "/opt/postprocessing/log/postprocessing.log",
     
-        "mantid_release": "/opt/Mantid/bin",
-        "mantid_nightly": "/opt/mantidnightly/bin",
-        "mantid_unstable": "/opt/mantidunstable/bin",
-    
         "communication_only": 1,
         "jobs_per_instrument": 2
     }
@@ -92,13 +88,7 @@ You can modify where the software is installed by modifying the prefix at the to
 
    - Create the configuration files:
 
-        cd configuration
-        cd configuration
-        cp icat4_prod.cfg icat4.cfg
-        cp icatclient.properties.developement icatclient.properties
     cd configuration
-        cp icat4_prod.cfg icat4.cfg
-        cp icatclient.properties.developement icatclient.properties
     cp post_process_consumer.conf.developement post_process_consumer.conf
 
    Edit the file according to your installation.
@@ -118,8 +108,6 @@ You can modify where the software is installed by modifying the prefix at the to
    - To run, simply call 
    
     python [installation path]/queueProcessor.py
-        
-   - Note: For python 2.6 and below, drop the argparse.py module under the "postprocessing" directory.
    
  
 Running the tests
@@ -139,8 +127,7 @@ Running manual tests for mantidpython.py
 
 Manual tests can be executed as
 
-
-    $ python2 scripts/mantidpython.py /SNS/HYP/shared/auto_reduction/reduce_HYS.py [HYS nexus file] [Output Dir]
+    $ python scripts/mantidpython.py /SNS/HYP/shared/auto_reduction/reduce_HYS.py [HYS nexus file] [Output Dir]
 
 or
 
