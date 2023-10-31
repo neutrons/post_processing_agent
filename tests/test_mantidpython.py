@@ -1,6 +1,6 @@
 import pytest
 import os
-from scripts.mantidpython import generate_subprocess_command, get_mantid_loc, get_nsd_conda_wrap
+from scripts.mantidpython import generate_subprocess_command, get_mantid_loc
 
 
 def test_get_mantid_location():

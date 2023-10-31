@@ -3,7 +3,6 @@ h5py
 git+https://github.com/nexusformat/python-nxs.git@master
 plotly
 stompest
-suds
 twisted
 requests
 

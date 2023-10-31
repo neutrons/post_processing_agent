@@ -7,6 +7,8 @@ from base_processor import BaseProcessor
 import json
 
 class TestProcessor(BaseProcessor):
+    # tell pytest this class does not contain tests
+    __test__ = False
     
     ## Input queue
     _message_queue = "/queue/REDUCTION.TESTPROCESSOR.DATA_READY"

@@ -47,50 +47,14 @@ class BaseProcessor(object):
         """
         return cls._message_queue
 
-    def _get_script_path(self, job_name, job_info, run_options, common_properties):
+    def _run_job(self, job_name, job_info):
         """
-            Determine which script to run.
+            Run a local job.
             @param job_name: a name for the job
             @param job_info: job description dictionary
-            @param run_options: options for running the job
-            @param common_properties: properties common to all jobs
         """
-        # Check for script information, or Mantid algorithm
-        script = ''
-        if 'script' in job_info:
-            script = job_info['script']
-        elif 'algorithm' in job_info:
-            # The following should be a standard script that runs the 
-            # designated algorithm
-            properties = common_properties
-            properties['Filename'] = self.data_file
-            properties.update(job_info['alg_properties'])
-
-            script_template = os.path.join(self.configuration.sw_dir, 'scripts', 'run_mantid_algorithm.py_template')
-            template_content = open(script_template).read()
-            # Replace the dictionary entries
-            template = string.Template(template_content)
-            script_content = template.substitute({'algorithm': job_info['algorithm'],
-                                          'algorithm_properties': properties})
-            script = os.path.join(self.output_dir, "mantid_script_%s.py" % job_name)
-            script_file = open(script, 'w')
-            script_file.write(script_content)
-            script_file.close()
-        return script
-
-    def _run_job(self, job_name,  job_info, run_options, common_properties, 
-                 wait=True, dependencies=[]):
-        """
-            Run a local job and wait for its completion.
-            @param job_name: a name for the job
-            @param job_info: job description dictionary
-            @param run_options: options for running the job
-            @param common_properties: properties common to all jobs
-            @param wait: if True, we will wait for the job to finish before returning
-            @param dependencies: list of job dependencies
-        """
-        # Check for script information, or Mantid algorithm
-        script = self._get_script_path(job_name, job_info, run_options, common_properties)
+        # Check for script information
+        script = job_info['script']
 
         # Check that the script exists
         if not os.path.isfile(script):
@@ -105,18 +69,10 @@ class BaseProcessor(object):
         if os.path.isfile(out_log):
             os.remove(out_log)
 
-        if 'remote' in run_options and run_options['remote'] is True:
-            node_request = None
-            if "node_request" in job_info:
-                node_request = job_info["node_request"]
-            job_id = job_handling.remote_submission(self.configuration, script, self.data_file, 
-                                                    self.output_dir, out_log, out_err, 
-                                                    wait, dependencies, node_request=node_request)
-        else:
-            job_id = job_handling.local_submission(self.configuration, script, self.data_file, 
-                                                   self.output_dir, out_log, out_err)
+        job_handling.local_submission(self.configuration, script, self.data_file,
+                                                self.output_dir, out_log, out_err)
 
-        return job_id, out_log, out_err
+        return out_log, out_err
 
     def _process_data(self, data):
         """

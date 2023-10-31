@@ -9,7 +9,6 @@ BuildArch: noarch
 License: MIT
 Source: postprocessing.tgz
 Requires: libNeXus.so.0()(64bit) libc.so.6()(64bit) libc.so.6(GLIBC_2.2.5)(64bit)
-Requires: python-suds
 Requires: nexus-python
 Requires: python-twisted-core
 Requires: python-twisted-web
@@ -38,8 +37,6 @@ mkdir -p %{buildroot}/var/log/SNS_applications
 make prefix="%{buildroot}%{prefix}" installed_prefix="%{prefix}" site_packages="%{buildroot}%{site_packages}" sysconfig="%{buildroot}%{_sysconfdir}/autoreduce" bindir="%{buildroot}/%{_bindir}" install
 
 %post
-chgrp snswheel %{_sysconfdir}/autoreduce/icat4.cfg
-chgrp snswheel %{_sysconfdir}/autoreduce/icatclient.properties
 chgrp snswheel %{_sysconfdir}/autoreduce/post_processing.conf
 chown -R snsdata %{_sysconfdir}/autoreduce
 chown -R snsdata %{prefix}

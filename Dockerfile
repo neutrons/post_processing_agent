@@ -5,7 +5,6 @@ RUN yum install -y epel-release
 RUN yum updateinfo
 RUN yum install -y \
     python-requests \
-    python-suds \
     python-twisted-core \
     python-twisted-web \
     python-twisted-words \

@@ -18,7 +18,6 @@ check:
 	@python -c "import nxs" || echo "ERROR: Need nexus: http://download.nexusformat.org/kits/"
 	@python -c "import twisted" || echo "ERROR: Need twisted: easy_install twisted"
 
-	@test -f configuration/icatclient.properties || echo -e "\n===> SET UP configuration/icatclient.properties BEFORE INSTALLATION\n";
 	@test -f configuration/post_process_consumer.conf || echo -e "\n===> SET UP configuration/post_process_consumer.conf BEFORE INSTALLATION\n";
 
 install: config postproc
@@ -49,20 +48,15 @@ postproc: check
 	install -m 755	postprocessing/Consumer.py	 $(prefix)/postprocessing/Consumer.py
 	install -m 755	postprocessing/Configuration.py	 $(prefix)/postprocessing/Configuration.py
 	install -m 755	postprocessing/PostProcessAdmin.py	 $(prefix)/postprocessing/PostProcessAdmin.py
-	install -m 755	postprocessing/ingest_nexus.py	 $(prefix)/postprocessing/ingest_nexus.py
 	install -m 755	postprocessing/reduction_script_writer.py	 $(prefix)/postprocessing/reduction_script_writer.py
 	install -m 755	postprocessing/publish_plot.py	$(prefix)/postprocessing/publish_plot.py
 	install -m 755	postprocessing/time_conversions.py	$(prefix)/postprocessing/time_conversions.py
-	install -m 755	scripts/remoteJob.sh	 $(prefix)/scripts/remoteJob.sh
-	install -m 755	scripts/startJob.sh	 $(prefix)/scripts/startJob.sh
 	install -m 755	scripts/mantidpython.py	 $(prefix)/scripts/mantidpython.py
-	install -m 755	scripts/run_mantid_algorithm.py_template	 $(prefix)/scripts/run_mantid_algorithm.py_template
 	install -m 755	scripts/ar-report.py	 $(prefix)/scripts/ar-report.py
 	install -m 755	postprocessing/queueProcessor.py	$(prefix)/queueProcessor.py
 	install -m 755	postprocessing/processors/__init__.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/base_processor.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/test_processor.py	$(prefix)/postprocessing/processors
-	install -m 755	postprocessing/processors/job_tree.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/oncat_processor.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/oncat_reduced_processor.py	$(prefix)/postprocessing/processors
 	install -m 755	postprocessing/processors/calvera_processor.py	$(prefix)/postprocessing/processors

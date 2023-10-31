@@ -28,12 +28,7 @@ point for configuration. Here are the entries to pay attention to:
         "task_script_data_arg": "-d",
         "log_file": "/opt/postprocessing/log/postprocessing.log",
     
-        "mantid_release": "/opt/Mantid/bin",
-        "mantid_nightly": "/opt/mantidnightly/bin",
-        "mantid_unstable": "/opt/mantidunstable/bin",
-    
         "communication_only": 1,
-        "remote_execution": 0,
         "jobs_per_instrument": 2
     }
 
@@ -47,7 +42,7 @@ point for configuration. Here are the entries to pay attention to:
      "FERMI_REDUCTION.DATA_READY", you should change the name of that queue 
      on the configuration file.
      
-    - If "jobs_per_instrument" is set to an integer greater than zero, no more than
+   - If "jobs_per_instrument" is set to an integer greater than zero, no more than
       that number of jobs will run on a given node for a given instrument.
       Set "jobs_per_instrument" to zero to turn this feature off.
       
@@ -76,25 +71,15 @@ point for configuration. Here are the entries to pay attention to:
 
    - Don't forget to set your Mantid user's properties to send output logs to stdout:
 
-        logging.channels.consoleChannel.class=StdoutChannel
+    logging.channels.consoleChannel.class=StdoutChannel
 
 #### Runtime settings
 
+#### ONCat processing
 
-#### ICAT processing
+The post processing agent handles cataloging raw and reduced data files in ONCat https://oncat.ornl.gov/ by
+calling scripts hosted on the analysis cluster.
 
-   - You need to create the following files:
-
-        configuration/icat4.cfg
-        configuration/icatclient.properties
-        configuration/post_process_consumer.conf
-
-     They will be installed in /etc/autoreduce when running "make install".
-     Examples in the configuration directory can be renamed and modified.
-     
-   - The ICAT processing in ingest_nexus.py and ingest_reduced.py were taken 
-     from https://github.com/mantidproject/autoreduce with only minor modifications.
-     
      
 Installation
 ------------
@@ -103,40 +88,36 @@ You can modify where the software is installed by modifying the prefix at the to
 
    - Create the configuration files:
 
-        cd configuration
-        cp icat4_prod.cfg icat4.cfg
-        cp icatclient.properties.developement icatclient.properties
-        cp post_process_consumer.conf.developement post_process_consumer.conf
+    cd configuration
+    cp post_process_consumer.conf.developement post_process_consumer.conf
 
-    Edit those two files according to your installation.
+   Edit the file according to your installation.
 
    - From the top source directory, run
 
-        sudo make install
+    sudo make install
 
    - Alternatively, you can package your configured installation as an RPM:
 
-        make rpm
+    make rpm
 
    - To install on a compute node with limited access, you can also do the following:
    
-        sudo make install/isolated
+    sudo make install/isolated
    
    - To run, simply call 
    
-        python [installation path]/queueProcessor.py
-        
-   - Note: For python 2.6 and below, drop the argparse.py module under the "postprocessing" directory.
+    python [installation path]/queueProcessor.py
    
  
 Running the tests
 -----------------
 
-The tests for this project are all written using `pytest <https://docs.pytest.org/en/latest>`_.
+The tests for this project are all written using [pytest](https://docs.pytest.org/en/latest>).
 
-   $ python -m pytest tests/
+    python -m pytest tests/
 
-This is one of the ways `pytest allows for selecting tests <https://docs.pytest.org/en/latest/usage.html#specifying-tests-selecting-tests>`_.
+This is one of the ways [pytest allows for selecting tests](https://docs.pytest.org/en/latest/usage.html#specifying-tests-selecting-tests).
 Specifying a directory or file will run all tests within that directory (recursively) or file.
 Specifying a regular expression using ``-k`` will select all tests that match the regular expression independent of where they are defined
 
@@ -146,12 +127,11 @@ Running manual tests for mantidpython.py
 
 Manual tests can be executed as
 
-
-   $ python2 scripts/mantidpython.py /SNS/HYP/shared/auto_reduction/reduce_HYS.py [HYS nexus file] [Output Dir]
+    $ python scripts/mantidpython.py /SNS/HYP/shared/auto_reduction/reduce_HYS.py [HYS nexus file] [Output Dir]
 
 or
 
-   $ python scripts/mantidpython.py tests/reduce_CONDA.py [Data file]  [Output dir]
+    $ python scripts/mantidpython.py tests/reduce_CONDA.py [Data file]  [Output dir]
 
 as an example for how to activating a specific conda environment for reduction.
      

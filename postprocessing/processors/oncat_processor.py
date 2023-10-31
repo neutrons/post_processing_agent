@@ -40,7 +40,7 @@ class ONCatProcessor(BaseProcessor):
 
         self.send(self.STARTED_QUEUE, json.dumps(self.data))
 
-        _, out_log, out_err = self._run_job("oncat", dict(script=self.SCRIPT_PATH), dict(), dict())
+        out_log, out_err = self._run_job("oncat", dict(script=self.SCRIPT_PATH))
         success, status_data = job_handling.determine_success_local(self.configuration, out_err)
         self.data.update(status_data)
         if os.path.isfile(out_log):
