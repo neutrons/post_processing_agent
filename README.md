@@ -19,7 +19,7 @@ point for configuration. Here are the entries to pay attention to:
         "amq_pwd": "",
         "amq_queues": ["/queue/FERMI_REDUCTION.DATA_READY", "/queue/CATALOG.DATA_READY", "/queue/REDUCTION_CATALOG.DATA_READY"],
         "reduction_data_ready": "FERMI_REDUCTION.DATA_READY",
-    
+
         "sw_dir": "/opt/postprocessing",
         "python_dir": "/opt/postprocessing/postprocessing",
         "start_script": "python",
@@ -27,31 +27,31 @@ point for configuration. Here are the entries to pay attention to:
         "task_script_queue_arg": "-q",
         "task_script_data_arg": "-d",
         "log_file": "/opt/postprocessing/log/postprocessing.log",
-    
+
         "communication_only": 1,
         "jobs_per_instrument": 2
     }
 
 #### ActiveMQ settings
 
-   - The ActiveMQ server settings must be set by replacing localhost above 
+   - The ActiveMQ server settings must be set by replacing localhost above
      by the proper address and the "amq_user" and "amq_pwd" must be filled out.
    - List the input queues in "amq_queues".
-   - Change the input queue names as needed. For example, if the standard 
-     "REDUCTION.DATA_READY" queue is replaced by special-purpose queue like 
-     "FERMI_REDUCTION.DATA_READY", you should change the name of that queue 
+   - Change the input queue names as needed. For example, if the standard
+     "REDUCTION.DATA_READY" queue is replaced by special-purpose queue like
+     "FERMI_REDUCTION.DATA_READY", you should change the name of that queue
      on the configuration file.
-     
+
    - If "jobs_per_instrument" is set to an integer greater than zero, no more than
       that number of jobs will run on a given node for a given instrument.
       Set "jobs_per_instrument" to zero to turn this feature off.
-      
+
       If this feature is used, you must add the following to activemq.xml:
-      
+
             <broker xmlns="http://activemq.apache.org/schema/core" brokerName="localhost" ... schedulerSupport="true">
-            
-            ... 
-            
+
+            ...
+
             <plugins>
               <redeliveryPlugin fallbackToDeadLetter="true" sendToDlqIfMaxRetriesExceeded="true">
                 <redeliveryPolicyMap>
@@ -80,7 +80,7 @@ point for configuration. Here are the entries to pay attention to:
 The post processing agent handles cataloging raw and reduced data files in ONCat https://oncat.ornl.gov/ by
 calling scripts hosted on the analysis cluster.
 
-     
+
 Installation
 ------------
 The typical installation is designed to be similar to earlier versions of this service.
@@ -102,14 +102,14 @@ You can modify where the software is installed by modifying the prefix at the to
     make rpm
 
    - To install on a compute node with limited access, you can also do the following:
-   
+
     sudo make install/isolated
-   
-   - To run, simply call 
-   
+
+   - To run, simply call
+
     python [installation path]/queueProcessor.py
-   
- 
+
+
 Running the tests
 -----------------
 
@@ -134,7 +134,7 @@ or
     $ python scripts/mantidpython.py tests/reduce_CONDA.py [Data file]  [Output dir]
 
 as an example for how to activating a specific conda environment for reduction.
-     
+
 
 Running with docker
 -------------------
