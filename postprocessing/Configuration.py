@@ -231,7 +231,9 @@ CONFIG_FILE_ALTERNATE = (
 )
 
 
-def read_configuration(config_file=None, defaults=[CONFIG_FILE, CONFIG_FILE_ALTERNATE]):
+def read_configuration(
+    config_file=None, defaults=[CONFIG_FILE, CONFIG_FILE_ALTERNATE], log_file=""
+):
     r"""
     Returns a new configuration object for a given configuration file, and initializes the basic configuration
     of all log messages.
@@ -240,6 +242,7 @@ def read_configuration(config_file=None, defaults=[CONFIG_FILE, CONFIG_FILE_ALTE
 
     @param str config_file: absolute path to custom configuration file to process
     @param list defaults: configuration files to be used when no custom configuration is provided
+    @param log_file: Specify optional override for logfile. This is used for testing.
 
     @returns Configuration: data structure representing the configuration file just read
     """
@@ -256,6 +259,8 @@ def read_configuration(config_file=None, defaults=[CONFIG_FILE, CONFIG_FILE_ALTE
             )
 
     configuration = Configuration(config_file)
+    if log_file:
+        configuration.log_file = str(log_file)
     initialize_logging(configuration.log_file)
 
     return configuration

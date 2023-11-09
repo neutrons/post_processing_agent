@@ -38,19 +38,22 @@ class TestConfiguration(object):
 
 def test_read_configuration(data_server):
     with pytest.raises(RuntimeError) as exception_info:
-        read_configuration(defaults=[])
+        log_file = tempfile.mkstemp()[1]  # second argument is filename
+        read_configuration(defaults=[], log_file=log_file)
     assert "Default configuration file(s) do not exist, or unreadable" in str(
         exception_info.value
     )
     backup = sys.stderr
     try:
+        log_file = tempfile.mkstemp()[1]  # second argument is filename
         conf = read_configuration(
-            config_file=data_server.path_to("post_processing.conf")
+            config_file=data_server.path_to("post_processing.conf"), log_file=log_file
         )
         # read_configuration also initializes the logging
         logging.info("record info to file")
         sys.stderr.write("writing to sys.stderr records this in file")
         log_contents = open(conf.log_file, "r").read()
+        assert bool(log_contents), "Log file is empty"
         assert "record info to file" in log_contents
         assert "writing to sys.stderr records this in file" in log_contents
     except IOError:
