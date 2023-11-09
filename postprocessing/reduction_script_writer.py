@@ -177,16 +177,26 @@ class ScriptWriter(object):
         amq_template = string.Template(configuration.service_status)
         amq_topic = amq_template.substitute(instrument=request_data["instrument"])
         amq_data = {"src_id": "postprocessing"}
+
+        def isstring(value):
+            is_python2 = bool(sys.version_info[0] == 2)
+            is_python3 = bool(sys.version_info[0] == 3)
+
+            # basestring is a python2 superclass for string and unicode
+            # the second half of this if can disappear after moving to python3
+            if is_python2 and isinstance(value, basestring):  # noqa: F821
+                return True
+            elif is_python3 and isinstance(value, string):  # same as previous clause
+                return True
+            else:
+                return False
+
         try:
             # Verify that the dictionary of template arguments is complete
             if "template_data" in request_data:
                 template_data = {}
                 for key, value in request_data["template_data"].items():
-                    # basestring is a python2 superclass for string and unicode
-                    # the second half of this if can disappear after moving to python3
-                    if isinstance(value, string) or isinstance(
-                        value, basestring  # noqa: F821
-                    ):
+                    if isstring(value):
                         # replace '+' sign with a blank space ('+' -> ' ')
                         # replace %xx escapes by their single-character equivalent
                         template_data[key] = urllib.unquote_plus(value)
