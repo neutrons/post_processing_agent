@@ -53,6 +53,9 @@ def test_read_configuration(data_server):
         log_contents = open(conf.log_file, "r").read()
         assert "record info to file" in log_contents
         assert "writing to sys.stderr records this in file" in log_contents
+    except IOError:
+        raise IOError("Log file not found: " + str(conf.log_file))
+        # python3 version raise IOError("Log file not found") from e
     finally:
         sys.stderr = backup
 
