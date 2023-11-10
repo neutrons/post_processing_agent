@@ -4,8 +4,8 @@ channels:
   - defaults
 dependencies:
   - python=2.7
-  - pytest
-  - pytest-cov
-  - stompest
+  - pytest=2.7
+  - pytest-cov=1.6
+  - stompest=2.1
 # needed for wheel - add when switching to python3
 #  - build
