@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: main
+    tags: ['v*']
+  workflow_dispatch:
+
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Set up MicroMamba
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        environment-file: environment.yml
+        condarc: |
+          channels:
+            - conda-forge
+            - default
+        cache-environment: true
+
+    - name: Unit test with code coverage
+      shell: bash -l {0}
+      run: python -m pytest -vv --cov=postprocessing --cov-report=xml --cov-report=term
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  rpm:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Build RPM inside Docker
+      run: |
+        docker build --tag postprocess --target=package -f Dockerfile .
+        fname=`docker run -v $(pwd):/store postprocess ls /root/rpmbuild/RPMS/noarch`
+        docker run -v `pwd`:/store postprocess mv /root/rpmbuild/RPMS/noarch/$fname /store
+        one=${fname#*postprocessing-}
+        two=${one%.noarch*}
+        echo "::set-output name=version::$two"
+        echo "::set-output name=fname::$fname"
+      continue-on-error: false
+
+# TODO: uncomment this once we have switched to python3 and can conda install the module build
+#  wheel:
+#    runs-on: ubuntu-latest
+#    steps:
+#    - name: Checkout Repository
+#      uses: actions/checkout@v2
+#
+#    - name: Set up MicroMamba
+#      uses: mamba-org/setup-micromamba@v1
+#      with:
+#        environment-file: environment.yml
+#        condarc: |
+#          channels:
+#            - conda-forge
+#            - default
+#        cache-environment: true
+#
+#    - name: Build wheel
+#      shell: bash -l {0}
+#      run: python -m build --wheel
