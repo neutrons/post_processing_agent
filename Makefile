@@ -50,7 +50,6 @@ postproc: check
 	install -m 755	postprocessing/PostProcessAdmin.py	 $(prefix)/postprocessing/PostProcessAdmin.py
 	install -m 755	postprocessing/reduction_script_writer.py	 $(prefix)/postprocessing/reduction_script_writer.py
 	install -m 755	postprocessing/publish_plot.py	$(prefix)/postprocessing/publish_plot.py
-	install -m 755	postprocessing/time_conversions.py	$(prefix)/postprocessing/time_conversions.py
 	install -m 755	scripts/mantidpython.py	 $(prefix)/scripts/mantidpython.py
 	install -m 755	scripts/ar-report.py	 $(prefix)/scripts/ar-report.py
 	install -m 755	postprocessing/queueProcessor.py	$(prefix)/queueProcessor.py
