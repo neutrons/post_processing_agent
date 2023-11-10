@@ -1,0 +1,12 @@
+name: post_processing_agent_py2
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=2.7
+  - pytest
+  - pytest-cov
+  - stompest
+# needed for wheel - add when switching to python3
+#  - build
+prefix: /home/u5z/mambaforge/envs/post_processing_agent_py2
