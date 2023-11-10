@@ -1,8 +1,8 @@
 FROM --platform=linux/amd64 centos:7 as package
 
-RUN yum install -y \
-    make \
-    rpm-build
+RUN yum install -y make rpm-build
+# lots of packages don't exist in rhel7
+# the Makefile will print lots of warnings as a result
 
 WORKDIR /app
 
