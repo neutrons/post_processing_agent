@@ -9,4 +9,3 @@ dependencies:
   - stompest
 # needed for wheel - add when switching to python3
 #  - build
-prefix: /home/u5z/mambaforge/envs/post_processing_agent_py2
