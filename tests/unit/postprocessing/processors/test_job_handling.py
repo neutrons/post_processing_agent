@@ -1,5 +1,4 @@
-
-from postprocessing.processors.job_handling import local_submission, determine_success_local
+from postprocessing.processors.job_handling import determine_success_local
 from postprocessing.Configuration import Configuration
 
 import tempfile
