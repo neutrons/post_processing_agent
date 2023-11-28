@@ -1,10 +1,8 @@
-import os
-
 from postprocessing.processors.job_handling import local_submission, determine_success_local
 
 from postprocessing.Configuration import Configuration
-import tempfile
 
+import tempfile
 import pytest
 
 @pytest.mark.parametrize("", [])
