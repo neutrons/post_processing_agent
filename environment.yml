@@ -7,6 +7,7 @@ dependencies:
   - pip
   - pytest
   - pytest-cov
+  - pytest-mock
   - pip:
     - stompest==2.1.6
 # needed for wheel - add when switching to python3
