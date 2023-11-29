@@ -1,16 +1,49 @@
-
 from postprocessing.processors.job_handling import local_submission, determine_success_local
 from postprocessing.Configuration import Configuration
 
-import tempfile
+import os
 import pytest
+import sys
+import tempfile
 
 
-@pytest.mark.parametrize("", [])
+@pytest.mark.parametrize(
+    "script, output_expected, error_expected",
+    [
+        (b"print('test')",                   b"test\n",   b""),
+        (b"raise Exception('forceError')",   b"",       b"Exception: forceError")
+    ]
+)
 def test_local_submission(
-    mocker, configuration, script, input_file, output_dir, out_log, out_err
+    mocker, script, output_expected, error_expected
 ):
-    pass
+
+    mock_configuration = mocker.Mock(spec=Configuration)
+    mock_configuration.python_executable = sys.executable
+    mock_configuration.comm_only = False
+
+    tempFile_script = tempfile.NamedTemporaryFile()
+    tempFile_input = tempfile.NamedTemporaryFile()
+    tempFile_output = tempfile.NamedTemporaryFile()
+    tempFile_error = tempfile.NamedTemporaryFile()
+
+    tempFile_script.write(script)
+
+    tempFile_script.seek(0)
+    tempFile_input.seek(0)
+    tempFile_output.seek(0)
+    tempFile_error.seek(0)
+
+    local_submission(mock_configuration,
+                     tempFile_script.name,
+                     tempFile_input.name,
+                     os.path.dirname(tempFile_output.name),
+                     tempFile_output.name,
+                     tempFile_error.name
+                     )
+
+    assert output_expected == tempFile_output.read()
+    assert error_expected in tempFile_error.read()
 
 
 @pytest.mark.parametrize(
@@ -40,3 +73,4 @@ def test_determine_success_local(
         success, data = determine_success_local(configuration_mock, error_file.name)
         assert success == success_expected
         assert data == data_expected
+
