@@ -121,6 +121,20 @@ This is one of the ways [pytest allows for selecting tests](https://docs.pytest.
 Specifying a directory or file will run all tests within that directory (recursively) or file.
 Specifying a regular expression using ``-k`` will select all tests that match the regular expression independent of where they are defined
 
+### Integration tests
+
+The integration tests requires activemq and the queueprocessor to be running, they will be automatically skipped if activemq is not running. This can be achieved using the docker-compose file provided,
+
+    docker-compose -f tests/integration/docker-compose.yml up -d --build
+
+then run
+
+    python -m pytest tests/integration
+
+after which you can stop docker with
+
+    docker-compose -f tests/integration/docker-compose.yml down
+
 
 Running manual tests for mantidpython.py
 ----------------------------------------
