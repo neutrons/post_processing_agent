@@ -81,8 +81,15 @@ class Configuration(object):
         self.mantid_path = (
             config["mantid_path"] if "mantid_path" in config else "/opt/Mantid/bin"
         )
+        # used to override /facility/instrument/shared
+        self.dev_instrument_shared = (
+            config["dev_instrument_shared"].strip()
+            if "dev_instrument_shared" in config
+            else ""
+        )
+        # used to override /facility/instrument/proposal/shared
         self.dev_output_dir = (
-            config["dev_output_dir"] if "dev_output_dir" in config else ""
+            config["dev_output_dir"].strip() if "dev_output_dir" in config else ""
         )
         self.python_executable = (
             config["python_exec"] if "python_exec" in config else "python"
