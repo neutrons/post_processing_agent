@@ -4,11 +4,12 @@ channels:
   - defaults
 dependencies:
   - python=2.7
-  - pip
+  - pip<21.0
+  # if pip doesn't work https://stackoverflow.com/questions/49940813/pip-no-module-named-internal
   - pytest
   - pytest-cov
   - pytest-mock
-  - pip:
+  - pip: # will need to be installed separately if pip is broken
     - stompest==2.1.6
 # needed for wheel - add when switching to python3
 #  - build

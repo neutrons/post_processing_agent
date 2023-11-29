@@ -85,9 +85,14 @@ class PostProcessAdmin:
         self._process_data(self.data)
         try:
             self.send("/queue/" + self.conf.reduction_started, json.dumps(self.data))
+            # get instrument shared directory
             instrument_shared_dir = os.path.join(
                 "/", self.facility, self.instrument, "shared", "autoreduce"
             )
+            if len(self.conf.dev_instrument_shared) > 0:
+                instrument_shared_dir = self.conf.dev_instrument_shared
+
+            # get the proposal shared directory
             proposal_shared_dir = os.path.join(
                 "/",
                 self.facility,
@@ -96,14 +101,15 @@ class PostProcessAdmin:
                 "shared",
                 "autoreduce",
             )
+            # Allow for an alternate output directory, if defined
+            if len(self.conf.dev_output_dir) > 0:
+                proposal_shared_dir = self.conf.dev_output_dir
+            logging.info("Using output directory: %s" % proposal_shared_dir)
+
+            # Set logging directory
             log_dir = os.path.join(proposal_shared_dir, "reduction_log")
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir)
-
-            # Allow for an alternate output directory, if defined
-            if len(self.conf.dev_output_dir.strip()) > 0:
-                proposal_shared_dir = self.conf.dev_output_dir
-            logging.info("Using output directory: %s" % proposal_shared_dir)
 
             # Look for run summary script
             summary_script = os.path.join(
