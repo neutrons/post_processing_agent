@@ -26,7 +26,13 @@ def getDevConfiguration(dev_output_dir=""):
     )
     if dev_output_dir:
         config.dev_output_dir = dev_output_dir
+        config.dev_instrument_shared = os.path.join(dev_output_dir, "shared")
     return config
+
+
+def createEmptyFile(filename):
+    with open(filename, "w"):
+        pass
 
 
 def test_bad_constructor():
@@ -36,9 +42,20 @@ def test_bad_constructor():
 
 
 def test_good_constructor(mocker):
+    instrument = "EQSANS"
+
     # setup mock configuration
     outdir = tempfile.mkdtemp()
     configuration = getDevConfiguration(outdir)
+    os.mkdir(configuration.dev_instrument_shared)
+    reduction_script = os.path.join(
+        configuration.dev_instrument_shared, "reduce_%s.py" % instrument
+    )
+    createEmptyFile(reduction_script)
+    summary_script = os.path.join(
+        configuration.dev_instrument_shared, "sumRun_%s.py" % instrument
+    )
+    createEmptyFile(summary_script)
 
     # create empty datafile because the processor checks the file exists
     pretend_datafile = tempfile.mkstemp()[1]  # the name of the file
@@ -48,7 +65,7 @@ def test_good_constructor(mocker):
     data = {
         "information": "mac83808.sns.gov",
         "run_number": "30892",
-        "instrument": "EQSANS",
+        "instrument": instrument,
         "ipts": "IPTS-10674",
         "facility": "SNS",
         "data_file": pretend_datafile,
@@ -63,7 +80,14 @@ def test_good_constructor(mocker):
     postProc.reduce()
     # verify reduction log directory - this should only be a single subdirectory
     outdir_contents = [os.path.join(outdir, item) for item in os.listdir(outdir)]
-    assert outdir_contents == [os.path.join(outdir, "reduction_log")]
+    outdir_contents.sort()
+    expected_contents = [
+        os.path.join(outdir, "reduction_log"),
+        configuration.dev_instrument_shared,
+    ]
+    expected_contents.sort()
+    assert len(outdir_contents) == len(expected_contents)
+    assert outdir_contents == expected_contents
 
     # cleanup
     os.unlink(pretend_datafile)
