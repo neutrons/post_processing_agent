@@ -96,14 +96,16 @@ class PostProcessAdmin:
                 "shared",
                 "autoreduce",
             )
-            log_dir = os.path.join(proposal_shared_dir, "reduction_log")
-            if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
 
             # Allow for an alternate output directory, if defined
             if len(self.conf.dev_output_dir.strip()) > 0:
                 proposal_shared_dir = self.conf.dev_output_dir
             logging.info("Using output directory: %s" % proposal_shared_dir)
+
+            # Set logging directory
+            log_dir = os.path.join(proposal_shared_dir, "reduction_log")
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
 
             # Look for run summary script
             summary_script = os.path.join(
