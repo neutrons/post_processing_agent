@@ -25,6 +25,11 @@ RUN touch /SNS/CORELLI/IPTS-15526/nexus/CORELLI_29666.nxs.h5
 RUN mkdir -p /SNS/CORELLI/shared/autoreduce
 RUN echo "raise RuntimeError('This is an ERROR!')" > /SNS/CORELLI/shared/autoreduce/reduce_CORELLI.py
 
+RUN mkdir -p /SNS/TOPAZ/shared/autoreduce
+RUN echo "a=0" > /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ.py
+RUN echo "a=1" > /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ_default.py
+RUN echo "a=\${value}" > /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ.py.template
+
 RUN echo "#!/bin/bash" > /usr/bin/run_postprocessing && \
     echo ". activate post_processing_agent_py2" >> /usr/bin/run_postprocessing && \
     echo "/opt/postprocessing/postprocessing/queueProcessor.py" >> /usr/bin/run_postprocessing && \

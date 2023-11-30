@@ -15,6 +15,7 @@
     "reduction_complete": "REDUCTION.COMPLETE",
     "reduction_error": "REDUCTION.ERROR",
     "reduction_disabled": "REDUCTION.DISABLED",
+    "create_reduction_script": "REDUCTION.CREATE_SCRIPT",
     "heart_beat": "/topic/SNS.COMMON.STATUS.AUTOREDUCE.0",
     "dev_output_dir": "",
     "reduction_data_ready": "REDUCTION.DATA_READY",
