@@ -1,7 +1,7 @@
 import time
 import json
-import subprocess
 import pytest
+from tests.conftest import docker_exec_and_cat
 
 from stompest.config import StompConfig
 from stompest.sync import Stomp
@@ -27,11 +27,7 @@ def test_default():
     time.sleep(1)
 
     # check that reduce_TOPAZ.py is updated correctly
-    reduce_TOPAZ = subprocess.check_output(
-        "docker exec integration_post_processing_agent_1 cat /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ.py",
-        stderr=subprocess.STDOUT,
-        shell=True,
-    )
+    reduce_TOPAZ = docker_exec_and_cat("/SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ.py")
 
     assert reduce_TOPAZ == "a=1\n"
 
@@ -59,10 +55,6 @@ def test_template():
     time.sleep(1)
 
     # check that reduce_TOPAZ.py is updated correctly
-    reduce_TOPAZ = subprocess.check_output(
-        "docker exec integration_post_processing_agent_1 cat /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ.py",
-        stderr=subprocess.STDOUT,
-        shell=True,
-    )
+    reduce_TOPAZ = docker_exec_and_cat("/SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ.py")
 
     assert reduce_TOPAZ == "a=42\n"

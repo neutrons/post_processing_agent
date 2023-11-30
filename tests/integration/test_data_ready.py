@@ -1,10 +1,10 @@
 import json
-import subprocess
 import pytest
 
 from stompest.config import StompConfig
 from stompest.sync import Stomp
 from stompest.error import StompConnectTimeout
+from tests.conftest import docker_exec_and_cat
 
 
 def test_missing_data():
@@ -108,10 +108,8 @@ def test_reduction():
     assert msg["data_file"] == message["data_file"]
 
     # we can also check that the reduction did run by checking the reduction_log
-    reduction_log = subprocess.check_output(
-        "docker exec integration_post_processing_agent_1 cat /SNS/EQSANS/IPTS-10674/shared/autoreduce/reduction_log/EQSANS_30892_event.nxs.log",
-        stderr=subprocess.STDOUT,
-        shell=True,
+    reduction_log = docker_exec_and_cat(
+        "/SNS/EQSANS/IPTS-10674/shared/autoreduce/reduction_log/EQSANS_30892_event.nxs.log"
     )
 
     assert (
