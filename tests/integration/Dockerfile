@@ -1,18 +1,17 @@
-FROM condaforge/mambaforge
+FROM mambaorg/micromamba
 
-RUN apt-get update -y
-RUN apt-get install gcc -y
+COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml .
 
-COPY environment.yml .
+RUN micromamba install --yes -n base --file environment.yml
 
-RUN conda env create
+ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
-COPY postprocessing /opt/postprocessing/postprocessing
-COPY configuration/post_process_consumer.conf.local /etc/autoreduce/post_processing.conf
-RUN sed -i 's/localhost/activemq/' /etc/autoreduce/post_processing.conf
+COPY --chown=$MAMBA_USER:$MAMBA_USER postprocessing /opt/postprocessing/postprocessing
+COPY --chown=$MAMBA_USER:$MAMBA_USER tests/integration/post_processing.conf /etc/autoreduce/post_processing.conf
 
 ENV PYTHONPATH /opt/postprocessing
 
+USER root
 RUN mkdir -p /opt/postprocessing/log && \
     mkdir -p /opt/postprocessing/scripts && \
     touch /opt/postprocessing/scripts/oncat_ingest.py && \
@@ -31,11 +30,10 @@ RUN mkdir -p /opt/postprocessing/log && \
     mkdir -p /SNS/TOPAZ/shared/autoreduce && \
     echo "a=0" > /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ.py && \
     echo "a=1" > /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ_default.py && \
-    echo "a=\${value}" > /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ.py.template
+    echo "a=\${value}" > /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ.py.template && \
+    \
+    chown -R $MAMBA_USER:$MAMBA_USER /opt/postprocessing /SNS
 
-RUN echo "#!/bin/bash" > /usr/bin/run_postprocessing && \
-    echo ". activate post_processing_agent_py2" >> /usr/bin/run_postprocessing && \
-    echo "/opt/postprocessing/postprocessing/queueProcessor.py" >> /usr/bin/run_postprocessing && \
-    chmod +x /usr/bin/run_postprocessing
+USER $MAMBA_USER
 
-CMD /usr/bin/run_postprocessing
+CMD /opt/postprocessing/postprocessing/queueProcessor.py
