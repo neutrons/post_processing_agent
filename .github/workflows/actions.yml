@@ -34,6 +34,36 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Set up MicroMamba
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        environment-file: environment.yml
+        condarc: |
+          channels:
+            - conda-forge
+            - default
+        cache-environment: true
+
+    - name: start docker containers
+      run: docker-compose -f tests/integration/docker-compose.yml up --build -d
+
+    - name: sleep to wait for containers to start up
+      run: sleep 2
+
+    - name: Run integration tests
+      shell: bash -l {0}
+      run: python -m pytest tests/integration
+
+    - name: stop docker containers
+      run: docker-compose -f tests/integration/docker-compose.yml down
+
   rpm:
     runs-on: ubuntu-latest
 
