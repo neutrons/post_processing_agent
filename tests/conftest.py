@@ -5,6 +5,7 @@ import pytest
 from collections import namedtuple
 import logging
 import os
+import subprocess
 import sys
 import tempfile
 
@@ -57,3 +58,36 @@ def test_logger():
         handler.close()
         logger.removeHandler(handler)
     os.remove(log_file)
+
+
+def docker_identify_container():
+    """This returns the container-id associated with the name that starts with "integration-post_processing_agent".
+    The function was added to be more resilient to slight variations in what docker names the images.
+    """
+    # this will throw an exception if the command returns non-zero
+    container_id = subprocess.check_output(
+        args=r'docker ps -qaf "name=^integration-post_processing_agent"',
+        stderr=subprocess.STDOUT,
+        shell=True,
+    )
+    # remove trailing whitespace
+    container_id = container_id.strip()
+    # verify it is non-empty
+    if container_id:
+        return container_id
+    else:
+        return "integration_post_processing_agent_1"  # default name on github
+
+
+def docker_exec_and_cat(filename):
+    """`cat` a file in a docker container"""
+    # get the name of the docker container that does the work
+    container_id = docker_identify_container()
+    print("communicating with docker container id", container_id)
+    # this will throw an exception if the command returns non-zero
+    filecontents = subprocess.check_output(
+        args="docker exec {} cat {}".format(container_id, filename),
+        stderr=subprocess.STDOUT,
+        shell=True,
+    )
+    return filecontents
