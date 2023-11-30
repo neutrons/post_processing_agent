@@ -21,5 +21,6 @@
     "reduction_data_ready": "REDUCTION.DATA_READY",
     "communication_only": 0,
     "max_procs": 10,
-    "exceptions": ["Error in logging framework", "Found no integrated charge value in gd_prtn_chrg"]
+    "exceptions": ["Error in logging framework", "Found no integrated charge value in gd_prtn_chrg"],
+    "processors": ["oncat_processor.ONCatProcessor"]
 }

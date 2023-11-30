@@ -13,9 +13,13 @@ COPY postprocessing /opt/postprocessing/postprocessing
 COPY configuration/post_process_consumer.conf.local /etc/autoreduce/post_processing.conf
 RUN sed -i 's/localhost/activemq/' /etc/autoreduce/post_processing.conf
 
+RUN mkdir -p /opt/postprocessing/scripts
+RUN touch /opt/postprocessing/scripts/oncat_ingest.py
+
 ENV PYTHONPATH /opt/postprocessing
 
 RUN mkdir -p /SNS/EQSANS/IPTS-10674/0/30892/NeXus
+RUN mkdir -p /SNS/EQSANS/IPTS-10674/shared/autoreduce
 RUN touch /SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs
 RUN mkdir -p /SNS/EQSANS/shared/autoreduce
 RUN echo "import sys;print(sys.argv[1:])" > /SNS/EQSANS/shared/autoreduce/reduce_EQSANS.py
