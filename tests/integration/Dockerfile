@@ -9,12 +9,18 @@ ARG MAMBA_DOCKERFILE_ACTIVATE=1
 COPY --chown=$MAMBA_USER:$MAMBA_USER postprocessing /opt/postprocessing/postprocessing
 COPY --chown=$MAMBA_USER:$MAMBA_USER tests/integration/post_processing.conf /etc/autoreduce/post_processing.conf
 
+RUN echo \#\!/bin/bash > /opt/conda/bin/coverage_run && \
+    echo coverage run \$@ >> /opt/conda/bin/coverage_run && \
+    chmod +x /opt/conda/bin/coverage_run
+
 ENV PYTHONPATH /opt/postprocessing
 
 USER root
+RUN echo -e "[run]\nsource=postprocessing\nparallel=True\nrelative_files=True" > /opt/postprocessing/.coveragerc
 RUN mkdir -p /opt/postprocessing/log && \
     mkdir -p /opt/postprocessing/scripts && \
     touch /opt/postprocessing/scripts/oncat_ingest.py && \
+    touch /opt/postprocessing/scripts/oncat_reduced_ingest.py && \
     \
     mkdir -p /SNS/EQSANS/IPTS-10674/0/30892/NeXus && \
     mkdir -p /SNS/EQSANS/IPTS-10674/shared/autoreduce && \
@@ -36,4 +42,7 @@ RUN mkdir -p /opt/postprocessing/log && \
 
 USER $MAMBA_USER
 
-CMD /opt/postprocessing/postprocessing/queueProcessor.py
+WORKDIR /opt/postprocessing
+ENV COVERAGE_PROCESS_START /opt/postprocessing/.coveragerc
+
+CMD ["coverage", "run", "postprocessing/queueProcessor.py"]
