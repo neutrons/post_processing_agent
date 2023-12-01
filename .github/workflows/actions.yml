@@ -51,18 +51,40 @@ jobs:
             - default
         cache-environment: true
 
-    - name: start docker containers
+    - name: Start docker containers
       run: docker-compose -f tests/integration/docker-compose.yml up --build -d
 
-    - name: sleep to wait for containers to start up
+    - name: Sleep, wait for containers to start up
       run: sleep 2
 
     - name: Run integration tests
       shell: bash -l {0}
       run: python -m pytest tests/integration
 
-    - name: stop docker containers
+    - name: Stop but dont remove docker containers
+      # Stopping the containers allows the code coverage to be written to disk
+      run: docker-compose -f tests/integration/docker-compose.yml stop
+
+    - name: Copy code coverage out of docker container
+      run: docker cp integration_post_processing_agent_1:/opt/postprocessing/ /tmp/
+
+    - name: Combine and show code coverage
+      shell: bash -l {0}
+      run: |
+        cd /tmp/postprocessing
+        coverage combine
+        coverage xml
+        cp coverage.xml $OLDPWD
+        coverage report
+
+    - name: Bring down docker containers completely now
+      # This will completely remove the containers
       run: docker-compose -f tests/integration/docker-compose.yml down
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   rpm:
     runs-on: ubuntu-latest
