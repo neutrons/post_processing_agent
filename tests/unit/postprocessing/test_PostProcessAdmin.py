@@ -2,32 +2,13 @@ from __future__ import print_function
 
 import shutil
 
-from postprocessing.Configuration import Configuration
 from postprocessing.PostProcessAdmin import PostProcessAdmin
 
 # third-party imports
 import os
 import pytest
 import tempfile
-
-
-def getDevConfiguration(dev_output_dir=""):
-    """
-    Create a Configuration object with a now developer directory
-    @param dev_output_dir: Location of the output directory
-    """
-    srcdir = os.path.dirname(os.path.realpath(__file__))  # directory this file is in
-    # go up 3 levels
-    for i in range(3):
-        srcdir = os.path.split(srcdir)[0]
-    # load the developer configuration file
-    config = Configuration(
-        os.path.join(srcdir, "configuration/post_process_consumer.conf.development")
-    )
-    if dev_output_dir:
-        config.dev_output_dir = dev_output_dir
-        config.dev_instrument_shared = os.path.join(dev_output_dir, "shared")
-    return config
+from tests.conftest import getDevConfiguration
 
 
 def createEmptyFile(filename):

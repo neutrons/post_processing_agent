@@ -6,6 +6,8 @@ New version of the post-processing agent for automated reduction and cataloging.
 For the old version of the post-processing agent, see https://github.com/mantidproject/autoreduce
 
 
+[![codecov](https://codecov.io/github/neutrons/post_processing_agent/graph/badge.svg?token=OYoTSnbmEL)](https://codecov.io/github/neutrons/post_processing_agent)
+
 Configuration
 -------------
 A configuration must be placed in `/etc/post_process_consumer.conf`.
