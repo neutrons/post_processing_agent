@@ -20,6 +20,7 @@ RUN echo -e "[run]\nsource=postprocessing\nparallel=True\nrelative_files=True" >
 RUN mkdir -p /opt/postprocessing/log && \
     mkdir -p /opt/postprocessing/scripts && \
     touch /opt/postprocessing/scripts/oncat_ingest.py && \
+    touch /opt/postprocessing/scripts/oncat_reduced_ingest.py && \
     \
     mkdir -p /SNS/EQSANS/IPTS-10674/0/30892/NeXus && \
     mkdir -p /SNS/EQSANS/IPTS-10674/shared/autoreduce && \
