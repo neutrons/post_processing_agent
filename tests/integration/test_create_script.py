@@ -20,7 +20,7 @@ def test_default():
         pytest.skip("Requires activemq running")
 
     # send data ready
-    client.send("/queue/REDUCTION.CREATE_SCRIPT", json.dumps(message))
+    client.send("/queue/REDUCTION.CREATE_SCRIPT", json.dumps(message).encode())
 
     client.disconnect()
 
@@ -48,7 +48,7 @@ def test_template():
         pytest.skip("Requires activemq running")
 
     # send data ready
-    client.send("/queue/REDUCTION.CREATE_SCRIPT", json.dumps(message))
+    client.send("/queue/REDUCTION.CREATE_SCRIPT", json.dumps(message).encode())
 
     client.disconnect()
 

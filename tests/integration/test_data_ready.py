@@ -23,7 +23,7 @@ def test_missing_data():
         pytest.skip("Requires activemq running")
 
     # send data ready
-    client.send("/queue/REDUCTION.DATA_READY", json.dumps(message))
+    client.send("/queue/REDUCTION.DATA_READY", json.dumps(message).encode())
 
     # expect a error for missing file
     client.subscribe("/queue/POSTPROCESS.ERROR")
@@ -56,7 +56,7 @@ def test_disabled_reduction():
         pytest.skip("Requires activemq running")
 
     # send data ready
-    client.send("/queue/REDUCTION.DATA_READY", json.dumps(message))
+    client.send("/queue/REDUCTION.DATA_READY", json.dumps(message).encode())
 
     # expect a reduction disabled
     client.subscribe("/queue/REDUCTION.DISABLED")
@@ -90,7 +90,7 @@ def test_reduction():
         pytest.skip("Requires activemq running")
 
     # send data ready
-    client.send("/queue/REDUCTION.DATA_READY", json.dumps(message))
+    client.send("/queue/REDUCTION.DATA_READY", json.dumps(message).encode())
 
     # expect a reduction complete
     client.subscribe("/queue/REDUCTION.COMPLETE")
@@ -134,7 +134,7 @@ def test_reduction_error():
         pytest.skip("Requires activemq running")
 
     # send data ready
-    client.send("/queue/REDUCTION.DATA_READY", json.dumps(message))
+    client.send("/queue/REDUCTION.DATA_READY", json.dumps(message).encode())
 
     # expect a reduction error
     client.subscribe("/queue/REDUCTION.ERROR")

@@ -15,7 +15,8 @@ Example input dictionaries:
 @copyright: 2014 Oak Ridge National Laboratory
 """
 import logging, json, socket, os, sys, subprocess
-import processors.job_handling as job_handling
+import importlib
+from postprocessing.processors import job_handling
 from stompest.config import StompConfig
 from stompest.sync import Stomp
 
@@ -49,7 +50,7 @@ class PostProcessAdmin:
         provided with an incoming message.
         @param data: data dictionary
         """
-        if data.has_key("data_file"):
+        if "data_file" in data:
             self.data_file = str(data["data_file"])
             if os.access(self.data_file, os.R_OK) is False:
                 raise ValueError(
@@ -58,22 +59,22 @@ class PostProcessAdmin:
         else:
             raise ValueError("data_file is missing: %s" % self.data_file)
 
-        if data.has_key("facility"):
+        if "facility" in data:
             self.facility = str(data["facility"]).upper()
         else:
             raise ValueError("Facility is missing")
 
-        if data.has_key("instrument"):
+        if "instrument" in data:
             self.instrument = str(data["instrument"]).upper()
         else:
             raise ValueError("Instrument is missing")
 
-        if data.has_key("ipts"):
+        if "ipts" in data:
             self.proposal = str(data["ipts"]).upper()
         else:
             raise ValueError("IPTS is missing")
 
-        if data.has_key("run_number"):
+        if "run_number" in data:
             self.run_number = str(data["run_number"])
         else:
             raise ValueError("Run number is missing")
@@ -170,8 +171,8 @@ class PostProcessAdmin:
             else:
                 self.send("/queue/" + self.conf.reduction_error, json.dumps(self.data))
         except:  # noqa: E722
-            logging.error("reduce: %s" % sys.exc_value)
-            self.data["error"] = "Reduction: %s " % sys.exc_value
+            logging.error("reduce: %s" % sys.exc_info()[1])
+            self.data["error"] = "Reduction: %s " % sys.exc_info()[1]
             self.send("/queue/" + self.conf.reduction_error, json.dumps(self.data))
 
     def create_reduction_script(self):
@@ -179,14 +180,14 @@ class PostProcessAdmin:
         Create a new reduction script from a template
         """
         try:
-            import reduction_script_writer
+            from postprocessing import reduction_script_writer
 
             writer = reduction_script_writer.ScriptWriter(self.data["instrument"])
             writer.process_request(
                 self.data, configuration=self.conf, send_function=self.send
             )
         except:  # noqa: E722
-            logging.error("create_reduction_script: %s" % sys.exc_value)
+            logging.error("create_reduction_script: %s" % sys.exc_info()[1])
 
     def send(self, destination, data):
         """
@@ -196,13 +197,13 @@ class PostProcessAdmin:
         """
         logging.info("%s: %s" % (destination, data))
         self.client.connect()
-        self.client.send(destination, data)
+        self.client.send(destination, data.encode())
         self.client.disconnect()
 
 
 if __name__ == "__main__":
     import argparse
-    from Configuration import read_configuration
+    from postprocessing.Configuration import read_configuration
 
     parser = argparse.ArgumentParser(description="Post-processing agent")
     parser.add_argument(
@@ -265,14 +266,8 @@ if __name__ == "__main__":
                 for p in configuration.processors:
                     toks = p.split(".")
                     if len(toks) == 2:
-                        processor_module = __import__(
-                            "postprocessing.processors.%s" % toks[0],
-                            globals(),
-                            locals(),
-                            [
-                                toks[1],
-                            ],
-                            -1,
+                        processor_module = importlib.import_module(
+                            "postprocessing.processors.%s" % toks[0]
                         )
                         try:
                             processor_class = eval("processor_module.%s" % toks[1])
@@ -287,7 +282,8 @@ if __name__ == "__main__":
                                 proc()
                         except:  # noqa: E722
                             logging.error(
-                                "PostProcessAdmin: Processor error: %s" % sys.exc_value
+                                "PostProcessAdmin: Processor error: %s"
+                                % sys.exc_info()[1]
                             )
                     else:
                         logging.error(
@@ -297,7 +293,7 @@ if __name__ == "__main__":
         except:  # noqa: E722
             # If we have a proper data dictionary, send it back with an error message
             if isinstance(data, dict):
-                data["error"] = str(sys.exc_value)
+                data["error"] = str(sys.exc_info()[1])
                 stomp = Stomp(
                     StompConfig(
                         configuration.failover_uri,
@@ -306,8 +302,8 @@ if __name__ == "__main__":
                     )
                 )
                 stomp.connect()
-                stomp.send(configuration.postprocess_error, json.dumps(data))
+                stomp.send(configuration.postprocess_error, json.dumps(data).encode())
                 stomp.disconnect()
             raise
     except:  # noqa: E722
-        logging.error("PostProcessAdmin: %s" % sys.exc_value)
+        logging.error("PostProcessAdmin: %s" % sys.exc_info()[1])

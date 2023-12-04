@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 # package imports
 from postprocessing.Configuration import (
     Configuration,

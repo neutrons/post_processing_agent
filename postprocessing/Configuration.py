@@ -10,6 +10,7 @@ import sys
 import os
 import json
 import logging
+import importlib
 
 
 class Configuration(object):
@@ -137,22 +138,16 @@ class Configuration(object):
                 toks = p.split(".")
                 if len(toks) == 2:
                     # for instance, emulate `from oncat_processor import ONCatProcessor`
-                    # TODO replace with importlib.import_module()
-                    processor_module = __import__(
-                        "postprocessing.processors.%s" % toks[0],
-                        globals(),
-                        locals(),
-                        [
-                            toks[1],
-                        ],
-                        -1,
+                    processor_module = importlib.import_module(
+                        "postprocessing.processors.%s" % toks[0]
                     )
                     try:
                         processor_class = eval("processor_module.%s" % toks[1])
                         self.queues.append(processor_class.get_input_queue_name())
                     except:  # noqa: E722
                         logging.error(
-                            "Configuration: Error loading processor: %s", sys.exc_value
+                            "Configuration: Error loading processor: %s",
+                            sys.exc_info()[1],
                         )
                 else:
                     logging.error(
