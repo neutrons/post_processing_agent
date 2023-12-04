@@ -4,13 +4,14 @@ channels:
   - defaults
 dependencies:
   - python=2.7
-  - requests
   - pip<21.0
   # if pip doesn't work https://stackoverflow.com/questions/49940813/pip-no-module-named-internal
   - gcc_linux-64
+  - plotly
   - pytest
   - pytest-cov
   - pytest-mock
+  - requests
   - pip: # will need to be installed separately if pip is broken
     - twisted==12.2.0
     - stompest==2.1.6

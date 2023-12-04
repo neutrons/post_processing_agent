@@ -93,6 +93,14 @@ def docker_exec_and_cat(filename):
     return filecontents
 
 
+def getDevConfigurationFile():
+    srcdir = os.path.dirname(os.path.realpath(__file__))  # directory this file is in
+    # go up 1 level to get out of tests directory
+    srcdir = os.path.split(srcdir)[0]
+
+    return os.path.join(srcdir, "configuration/post_process_consumer.conf.development")
+
+
 def getDevConfiguration(dev_output_dir=""):
     """
     Create a Configuration object with a now developer directory
@@ -100,14 +108,8 @@ def getDevConfiguration(dev_output_dir=""):
     """
     from postprocessing.Configuration import Configuration
 
-    srcdir = os.path.dirname(os.path.realpath(__file__))  # directory this file is in
-    # go up 1 level to get out of tests directory
-    srcdir = os.path.split(srcdir)[0]
-
     # load the developer configuration file
-    config = Configuration(
-        os.path.join(srcdir, "configuration/post_process_consumer.conf.development")
-    )
+    config = Configuration(getDevConfigurationFile())
     if dev_output_dir:
         config.dev_output_dir = dev_output_dir
         config.dev_instrument_shared = os.path.join(dev_output_dir, "shared")
