@@ -4,7 +4,6 @@ channels:
   - defaults
 dependencies:
   - python=2.7
-  - requests
   - pip<21.0
   # if pip doesn't work https://stackoverflow.com/questions/49940813/pip-no-module-named-internal
   - gcc_linux-64
