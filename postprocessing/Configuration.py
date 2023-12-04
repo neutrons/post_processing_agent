@@ -138,7 +138,7 @@ class Configuration(object):
                 toks = p.split(".")
                 if len(toks) == 2:
                     # for instance, emulate `from oncat_processor import ONCatProcessor`
-                    processor_module = importlib.import_module( # noqa: F841
+                    processor_module = importlib.import_module(  # noqa: F841
                         "postprocessing.processors.%s" % toks[0]
                     )
                     try:
