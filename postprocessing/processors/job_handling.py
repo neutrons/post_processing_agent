@@ -70,9 +70,9 @@ def determine_success_local(configuration, out_err):
             if re.search(item, error_line):
                 success = True
                 data["information"] = error_line
-                logging.error("Reduction error ignored: %s", error_line)
+                logging.error("Reduction error ignored: %s" % error_line)
 
         if not success:
-            data["error"] = f"REDUCTION: {error_line}"
+            data["error"] = "REDUCTION: %s" % error_line
 
     return success, data

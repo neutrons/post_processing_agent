@@ -12,7 +12,7 @@ import json
 from . import job_handling
 
 
-class BaseProcessor:
+class BaseProcessor(object):
     """
     Base class for job processor
     """
@@ -62,15 +62,15 @@ class BaseProcessor:
         if not os.path.isfile(script):
             self.process_error(
                 self.configuration.reduction_error,
-                f"Script {script} does not exist",
+                "Script %s does not exist" % str(script),
             )
 
         # Remove old log files
         out_log = os.path.join(
-            self.log_dir, f"{os.path.basename(self.data_file)}.{job_name}.log"
+            self.log_dir, "%s.%s.log" % (os.path.basename(self.data_file), job_name)
         )
         out_err = os.path.join(
-            self.log_dir, f"{os.path.basename(self.data_file)}.{job_name}.err"
+            self.log_dir, "%s.%s.err" % (os.path.basename(self.data_file), job_name)
         )
         if os.path.isfile(out_err):
             os.remove(out_err)
@@ -98,10 +98,10 @@ class BaseProcessor:
             self.data_file = str(data["data_file"])
             if os.access(self.data_file, os.R_OK) is False:
                 raise ValueError(
-                    f"Data file does not exist or is not readable: {self.data_file}"
+                    "Data file does not exist or is not readable: %s" % self.data_file
                 )
         else:
-            raise ValueError(f"data_file is missing: {self.data_file}")
+            raise ValueError("data_file is missing: %s" % self.data_file)
 
         if "facility" in data:
             self.facility = str(data["facility"]).upper()
@@ -139,7 +139,7 @@ class BaseProcessor:
         error_message = "%s: %s" % (type(self).__name__, message)
         logging.error(error_message)
         self.data["error"] = error_message
-        self.send(f"/queue/{destination}", json.dumps(self.data).encode())
+        self.send("/queue/%s" % destination, json.dumps(self.data).encode())
         # Reset the error and information
         if "information" in self.data:
             del self.data["information"]

@@ -16,7 +16,7 @@ this_module_path = sys.modules[__name__].__file__
 def data_server():
     r"""Object containing info and functionality for data files"""
 
-    class _DataServe:
+    class _DataServe(object):
         _directory = os.path.join(os.path.dirname(this_module_path), "data")
 
         @property

@@ -13,7 +13,7 @@ import logging
 import importlib
 
 
-class Configuration:
+class Configuration(object):
     """
     Read and process configuration file and provide an easy way to create a configured Client object
     """
@@ -21,7 +21,7 @@ class Configuration:
     def __init__(self, config_file):
         if os.access(config_file, os.R_OK) is False:
             raise RuntimeError(
-                f"Configuration file doesn't exist or is not readable: {config_file}"
+                "Configuration file doesn't exist or is not readable: %s" % config_file
             )
         cfg = open(config_file, "r")
         json_encoded = cfg.read()
@@ -139,10 +139,10 @@ class Configuration:
                 if len(toks) == 2:
                     # for instance, emulate `from oncat_processor import ONCatProcessor`
                     processor_module = importlib.import_module(  # noqa: F841
-                        f"postprocessing.processors.{toks[0]}"
+                        "postprocessing.processors.%s" % toks[0]
                     )
                     try:
-                        processor_class = eval(f"processor_module.{toks[1]}")
+                        processor_class = eval("processor_module.%s" % toks[1])
                         self.queues.append(processor_class.get_input_queue_name())
                     except:  # noqa: E722
                         logging.error(
@@ -177,7 +177,7 @@ stomp_logger = logging.getLogger("stompest.sync.client")
 stomp_logger.setLevel(logging.ERROR)
 
 
-class StreamToLogger:
+class StreamToLogger(object):
     r"""File-like stream object that redirects writes to a Logger instance."""
 
     def __init__(self, logger, log_level=logging.INFO):
@@ -256,7 +256,8 @@ def read_configuration(
                 break
         else:
             raise RuntimeError(
-                f"Default configuration file(s) do not exist, or unreadable: {defaults}"
+                "Default configuration file(s) do not exist, or unreadable: %s"
+                % str(defaults)
             )
 
     configuration = Configuration(config_file)

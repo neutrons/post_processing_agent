@@ -15,7 +15,7 @@ from stompest.async.listener import SubscriptionListener
 from stompest.protocol import StompSpec, StompFailoverUri
 
 
-class Consumer:
+class Consumer(object):
     """
     ActiveMQ consumer
     """
@@ -48,7 +48,7 @@ class Consumer:
         if self.config.heartbeat_ping not in self.config.queues:
             self.config.queues.append(self.config.heartbeat_ping)
         for q in self.config.queues:
-            headers[StompSpec.ID_HEADER] = f"post-proc-service-{q}"
+            headers[StompSpec.ID_HEADER] = "post-proc-service-%s" % q
             client.subscribe(
                 q,
                 headers,
@@ -61,7 +61,7 @@ class Consumer:
         try:
             client = yield client.disconnected
         except:
-            logging.error("Connection error: %s", sys.exc_info()[1])
+            logging.error("Connection error: %s" % sys.exc_info()[1])
         reactor.callLater(5, self.run)
 
     def consume(self, client, frame):
@@ -100,7 +100,7 @@ class Consumer:
                 self.ack_ping(data_dict)
                 client.ack(frame)
                 return
-            logging.info("Received %s: %s", destination, data)
+            logging.info("Received %s: %s" % (destination, data))
             instrument = None
             if self.config.jobs_per_instrument > 0 and "instrument" in data_dict:
                 instrument = data_dict["instrument"].upper()
@@ -112,9 +112,8 @@ class Consumer:
                     ):
                         client.nack(frame)
                         logging.error(
-                            "Too many jobs for %s on %s: rejecting",
-                            instrument,
-                            os.getpid(),
+                            "Too many jobs for %s on %s: rejecting"
+                            % (instrument, os.getpid())
                         )
                         return
                 else:
@@ -145,7 +144,7 @@ class Consumer:
                 command_args.append(self.config.task_script_data_arg)
             command_args.append(str(data.decode()).replace(" ", ""))
 
-            logging.warning("Command: %s", str(command_args))
+            logging.warning("Command: %s" % str(command_args))
             proc = subprocess.Popen(command_args)
             logging.warning("end")
             self.procList.append(proc)
@@ -156,7 +155,7 @@ class Consumer:
             max_procs_reached = len(self.procList) > self.config.max_procs
             if max_procs_reached:
                 logging.info(
-                    "Maxmimum number of sub-processes reached: %s", len(self.procList)
+                    "Maxmimum number of sub-processes reached: %s" % len(self.procList)
                 )
 
             # If we have reached the max number of processes, block until we have
@@ -167,7 +166,7 @@ class Consumer:
 
             if max_procs_reached:
                 logging.info(
-                    "Resuming. Number of sub-processes: %s", len(self.procList)
+                    "Resuming. Number of sub-processes: %s" % len(self.procList)
                 )
             self.update_processes()
         except:
@@ -215,7 +214,7 @@ class Consumer:
             stomp.send(destination, json.dumps(data_dict).encode())
             stomp.disconnect()
         except:
-            logging.error("Could not send heartbeat: %s", sys.exc_info()[1])
+            logging.error("Could not send heartbeat: %s" % sys.exc_info()[1])
 
     def ack_ping(self, data):
         """
@@ -225,4 +224,4 @@ class Consumer:
         if "reply_to" in data:
             self.heartbeat(data["reply_to"], data)
         else:
-            logging.error("Incomplete ping request %s", str(data))
+            logging.error("Incomplete ping request %s" % str(data))
