@@ -23,7 +23,7 @@ def test_oncat_catalog():
         pytest.skip("Requires activemq running")
 
     # send data ready
-    client.send("/queue/CATALOG.ONCAT.DATA_READY", json.dumps(message))
+    client.send("/queue/CATALOG.ONCAT.DATA_READY", json.dumps(message).encode())
 
     # expect a message on CATALOG.ONCAT.COMPLETE
     client.subscribe("/queue/CATALOG.ONCAT.COMPLETE")
@@ -58,7 +58,7 @@ def test_oncat_reduction_catalog():
         pytest.skip("Requires activemq running")
 
     # send data ready
-    client.send("/queue/REDUCTION_CATALOG.DATA_READY", json.dumps(message))
+    client.send("/queue/REDUCTION_CATALOG.DATA_READY", json.dumps(message).encode())
 
     # expect a message on REDUCTION_CATALOG.COMPLETE
     client.subscribe("/queue/REDUCTION_CATALOG.COMPLETE")
@@ -93,7 +93,7 @@ def test_calvera():
         pytest.skip("Requires activemq running")
 
     # send data ready
-    client.send("/queue/CALVERA.RAW.DATA_READY", json.dumps(message))
+    client.send("/queue/CALVERA.RAW.DATA_READY", json.dumps(message).encode())
 
     # expect an error
     client.subscribe("/queue/CALVERA.RAW.ERROR")
@@ -133,7 +133,7 @@ def test_calvera_reduced():
         pytest.skip("Requires activemq running")
 
     # send data ready
-    client.send("/queue/CALVERA.REDUCED.DATA_READY", json.dumps(message))
+    client.send("/queue/CALVERA.REDUCED.DATA_READY", json.dumps(message).encode())
 
     # expect an error
     client.subscribe("/queue/CALVERA.REDUCED.ERROR")

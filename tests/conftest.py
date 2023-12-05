@@ -90,7 +90,7 @@ def docker_exec_and_cat(filename):
         stderr=subprocess.STDOUT,
         shell=True,
     )
-    return filecontents
+    return filecontents.decode()
 
 
 def getDevConfigurationFile():

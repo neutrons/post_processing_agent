@@ -5,11 +5,11 @@
 
     @copyright: 2014-2015 Oak Ridge National Laboratory
 """
-from __future__ import print_function
+
 import os
 import logging
 import json
-import job_handling
+from . import job_handling
 
 
 class BaseProcessor(object):
@@ -94,7 +94,7 @@ class BaseProcessor(object):
         provided with an incoming message.
         @param data: data dictionary
         """
-        if data.has_key("data_file"):
+        if "data_file" in data:
             self.data_file = str(data["data_file"])
             if os.access(self.data_file, os.R_OK) is False:
                 raise ValueError(
@@ -103,22 +103,22 @@ class BaseProcessor(object):
         else:
             raise ValueError("data_file is missing: %s" % self.data_file)
 
-        if data.has_key("facility"):
+        if "facility" in data:
             self.facility = str(data["facility"]).upper()
         else:
             raise ValueError("Facility is missing")
 
-        if data.has_key("instrument"):
+        if "instrument" in data:
             self.instrument = str(data["instrument"]).upper()
         else:
             raise ValueError("Instrument is missing")
 
-        if data.has_key("ipts"):
+        if "ipts" in data:
             self.proposal = str(data["ipts"]).upper()
         else:
             raise ValueError("IPTS is missing")
 
-        if data.has_key("run_number"):
+        if "run_number" in data:
             self.run_number = str(data["run_number"])
         else:
             raise ValueError("Run number is missing")
@@ -139,7 +139,7 @@ class BaseProcessor(object):
         error_message = "%s: %s" % (type(self).__name__, message)
         logging.error(error_message)
         self.data["error"] = error_message
-        self.send("/queue/%s" % destination, json.dumps(self.data))
+        self.send("/queue/%s" % destination, json.dumps(self.data).encode())
         # Reset the error and information
         if "information" in self.data:
             del self.data["information"]

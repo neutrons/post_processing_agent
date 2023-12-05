@@ -40,7 +40,7 @@ import sys
 import shutil
 import string
 import time
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 
 class ScriptWriter(object):
@@ -144,7 +144,7 @@ class ScriptWriter(object):
         try:
             template_keys = sorted(template_args.keys())
             template_values = [
-                string.replace(str(template_args[k]), "\n", "; ") for k in template_keys
+                str(template_args[k]).replace("\n", "; ") for k in template_keys
             ]
             template_keys.insert(0, "Time")
             template_values.insert(0, "%s" % time.ctime())
@@ -161,7 +161,7 @@ class ScriptWriter(object):
         except Exception:
             logging.error(
                 "ScriptWriter: Could not write log entry for %s: %s"
-                % (self.script_name, sys.exc_value)
+                % (self.script_name, sys.exc_info()[1])
             )
 
     def process_request(self, request_data, configuration, send_function):
@@ -178,28 +178,15 @@ class ScriptWriter(object):
         amq_topic = amq_template.substitute(instrument=request_data["instrument"])
         amq_data = {"src_id": "postprocessing"}
 
-        def isstring(value):
-            is_python2 = bool(sys.version_info[0] == 2)
-            is_python3 = bool(sys.version_info[0] == 3)
-
-            # basestring is a python2 superclass for string and unicode
-            # the second half of this if can disappear after moving to python3
-            if is_python2 and isinstance(value, basestring):  # noqa: F821
-                return True
-            elif is_python3 and isinstance(value, string):  # same as previous clause
-                return True
-            else:
-                return False
-
         try:
             # Verify that the dictionary of template arguments is complete
             if "template_data" in request_data:
                 template_data = {}
                 for key, value in request_data["template_data"].items():
-                    if isstring(value):
+                    if isinstance(value, str):
                         # replace '+' sign with a blank space ('+' -> ' ')
                         # replace %xx escapes by their single-character equivalent
-                        template_data[key] = urllib.unquote_plus(value)
+                        template_data[key] = urllib.parse.unquote_plus(value)
                     else:
                         template_data[key] = value
 
@@ -244,9 +231,9 @@ class ScriptWriter(object):
                     "Missing %s reduction template" % request_data["instrument"]
                 )
         except RuntimeError:
-            logging.error("Script writer: %s" % sys.exc_value)
+            logging.error("Script writer: %s" % sys.exc_info()[1])
             amq_data["status"] = "Error creating %s reduction script: %s" % (
                 request_data["instrument"],
-                sys.exc_value,
+                sys.exc_info()[1],
             )
         send_function(amq_topic, json.dumps(amq_data))

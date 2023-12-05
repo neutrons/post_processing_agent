@@ -61,7 +61,7 @@ class Consumer(object):
         try:
             client = yield client.disconnected
         except:
-            logging.error("Connection error: %s" % sys.exc_value)
+            logging.error("Connection error: %s" % sys.exc_info()[1])
         reactor.callLater(5, self.run)
 
     def consume(self, client, frame):
@@ -120,10 +120,12 @@ class Consumer(object):
                     self.instrument_jobs[instrument] = []
             client.ack(frame)
         except:
-            logging.error(sys.exc_value)
+            logging.error(sys.exc_info()[1])
             # Raising an exception here may result in an ActiveMQ result being sent.
             # We therefore pick a message that will mean someone to the users.
-            raise RuntimeError, "Error processing incoming message: contact post-processing expert"
+            raise RuntimeError(
+                "Error processing incoming message: contact post-processing expert"
+            )
 
         try:
             # Put together the command to execute, including any optional arguments
@@ -140,10 +142,11 @@ class Consumer(object):
             # Format the data argument
             if self.config.task_script_data_arg is not None:
                 command_args.append(self.config.task_script_data_arg)
-            command_args.append(str(data).replace(" ", ""))
+            command_args.append(str(data.decode()).replace(" ", ""))
 
-            logging.debug("Command: %s" % str(command_args))
+            logging.warning("Command: %s" % str(command_args))
             proc = subprocess.Popen(command_args)
+            logging.warning("end")
             self.procList.append(proc)
             if instrument is not None:
                 self.instrument_jobs[instrument].append(proc)
@@ -167,10 +170,12 @@ class Consumer(object):
                 )
             self.update_processes()
         except:
-            logging.error(sys.exc_value)
+            logging.error(sys.exc_info()[1])
             # Raising an exception here may result in an ActiveMQ result being sent.
             # We therefore pick a message that will mean someone to the users.
-            raise RuntimeError, "Error processing message: contact post-processing expert"
+            raise RuntimeError(
+                "Error processing message: contact post-processing expert"
+            )
 
     def update_processes(self):
         """
@@ -206,10 +211,10 @@ class Consumer(object):
                     "pid": str(os.getpid()),
                 }
             )
-            stomp.send(destination, json.dumps(data_dict))
+            stomp.send(destination, json.dumps(data_dict).encode())
             stomp.disconnect()
         except:
-            logging.error("Could not send heartbeat: %s" % sys.exc_value)
+            logging.error("Could not send heartbeat: %s" % sys.exc_info()[1])
 
     def ack_ping(self, data):
         """

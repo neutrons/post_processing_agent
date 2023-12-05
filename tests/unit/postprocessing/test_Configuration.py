@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 # package imports
 from postprocessing.Configuration import (
     Configuration,
@@ -16,6 +14,7 @@ import logging
 import os
 import sys
 import tempfile
+import importlib
 
 
 class TestConfiguration(object):
@@ -78,8 +77,9 @@ def test_initialize_logging():
     backup = sys.stderr
     _, log_file = tempfile.mkstemp()
     try:
-        # we need preemptive_cleanup because previous tests have already created handlers for logging.root
-        initialize_logging(log_file, preemptive_cleanup=True)
+        # we need to reload logging so that the new config gets set correctly
+        importlib.reload(logging)
+        initialize_logging(log_file)
         sys.stderr.write("What an error!")
         log_contents = open(log_file, "r").read()
         assert "What an error!" in log_contents
