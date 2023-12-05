@@ -43,7 +43,7 @@ import time
 import urllib.request, urllib.parse, urllib.error
 
 
-class ScriptWriter(object):
+class ScriptWriter:
     """
     Script writer class
     """
@@ -110,7 +110,7 @@ class ScriptWriter(object):
             if item not in template_args:
                 missing_args.append(item)
         if len(missing_args) > 0:
-            raise KeyError("Template arguments missing: %s" % str(missing_args))
+            raise KeyError(f"Template arguments missing: {missing_args}")
 
     def write_script(self, **template_args):
         r"""Write the script using a template
@@ -133,7 +133,7 @@ class ScriptWriter(object):
             script_file.close()
         else:
             raise RuntimeError(
-                "Script directory does not exist: %s" % self.autoreduction_dir
+                f"Script directory does not exist: {self.autoreduction_dir}"
             )
 
     def log_entry(self, **template_args):
@@ -147,7 +147,7 @@ class ScriptWriter(object):
                 str(template_args[k]).replace("\n", "; ") for k in template_keys
             ]
             template_keys.insert(0, "Time")
-            template_values.insert(0, "%s" % time.ctime())
+            template_values.insert(0, str(time.ctime()))
             log_entry = ""
             # If the file doesn't exist, create it with a header line
             if not os.path.isfile(self.log_file):
@@ -160,8 +160,9 @@ class ScriptWriter(object):
             log_file.close()
         except Exception:
             logging.error(
-                "ScriptWriter: Could not write log entry for %s: %s"
-                % (self.script_name, sys.exc_info()[1])
+                "ScriptWriter: Could not write log entry for %s: %s",
+                self.script_name,
+                sys.exc_info()[1],
             )
 
     def process_request(self, request_data, configuration, send_function):
@@ -201,8 +202,7 @@ class ScriptWriter(object):
                     )
                     if not os.path.isfile(default_script_path):
                         raise RuntimeError(
-                            "ScriptWriter: Could not find script %s"
-                            % self.default_script_name
+                            f"ScriptWriter: Could not find script {self.default_script_name}",
                         )
                     shutil.copy(
                         default_script_path,
@@ -215,8 +215,7 @@ class ScriptWriter(object):
                     # Verify that the template file exists
                     if not os.path.isfile(self._template_path):
                         raise RuntimeError(
-                            "ScriptWriter: Could not find template %s"
-                            % self.template_name
+                            f"ScriptWriter: Could not find template {self.template_name}"
                         )
 
                     self.check_arguments(**template_data)

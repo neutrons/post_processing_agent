@@ -17,7 +17,7 @@ import tempfile
 import importlib
 
 
-class TestConfiguration(object):
+class TestConfiguration:
     def test_init(self, data_server):
         with pytest.raises(RuntimeError) as exception_info:
             Configuration("no_file")
@@ -64,7 +64,7 @@ def test_read_configuration(data_server, caplog):
         sys.stderr = backup
 
 
-class TestStreamToLogger(object):
+class TestStreamToLogger:
     def test_write(self, test_logger):
         sl = StreamToLogger(test_logger.logger)
         sl.write("Hello\nWorld")

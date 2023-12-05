@@ -22,21 +22,12 @@ class ONCatProcessor(BaseProcessor):
     ERROR_QUEUE = "/queue/CATALOG.ONCAT.ERROR"
     SCRIPT_PATH = "/opt/postprocessing/scripts/oncat_ingest.py"
 
-    def __init__(self, data, conf, send_function):
-        """
-        Initialize the processor
-        @param data: data dictionary from the incoming message
-        @param conf: configuration object
-        @param send_function: function to call to send AMQ messages
-        """
-        super(ONCatProcessor, self).__init__(data, conf, send_function)
-
     def __call__(self):
         """
         Execute the job
         """
         if not os.path.isfile(self.SCRIPT_PATH):
-            self.data["information"] = "ONCat script not found: %s" % self.SCRIPT_PATH
+            self.data["information"] = f"ONCat script not found: {self.SCRIPT_PATH}"
             self.send(self.ERROR_QUEUE, json.dumps(self.data))
             return
 
