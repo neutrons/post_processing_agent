@@ -24,6 +24,7 @@ def test_missing_data():
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
+    # expect a reduction disabled
     conn.subscribe(destination="/queue/POSTPROCESS.ERROR", id="123", ack="auto")
 
     # send data ready
@@ -33,9 +34,9 @@ def test_missing_data():
 
     conn.disconnect()
 
-    header, data = listener.get_latest_message()
+    header, body = listener.get_latest_message()
 
-    msg = json.loads(data)
+    msg = json.loads(body)
     assert (
         msg["error"]
         == "Data file does not exist or is not readable: /SNS/DOES_NOT_EXIST.nxs"
@@ -51,24 +52,29 @@ def test_disabled_reduction():
         "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
     }
 
-    client = Stomp(StompConfig("tcp://localhost:61613"))
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener(print_to_log=False)
+    conn.set_listener("", listener)
+
     try:
-        client.connect()
-    except StompConnectTimeout:
+        conn.connect()
+    except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
-    # send data ready
-    client.send("/queue/REDUCTION.DATA_READY", json.dumps(message).encode())
-
     # expect a reduction disabled
-    client.subscribe("/queue/REDUCTION.DISABLED")
+    conn.subscribe("/queue/REDUCTION.DISABLED", id="123", ack="auto")
 
-    assert client.canRead(5)
-    frame = client.receiveFrame()
+    # send data ready
+    conn.send("/queue/REDUCTION.DATA_READY", json.dumps(message).encode())
 
-    client.disconnect()
+    listener.wait_for_message()
 
-    msg = json.loads(frame.body)
+    conn.disconnect()
+
+    header, body = listener.get_latest_message()
+
+    msg = json.loads(body)
     assert msg["run_number"] == message["run_number"]
     assert msg["instrument"] == message["instrument"]
     assert msg["ipts"] == message["ipts"]
@@ -85,24 +91,29 @@ def test_reduction():
         "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
     }
 
-    client = Stomp(StompConfig("tcp://localhost:61613"))
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener(print_to_log=False)
+    conn.set_listener("", listener)
+
     try:
-        client.connect()
-    except StompConnectTimeout:
+        conn.connect()
+    except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
-    # send data ready
-    client.send("/queue/REDUCTION.DATA_READY", json.dumps(message).encode())
-
     # expect a reduction complete
-    client.subscribe("/queue/REDUCTION.COMPLETE")
+    conn.subscribe("/queue/REDUCTION.COMPLETE", id="123", ack="auto")
 
-    assert client.canRead(5)
-    frame = client.receiveFrame()
+    # send data ready
+    conn.send("/queue/REDUCTION.DATA_READY", json.dumps(message).encode())
 
-    client.disconnect()
+    listener.wait_for_message()
 
-    msg = json.loads(frame.body)
+    conn.disconnect()
+
+    header, body = listener.get_latest_message()
+
+    msg = json.loads(body)
     assert msg["run_number"] == message["run_number"]
     assert msg["instrument"] == message["instrument"]
     assert msg["ipts"] == message["ipts"]
@@ -129,24 +140,29 @@ def test_reduction_error():
         "data_file": "/SNS/CORELLI/IPTS-15526/nexus/CORELLI_29666.nxs.h5",
     }
 
-    client = Stomp(StompConfig("tcp://localhost:61613"))
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener(print_to_log=False)
+    conn.set_listener("", listener)
+
     try:
-        client.connect()
-    except StompConnectTimeout:
+        conn.connect()
+    except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
-    # send data ready
-    client.send("/queue/REDUCTION.DATA_READY", json.dumps(message).encode())
-
     # expect a reduction error
-    client.subscribe("/queue/REDUCTION.ERROR")
+    conn.subscribe("/queue/REDUCTION.ERROR", id="123", ack="auto")
 
-    assert client.canRead(5)
-    frame = client.receiveFrame()
+    # send data ready
+    conn.send("/queue/REDUCTION.DATA_READY", json.dumps(message).encode())
 
-    client.disconnect()
+    listener.wait_for_message()
 
-    msg = json.loads(frame.body)
+    conn.disconnect()
+
+    header, body = listener.get_latest_message()
+
+    msg = json.loads(body)
     assert msg["run_number"] == message["run_number"]
     assert msg["instrument"] == message["instrument"]
     assert msg["ipts"] == message["ipts"]
