@@ -3,14 +3,13 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.6
-  - pip
+  - python=3.9
   - plotly
   - pre-commit
   - pytest
   - pytest-cov
   - pytest-mock
-  - requests
+  - requests=2.25
   - stomp.py=7
 # needed for wheel - add when switching to python3
 #  - build
