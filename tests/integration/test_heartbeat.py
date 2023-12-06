@@ -1,10 +1,6 @@
 import json
 import pytest
 
-from stompest.config import StompConfig
-from stompest.sync import Stomp
-from stompest.error import StompConnectTimeout
-
 
 def test_heartbeat():
     """While the queue processor is running, every 30 seconds it should send a message to /topic/SNS.COMMON.STATUS.AUTOREDUCE.0 with the hostname and pid"""

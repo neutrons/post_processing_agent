@@ -1,10 +1,6 @@
 import json
 import pytest
 
-from stompest.config import StompConfig
-from stompest.sync import Stomp
-from stompest.error import StompConnectTimeout
-
 
 def test_oncat_catalog():
     """This should run ONCatProcessor"""

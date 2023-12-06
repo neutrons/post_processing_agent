@@ -3,9 +3,7 @@ import json
 import pytest
 from tests.conftest import docker_exec_and_cat
 
-from stompest.config import StompConfig
-from stompest.sync import Stomp
-from stompest.error import StompConnectTimeout
+import stomp
 
 
 def test_default():
@@ -13,16 +11,16 @@ def test_default():
 
     message = {"instrument": "TOPAZ", "use_default": True, "template_data": {}}
 
-    client = Stomp(StompConfig("tcp://localhost:61613"))
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
     try:
-        client.connect()
-    except StompConnectTimeout:
+        conn.connect()
+    except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
     # send data ready
-    client.send("/queue/REDUCTION.CREATE_SCRIPT", json.dumps(message).encode())
+    conn.send("/queue/REDUCTION.CREATE_SCRIPT", json.dumps(message).encode())
 
-    client.disconnect()
+    conn.disconnect()
 
     time.sleep(1)
 
@@ -41,16 +39,16 @@ def test_template():
         "template_data": {"value": 42},
     }
 
-    client = Stomp(StompConfig("tcp://localhost:61613"))
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
     try:
-        client.connect()
-    except StompConnectTimeout:
+        conn.connect()
+    except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
     # send data ready
-    client.send("/queue/REDUCTION.CREATE_SCRIPT", json.dumps(message).encode())
+    conn.send("/queue/REDUCTION.CREATE_SCRIPT", json.dumps(message).encode())
 
-    client.disconnect()
+    conn.disconnect()
 
     time.sleep(1)
 

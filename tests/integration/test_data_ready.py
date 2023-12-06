@@ -1,9 +1,7 @@
 import json
 import pytest
 
-from stompest.config import StompConfig
-from stompest.sync import Stomp
-from stompest.error import StompConnectTimeout
+import stomp
 from tests.conftest import docker_exec_and_cat
 
 
@@ -16,24 +14,28 @@ def test_missing_data():
         "data_file": "/SNS/DOES_NOT_EXIST.nxs",
     }
 
-    client = Stomp(StompConfig("tcp://localhost:61613"))
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener(print_to_log=False)
+    conn.set_listener("", listener)
+
     try:
-        client.connect()
-    except StompConnectTimeout:
+        conn.connect()
+    except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
+    conn.subscribe(destination="/queue/POSTPROCESS.ERROR", id="123", ack="auto")
+
     # send data ready
-    client.send("/queue/REDUCTION.DATA_READY", json.dumps(message).encode())
+    conn.send("/queue/REDUCTION.DATA_READY", json.dumps(message).encode())
 
-    # expect a error for missing file
-    client.subscribe("/queue/POSTPROCESS.ERROR")
+    listener.wait_for_message()
 
-    assert client.canRead(5)
-    frame = client.receiveFrame()
+    conn.disconnect()
 
-    client.disconnect()
+    header, data = listener.get_latest_message()
 
-    msg = json.loads(frame.body)
+    msg = json.loads(data)
     assert (
         msg["error"]
         == "Data file does not exist or is not readable: /SNS/DOES_NOT_EXIST.nxs"
