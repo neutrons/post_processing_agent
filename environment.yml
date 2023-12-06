@@ -11,6 +11,7 @@ dependencies:
   - pytest-cov
   - pytest-mock
   - requests
+  - stomp.py=7
   - twisted
   - pip: # will need to be installed separately if pip is broken
     - stompest

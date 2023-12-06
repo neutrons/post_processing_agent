@@ -34,6 +34,7 @@ class Configuration(object):
         self.amq_pwd = config["amq_pwd"]
         # ActiveMQ broker information
         self.failover_uri = config["failover_uri"]
+        self.brokers = [(host, port) for host, port in config["brokers"]]
         self.queues = config["amq_queues"]
         self.sw_dir = config["sw_dir"] if "sw_dir" in config else "/opt/postprocessing"
         self.postprocess_error = config["postprocess_error"]
