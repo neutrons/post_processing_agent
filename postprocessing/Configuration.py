@@ -173,11 +173,6 @@ class Configuration(object):
         logger.info("  - Error exceptions: %s", str(self.exceptions))
 
 
-# Set the log level for the Stomp client
-stomp_logger = logging.getLogger("stompest.sync.client")
-stomp_logger.setLevel(logging.ERROR)
-
-
 class StreamToLogger(object):
     r"""File-like stream object that redirects writes to a Logger instance."""
 
