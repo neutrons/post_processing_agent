@@ -38,10 +38,10 @@ class CalveraProcessor(BaseProcessor):
                 success = True
             else:
                 success = False
-                res["error"] = "SENDING TO Calvera: %s" % response.text
+                res["error"] = f"SENDING TO Calvera: {response.text}"
         except Exception as e:
             success = False
-            res["error"] = "SENDING TO Calvera: %s" % str(e)
+            res["error"] = f"SENDING TO Calvera: {e}"
 
         return success, res
 

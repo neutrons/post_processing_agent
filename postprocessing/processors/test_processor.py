@@ -14,16 +14,6 @@ class TestProcessor(BaseProcessor):
     ## Input queue
     _message_queue = "/queue/REDUCTION.TESTPROCESSOR.DATA_READY"
 
-    def __init__(self, data, conf, send_function):
-        """
-        Initialize the processor
-
-        @param data: data dictionary from the incoming message
-        @param conf: configuration object
-        @param send_function: function to call to send AMQ messages
-        """
-        super(TestProcessor, self).__init__(data, conf, send_function)
-
     def __call__(self):
         """
         Just send back acknowledgment messages

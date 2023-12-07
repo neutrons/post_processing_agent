@@ -5,7 +5,12 @@ The original code for this class was take from https://github.com/mantidproject/
 
 @copyright: 2014 Oak Ridge National Laboratory
 """
-import json, logging, time, subprocess, sys, socket
+import json
+import logging
+import time
+import subprocess
+import sys
+import socket
 import os
 import stomp
 
@@ -158,7 +163,7 @@ class Listener(stomp.ConnectionListener):
         if "reply_to" in data:
             heartbeat(self.conn, data["reply_to"], data)
         else:
-            logging.error("Incomplete ping request %s" % str(data))
+            logging.error("Incomplete ping request %s", str(data))
 
 
 def heartbeat(conn, destination, data_dict={}):
@@ -182,7 +187,7 @@ def heartbeat(conn, destination, data_dict={}):
         )
         conn.send(destination, json.dumps(data_dict).encode())
     except:  # noqa: E722
-        logging.error("Could not send heartbeat: %s" % sys.exc_info()[1])
+        logging.error("Could not send heartbeat: %s", sys.exc_info()[1])
 
 
 class Consumer:
@@ -195,14 +200,6 @@ class Consumer:
         self.procList = []
         self.instrument_jobs = {}
         self._connection = None
-
-    def set_listener(self, listener):
-        """
-        Set the listener object that will process each incoming message.
-
-        :param listener: listener object
-        """
-        self._listener = listener
 
     def get_connection(self, listener=None):
         """

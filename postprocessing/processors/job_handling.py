@@ -25,21 +25,18 @@ def local_submission(configuration, script, input_file, output_dir, out_log, out
         input_file,
         output_dir,
     )
-    logFile = open(out_log, "w")
-    errFile = open(out_err, "w")
-    if configuration.comm_only is False:
-        proc = subprocess.Popen(
-            cmd,
-            shell=True,
-            stdin=subprocess.PIPE,
-            stdout=logFile,
-            stderr=errFile,
-            universal_newlines=True,
-            cwd=output_dir,
-        )
-        proc.communicate()
-    logFile.close()
-    errFile.close()
+    with open(out_log, "w") as logFile, open(out_err, "w") as errFile:
+        if configuration.comm_only is False:
+            proc = subprocess.Popen(
+                cmd,
+                shell=True,
+                stdin=subprocess.PIPE,
+                stdout=logFile,
+                stderr=errFile,
+                universal_newlines=True,
+                cwd=output_dir,
+            )
+            proc.communicate()
 
 
 def determine_success_local(configuration, out_err):
@@ -56,23 +53,22 @@ def determine_success_local(configuration, out_err):
         last_line = None
         error_line = None
         # TODO in python3 this should be changed to a context manager
-        fp = open(out_err, "r")
-        for line in fp.readlines():
-            if len(line.replace("-", "").strip()) > 0:
-                last_line = line.strip()
-            result = re.search("Error: (.+)$", line)
-            if result is not None:
-                error_line = result.group(1)
-        fp.close()
+        with open(out_err, "r") as fp:
+            for line in fp.readlines():
+                if len(line.replace("-", "").strip()) > 0:
+                    last_line = line.strip()
+                result = re.search("Error: (.+)$", line)
+                if result is not None:
+                    error_line = result.group(1)
         if error_line is None:
             error_line = last_line
         for item in configuration.exceptions:
             if re.search(item, error_line):
                 success = True
                 data["information"] = error_line
-                logging.error("Reduction error ignored: %s" % error_line)
+                logging.error("Reduction error ignored: %s", error_line)
 
         if not success:
-            data["error"] = "REDUCTION: %s" % error_line
+            data["error"] = f"REDUCTION: {error_line}"
 
     return success, data
