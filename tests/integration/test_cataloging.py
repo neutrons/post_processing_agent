@@ -15,7 +15,7 @@ def test_oncat_catalog():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
 
-    listener = stomp.listener.TestListener(print_to_log=False)
+    listener = stomp.listener.TestListener()
     conn.set_listener("", listener)
 
     try:
@@ -55,7 +55,7 @@ def test_oncat_reduction_catalog():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
 
-    listener = stomp.listener.TestListener(print_to_log=False)
+    listener = stomp.listener.TestListener()
     conn.set_listener("", listener)
 
     try:
@@ -95,7 +95,7 @@ def test_calvera():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
 
-    listener = stomp.listener.TestListener(print_to_log=False)
+    listener = stomp.listener.TestListener()
     conn.set_listener("", listener)
 
     try:
@@ -140,7 +140,7 @@ def test_calvera_reduced():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
 
-    listener = stomp.listener.TestListener(print_to_log=False)
+    listener = stomp.listener.TestListener()
     conn.set_listener("", listener)
 
     try:

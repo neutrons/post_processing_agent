@@ -80,7 +80,7 @@ class Listener(stomp.ConnectionListener):
                 else:
                     self.instrument_jobs[instrument] = []
             self.conn.ack(frame.headers["message-id"], frame.headers["subscription"])
-        except:
+        except:  # noqa: E722
             logging.error(sys.exc_info()[1])
             # Raising an exception here may result in an ActiveMQ result being sent.
             # We therefore pick a message that will mean someone to the users.
@@ -130,7 +130,7 @@ class Listener(stomp.ConnectionListener):
                     "Resuming. Number of sub-processes: %s", len(self.procList)
                 )
             self.update_processes()
-        except:
+        except:  # noqa: E722
             logging.error(sys.exc_info()[1])
             # Raising an exception here may result in an ActiveMQ result being sent.
             # We therefore pick a message that will mean someone to the users.
@@ -181,7 +181,7 @@ def heartbeat(conn, destination, data_dict={}):
             }
         )
         conn.send(destination, json.dumps(data_dict).encode())
-    except:
+    except:  # noqa: E722
         logging.error("Could not send heartbeat: %s" % sys.exc_info()[1])
 
 
@@ -261,10 +261,10 @@ class Consumer:
                     if time.time() - last_heartbeat > HEARTBEAT_DELAY:
                         last_heartbeat = time.time()
                         heartbeat(self._connection, self.config.heart_beat)
-                except:
+                except:  # noqa: E722
                     logging.exception("Problem writing heartbeat")
 
                 time.sleep(waiting_period)
-            except:
+            except:  # noqa: E722
                 logging.exception("Problem connecting to AMQ broker")
                 time.sleep(5.0)

@@ -16,7 +16,7 @@ def test_missing_data():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
 
-    listener = stomp.listener.TestListener(print_to_log=False)
+    listener = stomp.listener.TestListener()
     conn.set_listener("", listener)
 
     try:
@@ -54,7 +54,7 @@ def test_disabled_reduction():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
 
-    listener = stomp.listener.TestListener(print_to_log=False)
+    listener = stomp.listener.TestListener()
     conn.set_listener("", listener)
 
     try:
@@ -93,7 +93,7 @@ def test_reduction():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
 
-    listener = stomp.listener.TestListener(print_to_log=False)
+    listener = stomp.listener.TestListener()
     conn.set_listener("", listener)
 
     try:
@@ -142,7 +142,7 @@ def test_reduction_error():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
 
-    listener = stomp.listener.TestListener(print_to_log=False)
+    listener = stomp.listener.TestListener()
     conn.set_listener("", listener)
 
     try:

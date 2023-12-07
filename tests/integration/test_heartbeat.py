@@ -8,7 +8,7 @@ def test_heartbeat():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
 
-    listener = stomp.listener.TestListener(print_to_log=False)
+    listener = stomp.listener.TestListener()
     conn.set_listener("", listener)
 
     try:
@@ -36,7 +36,7 @@ def test_heartbeat_ping():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
 
-    listener = stomp.listener.TestListener(print_to_log=False)
+    listener = stomp.listener.TestListener()
     conn.set_listener("", listener)
 
     try:
