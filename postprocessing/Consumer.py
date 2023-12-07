@@ -12,6 +12,7 @@ import subprocess
 import sys
 import socket
 import os
+import signal
 import stomp
 
 HEARTBEAT_DELAY = 30
@@ -200,6 +201,13 @@ class Consumer:
         self.procList = []
         self.instrument_jobs = {}
         self._connection = None
+        self._exit = False
+
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+
+    def exit_gracefully(self, *args):
+        self._exit = True
 
     def get_connection(self, listener=None):
         """
@@ -249,7 +257,7 @@ class Consumer:
         """
 
         last_heartbeat = 0
-        while True:
+        while not self._exit:
             try:
                 if self._connection is None or self._connection.is_connected() is False:
                     self.connect()
