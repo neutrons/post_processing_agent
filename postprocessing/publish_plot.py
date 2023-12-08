@@ -48,7 +48,7 @@ def publish_plot(instrument, run_number, files, config_file=None):
 
     status_code = request.status_code
     if status_code != 200:
-        raise RuntimeError("post returned %d" % status_code)
+        raise RuntimeError(f"post returned {status_code}")
     return request
 
 

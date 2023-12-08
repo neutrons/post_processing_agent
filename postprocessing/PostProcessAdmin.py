@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Post-processing tasks
 
@@ -14,16 +14,20 @@ Example input dictionaries:
 
 @copyright: 2014 Oak Ridge National Laboratory
 """
-import logging, json, socket, os, sys, subprocess
+import logging
+import json
+import socket
+import os
+import sys
+import subprocess
 import importlib
 from postprocessing.processors import job_handling
-from stompest.config import StompConfig
-from stompest.sync import Stomp
+import stomp
 
 
 class PostProcessAdmin:
     def __init__(self, data, conf):
-        logging.debug("json data: %s [%s]" % (str(data), type(data)))
+        logging.debug("json data: %s [%s]", str(data), type(data))
         if not isinstance(data, dict):
             raise ValueError("PostProcessAdmin expects a data dictionary")
         data["information"] = socket.gethostname()
@@ -32,11 +36,6 @@ class PostProcessAdmin:
 
         # List of error messages to be handled as information
         self.exceptions = self.conf.exceptions
-
-        stompConfig = StompConfig(
-            self.conf.failover_uri, self.conf.amq_user, self.conf.amq_pwd
-        )
-        self.client = Stomp(stompConfig)
 
         self.data_file = None
         self.facility = None
@@ -54,10 +53,10 @@ class PostProcessAdmin:
             self.data_file = str(data["data_file"])
             if os.access(self.data_file, os.R_OK) is False:
                 raise ValueError(
-                    "Data file does not exist or is not readable: %s" % self.data_file
+                    f"Data file does not exist or is not readable: {self.data_file}"
                 )
         else:
-            raise ValueError("data_file is missing: %s" % self.data_file)
+            raise ValueError(f"data_file is missing: {self.data_file}")
 
         if "facility" in data:
             self.facility = str(data["facility"]).upper()
@@ -105,7 +104,7 @@ class PostProcessAdmin:
             # Allow for an alternate output directory, if defined
             if len(self.conf.dev_output_dir) > 0:
                 proposal_shared_dir = self.conf.dev_output_dir
-            logging.info("Using output directory: %s" % proposal_shared_dir)
+            logging.info("Using output directory: %s", proposal_shared_dir)
 
             # Set logging directory
             log_dir = os.path.join(proposal_shared_dir, "reduction_log")
@@ -114,15 +113,15 @@ class PostProcessAdmin:
 
             # Look for run summary script
             summary_script = os.path.join(
-                instrument_shared_dir, "sumRun_%s.py" % self.instrument
+                instrument_shared_dir, f"sumRun_{self.instrument}.py"
             )
             if os.path.exists(summary_script) is True:
                 summary_output = os.path.join(
                     proposal_shared_dir,
-                    "%s_%s_runsummary.csv" % (self.instrument, self.proposal),
+                    f"{self.instrument}_{self.proposal}_runsummary.csv",
                 )
                 cmd = (
-                    "python "
+                    "python3 "
                     + summary_script
                     + " "
                     + self.instrument
@@ -137,7 +136,7 @@ class PostProcessAdmin:
 
             # Look for auto-reduction script
             reduce_script_path = os.path.join(
-                instrument_shared_dir, "reduce_%s.py" % self.instrument
+                instrument_shared_dir, f"reduce_{self.instrument}.py"
             )
             if os.path.exists(reduce_script_path) is False:
                 self.send(
@@ -171,8 +170,8 @@ class PostProcessAdmin:
             else:
                 self.send("/queue/" + self.conf.reduction_error, json.dumps(self.data))
         except:  # noqa: E722
-            logging.error("reduce: %s" % sys.exc_info()[1])
-            self.data["error"] = "Reduction: %s " % sys.exc_info()[1]
+            logging.error("reduce: %s", sys.exc_info()[1])
+            self.data["error"] = f"Reduction: {sys.exc_info()[1]}"
             self.send("/queue/" + self.conf.reduction_error, json.dumps(self.data))
 
     def create_reduction_script(self):
@@ -187,7 +186,7 @@ class PostProcessAdmin:
                 self.data, configuration=self.conf, send_function=self.send
             )
         except:  # noqa: E722
-            logging.error("create_reduction_script: %s" % sys.exc_info()[1])
+            logging.error("create_reduction_script: %s", sys.exc_info()[1])
 
     def send(self, destination, data):
         """
@@ -195,10 +194,11 @@ class PostProcessAdmin:
         @param destination: AMQ queue to send to
         @param data: payload of the message
         """
-        logging.info("%s: %s" % (destination, data))
-        self.client.connect()
-        self.client.send(destination, data.encode())
-        self.client.disconnect()
+        logging.info("%s: %s", destination, data)
+        conn = stomp.Connection(host_and_ports=self.conf.brokers)
+        conn.connect(self.conf.amq_user, self.conf.amq_pwd, wait=True)
+        conn.send(destination, data.encode())
+        conn.disconnect()
 
 
 if __name__ == "__main__":
@@ -253,12 +253,12 @@ if __name__ == "__main__":
             if isinstance(
                 configuration.reduction_data_ready, list
             ) and namespace.queue in [
-                "/queue/%s" % q for q in configuration.reduction_data_ready
+                f"/queue/{q}" for q in configuration.reduction_data_ready
             ]:
                 pp.reduce()
-            elif namespace.queue == "/queue/%s" % configuration.reduction_data_ready:
+            elif namespace.queue == f"/queue/{configuration.reduction_data_ready}":
                 pp.reduce()
-            elif namespace.queue == "/queue/%s" % configuration.create_reduction_script:
+            elif namespace.queue == f"/queue/{configuration.create_reduction_script}":
                 pp.create_reduction_script()
 
             # Check for registered processors
@@ -267,10 +267,10 @@ if __name__ == "__main__":
                     toks = p.split(".")
                     if len(toks) == 2:
                         processor_module = importlib.import_module(
-                            "postprocessing.processors.%s" % toks[0]
+                            f"postprocessing.processors.{toks[0]}"
                         )
                         try:
-                            processor_class = eval("processor_module.%s" % toks[1])
+                            processor_class = eval(f"processor_module.{toks[1]}")
                             if (
                                 namespace.queue
                                 == processor_class.get_input_queue_name()
@@ -282,8 +282,8 @@ if __name__ == "__main__":
                                 proc()
                         except:  # noqa: E722
                             logging.error(
-                                "PostProcessAdmin: Processor error: %s"
-                                % sys.exc_info()[1]
+                                "PostProcessAdmin: Processor error: %s",
+                                sys.exc_info()[1],
                             )
                     else:
                         logging.error(
@@ -294,16 +294,10 @@ if __name__ == "__main__":
             # If we have a proper data dictionary, send it back with an error message
             if isinstance(data, dict):
                 data["error"] = str(sys.exc_info()[1])
-                stomp = Stomp(
-                    StompConfig(
-                        configuration.failover_uri,
-                        configuration.amq_user,
-                        configuration.amq_pwd,
-                    )
-                )
-                stomp.connect()
-                stomp.send(configuration.postprocess_error, json.dumps(data).encode())
-                stomp.disconnect()
+                conn = stomp.Connection(host_and_ports=configuration.brokers)
+                conn.connect(configuration.amq_user, configuration.amq_pwd, wait=True)
+                conn.send(configuration.postprocess_error, json.dumps(data).encode())
+                conn.disconnect()
             raise
     except:  # noqa: E722
-        logging.error("PostProcessAdmin: %s" % sys.exc_info()[1])
+        logging.error("PostProcessAdmin: %s", sys.exc_info()[1])

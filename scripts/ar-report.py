@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from __future__ import absolute_import, division, print_function, unicode_literals
 import h5py
 import os
@@ -13,7 +13,7 @@ shareddirlist = []
 reduceloglist = []
 
 
-class GenericFile(object):
+class GenericFile:
     def __init__(self, path):
         self.filename = path
         self.timeCreation = None
@@ -67,7 +67,7 @@ class GenericFile(object):
 
 class ReductionLogFile(GenericFile):
     def __init__(self, logfullname, eventfilename):
-        super(ReductionLogFile, self).__init__(logfullname)
+        super().__init__(logfullname)
         self.mantidVersion = "UNKNOWN"
         self.longestDuration = 0.0
         self.longestAlgorithm = ""
@@ -309,7 +309,7 @@ class ARstatus:
 
 class EventFile(GenericFile):
     def __init__(self, direc, filename):
-        super(EventFile, self).__init__(os.path.join(direc, filename))
+        super().__init__(os.path.join(direc, filename))
         self.shortname = filename
         self.prefix = filename.replace(".nxs.h5", "").replace("_event.nxs", "")
 

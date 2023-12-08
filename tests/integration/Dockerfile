@@ -1,21 +1,19 @@
-FROM mambaorg/micromamba
+FROM registry.access.redhat.com/ubi9/ubi
 
-COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml .
+RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+RUN dnf update
+RUN dnf install -y python3-requests python3-stomppy python3-pip python3-coverage
+RUN python3 -m pip install plotly
 
-RUN micromamba install --yes -n base --file environment.yml
+COPY postprocessing /opt/postprocessing/postprocessing
+COPY tests/integration/post_processing.conf /etc/autoreduce/post_processing.conf
 
-ARG MAMBA_DOCKERFILE_ACTIVATE=1
-
-COPY --chown=$MAMBA_USER:$MAMBA_USER postprocessing /opt/postprocessing/postprocessing
-COPY --chown=$MAMBA_USER:$MAMBA_USER tests/integration/post_processing.conf /etc/autoreduce/post_processing.conf
-
-RUN echo \#\!/bin/bash > /opt/conda/bin/coverage_run && \
-    echo coverage run \$@ >> /opt/conda/bin/coverage_run && \
-    chmod +x /opt/conda/bin/coverage_run
+RUN echo \#\!/bin/bash > /usr/bin/coverage_run && \
+    echo coverage run \$@ >> /usr/bin/coverage_run && \
+    chmod +x /usr/bin/coverage_run
 
 ENV PYTHONPATH /opt/postprocessing
 
-USER root
 RUN echo -e "[run]\nsource=postprocessing\nparallel=True\nrelative_files=True" > /opt/postprocessing/.coveragerc
 RUN mkdir -p /opt/postprocessing/log && \
     mkdir -p /opt/postprocessing/scripts && \
@@ -39,8 +37,6 @@ RUN mkdir -p /opt/postprocessing/log && \
     echo "a=\${value}" > /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ.py.template && \
     \
     chown -R $MAMBA_USER:$MAMBA_USER /opt/postprocessing /SNS
-
-USER $MAMBA_USER
 
 WORKDIR /opt/postprocessing
 ENV COVERAGE_PROCESS_START /opt/postprocessing/.coveragerc
