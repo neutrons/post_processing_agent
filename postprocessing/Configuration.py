@@ -94,7 +94,7 @@ class Configuration:
             config["dev_output_dir"].strip() if "dev_output_dir" in config else ""
         )
         self.python_executable = (
-            config["python_exec"] if "python_exec" in config else "python"
+            config["python_exec"] if "python_exec" in config else "python3"
         )
 
         self.max_procs = config["max_procs"] if "max_procs" in config else 5

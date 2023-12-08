@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Post-processing tasks
 
@@ -121,7 +121,7 @@ class PostProcessAdmin:
                     f"{self.instrument}_{self.proposal}_runsummary.csv",
                 )
                 cmd = (
-                    "python "
+                    "python3 "
                     + summary_script
                     + " "
                     + self.instrument
