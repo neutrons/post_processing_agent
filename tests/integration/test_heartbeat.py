@@ -1,28 +1,30 @@
 import json
 import pytest
-
-from stompest.config import StompConfig
-from stompest.sync import Stomp
-from stompest.error import StompConnectTimeout
+import stomp
 
 
 def test_heartbeat():
     """While the queue processor is running, every 30 seconds it should send a message to /topic/SNS.COMMON.STATUS.AUTOREDUCE.0 with the hostname and pid"""
 
-    client = Stomp(StompConfig("tcp://localhost:61613"))
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener()
+    conn.set_listener("", listener)
+
     try:
-        client.connect()
-    except StompConnectTimeout:
+        conn.connect()
+    except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
-    client.subscribe("/topic/SNS.COMMON.STATUS.AUTOREDUCE.0")
+    conn.subscribe("/topic/SNS.COMMON.STATUS.AUTOREDUCE.0", id="123", ack="auto")
 
-    assert client.canRead(60)  # wait for heartbeat, should be one every 30 seconds
-    frame = client.receiveFrame()
+    listener.wait_for_message()
 
-    client.disconnect()
+    conn.disconnect()
 
-    data = json.loads(frame.body)
+    header, body = listener.get_latest_message()
+
+    data = json.loads(body)
     assert "src_name" in data
     assert data["role"] == "postprocessing"
     assert data["status"] == "0"
@@ -32,26 +34,30 @@ def test_heartbeat():
 def test_heartbeat_ping():
     """When a message is received at /topic/SNS.COMMON.STATUS.PING this should respond with a heartbeat to reply_to"""
 
-    client = Stomp(StompConfig("tcp://localhost:61613"))
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener()
+    conn.set_listener("", listener)
+
     try:
-        client.connect()
-    except StompConnectTimeout:
+        conn.connect()
+    except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
-    # request a response on /queue/PING_TEST
-    client.send(
+    conn.subscribe("/queue/PING_TEST", id="123", ack="auto")
+
+    conn.send(
         "/topic/SNS.COMMON.STATUS.PING",
         json.dumps({"reply_to": "/queue/PING_TEST"}).encode(),
     )
 
-    client.subscribe("/queue/PING_TEST")
+    listener.wait_for_message()
 
-    assert client.canRead(5)
-    frame = client.receiveFrame()
+    conn.disconnect()
 
-    client.disconnect()
+    header, body = listener.get_latest_message()
 
-    data = json.loads(frame.body)
+    data = json.loads(body)
     assert "src_name" in data
     assert data["role"] == "postprocessing"
     assert data["status"] == "0"

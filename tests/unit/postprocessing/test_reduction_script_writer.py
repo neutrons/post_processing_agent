@@ -31,7 +31,7 @@ def writer_local(data_server):
     )  # called after all tests in this module finish
 
 
-class TestScriptWriter(object):
+class TestScriptWriter:
     arguments = {
         "mask": """MaskBTPParameters.append({'Pixel': '121-128'})
     MaskBTPParameters.append({'Pixel': '1-8'})

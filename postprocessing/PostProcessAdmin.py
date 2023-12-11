@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Post-processing tasks
 
@@ -14,16 +14,20 @@ Example input dictionaries:
 
 @copyright: 2014 Oak Ridge National Laboratory
 """
-import logging, json, socket, os, sys, subprocess
+import logging
+import json
+import socket
+import os
+import sys
+import subprocess
 import importlib
 from postprocessing.processors import job_handling
-from stompest.config import StompConfig
-from stompest.sync import Stomp
+import stomp
 
 
 class PostProcessAdmin:
     def __init__(self, data, conf):
-        logging.debug("json data: %s [%s]" % (str(data), type(data)))
+        logging.debug("json data: %s [%s]", str(data), type(data))
         if not isinstance(data, dict):
             raise ValueError("PostProcessAdmin expects a data dictionary")
         data["information"] = socket.gethostname()
@@ -33,17 +37,11 @@ class PostProcessAdmin:
         # List of error messages to be handled as information
         self.exceptions = self.conf.exceptions
 
-        stompConfig = StompConfig(
-            self.conf.failover_uri, self.conf.amq_user, self.conf.amq_pwd
-        )
-        self.client = Stomp(stompConfig)
-
         self.data_file = None
         self.facility = None
         self.instrument = None
         self.proposal = None
         self.run_number = None
-
 
     def send(self, destination, data):
         """
@@ -51,10 +49,11 @@ class PostProcessAdmin:
         @param destination: AMQ queue to send to
         @param data: payload of the message
         """
-        logging.info("%s: %s" % (destination, data))
-        self.client.connect()
-        self.client.send(destination, data.encode())
-        self.client.disconnect()
+        logging.info("%s: %s", destination, data)
+        conn = stomp.Connection(host_and_ports=self.conf.brokers)
+        conn.connect(self.conf.amq_user, self.conf.amq_pwd, wait=True)
+        conn.send(destination, data.encode())
+        conn.disconnect()
 
 
 if __name__ == "__main__":
@@ -114,10 +113,10 @@ if __name__ == "__main__":
                     toks = p.split(".")
                     if len(toks) == 2:
                         processor_module = importlib.import_module(
-                            "postprocessing.processors.%s" % toks[0]
+                            f"postprocessing.processors.{toks[0]}"
                         )
                         try:
-                            processor_class = eval("processor_module.%s" % toks[1])
+                            processor_class = eval(f"processor_module.{toks[1]}")
                             if (
                                 namespace.queue
                                 == processor_class.get_input_queue_name()
@@ -129,8 +128,8 @@ if __name__ == "__main__":
                                 proc()
                         except:  # noqa: E722
                             logging.error(
-                                "PostProcessAdmin: Processor error: %s"
-                                % sys.exc_info()[1]
+                                "PostProcessAdmin: Processor error: %s",
+                                sys.exc_info()[1],
                             )
                             raise
                     else:
@@ -142,16 +141,10 @@ if __name__ == "__main__":
             # If we have a proper data dictionary, send it back with an error message
             if isinstance(data, dict):
                 data["error"] = str(sys.exc_info()[1])
-                stomp = Stomp(
-                    StompConfig(
-                        configuration.failover_uri,
-                        configuration.amq_user,
-                        configuration.amq_pwd,
-                    )
-                )
-                stomp.connect()
-                stomp.send(configuration.postprocess_error, json.dumps(data).encode())
-                stomp.disconnect()
+                conn = stomp.Connection(host_and_ports=configuration.brokers)
+                conn.connect(configuration.amq_user, configuration.amq_pwd, wait=True)
+                conn.send(configuration.postprocess_error, json.dumps(data).encode())
+                conn.disconnect()
             raise
     except:  # noqa: E722
-        logging.error("PostProcessAdmin: %s" % sys.exc_info()[1])
+        logging.error("PostProcessAdmin: %s", sys.exc_info()[1])

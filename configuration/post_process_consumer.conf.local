@@ -1,5 +1,6 @@
 {
     "failover_uri": "failover:(tcp://localhost:61613)?randomize=false,startupMaxReconnectAttempts=100,initialReconnectDelay=1000,maxReconnectDelay=5000,maxReconnectAttempts=-1",
+    "brokers": [("localhost", 61613)],
     "amq_queues": ["/queue/REDUCTION.CREATE_SCRIPT", "/queue/REDUCTION.DATA_READY", "/queue/CATALOG.DATA_READY", "/queue/REDUCTION_CATALOG.DATA_READY"],
     "amq_user": "",
     "amq_pwd": "",

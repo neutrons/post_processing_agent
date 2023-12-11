@@ -1,9 +1,6 @@
 import json
 import pytest
-
-from stompest.config import StompConfig
-from stompest.sync import Stomp
-from stompest.error import StompConnectTimeout
+import stomp
 
 
 def test_oncat_catalog():
@@ -16,24 +13,29 @@ def test_oncat_catalog():
         "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
     }
 
-    client = Stomp(StompConfig("tcp://localhost:61613"))
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener()
+    conn.set_listener("", listener)
+
     try:
-        client.connect()
-    except StompConnectTimeout:
+        conn.connect()
+    except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
-    # send data ready
-    client.send("/queue/CATALOG.ONCAT.DATA_READY", json.dumps(message).encode())
-
     # expect a message on CATALOG.ONCAT.COMPLETE
-    client.subscribe("/queue/CATALOG.ONCAT.COMPLETE")
+    conn.subscribe("/queue/CATALOG.ONCAT.COMPLETE", id="123", ack="auto")
 
-    assert client.canRead(5)
-    frame = client.receiveFrame()
+    # send data ready
+    conn.send("/queue/CATALOG.ONCAT.DATA_READY", json.dumps(message).encode())
 
-    client.disconnect()
+    listener.wait_for_message()
 
-    msg = json.loads(frame.body)
+    conn.disconnect()
+
+    header, body = listener.get_latest_message()
+
+    msg = json.loads(body)
     assert msg["run_number"] == message["run_number"]
     assert msg["instrument"] == message["instrument"]
     assert msg["ipts"] == message["ipts"]
@@ -51,24 +53,29 @@ def test_oncat_reduction_catalog():
         "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
     }
 
-    client = Stomp(StompConfig("tcp://localhost:61613"))
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener()
+    conn.set_listener("", listener)
+
     try:
-        client.connect()
-    except StompConnectTimeout:
+        conn.connect()
+    except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
-    # send data ready
-    client.send("/queue/REDUCTION_CATALOG.DATA_READY", json.dumps(message).encode())
-
     # expect a message on REDUCTION_CATALOG.COMPLETE
-    client.subscribe("/queue/REDUCTION_CATALOG.COMPLETE")
+    conn.subscribe("/queue/REDUCTION_CATALOG.COMPLETE", id="123", ack="auto")
 
-    assert client.canRead(5)
-    frame = client.receiveFrame()
+    # send data ready
+    conn.send("/queue/REDUCTION_CATALOG.DATA_READY", json.dumps(message).encode())
 
-    client.disconnect()
+    listener.wait_for_message()
 
-    msg = json.loads(frame.body)
+    conn.disconnect()
+
+    header, body = listener.get_latest_message()
+
+    msg = json.loads(body)
     assert msg["run_number"] == message["run_number"]
     assert msg["instrument"] == message["instrument"]
     assert msg["ipts"] == message["ipts"]
@@ -86,24 +93,29 @@ def test_calvera():
         "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
     }
 
-    client = Stomp(StompConfig("tcp://localhost:61613"))
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener()
+    conn.set_listener("", listener)
+
     try:
-        client.connect()
-    except StompConnectTimeout:
+        conn.connect()
+    except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
-    # send data ready
-    client.send("/queue/CALVERA.RAW.DATA_READY", json.dumps(message).encode())
-
     # expect an error
-    client.subscribe("/queue/CALVERA.RAW.ERROR")
+    conn.subscribe("/queue/CALVERA.RAW.ERROR", id="123", ack="auto")
 
-    assert client.canRead(5)
-    frame = client.receiveFrame()
+    # send data ready
+    conn.send("/queue/CALVERA.RAW.DATA_READY", json.dumps(message).encode())
 
-    client.disconnect()
+    listener.wait_for_message()
 
-    msg = json.loads(frame.body)
+    conn.disconnect()
+
+    header, body = listener.get_latest_message()
+
+    msg = json.loads(body)
     assert msg["run_number"] == message["run_number"]
     assert msg["instrument"] == message["instrument"]
     assert msg["ipts"] == message["ipts"]
@@ -126,24 +138,29 @@ def test_calvera_reduced():
         "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
     }
 
-    client = Stomp(StompConfig("tcp://localhost:61613"))
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener()
+    conn.set_listener("", listener)
+
     try:
-        client.connect()
-    except StompConnectTimeout:
+        conn.connect()
+    except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
-    # send data ready
-    client.send("/queue/CALVERA.REDUCED.DATA_READY", json.dumps(message).encode())
-
     # expect an error
-    client.subscribe("/queue/CALVERA.REDUCED.ERROR")
+    conn.subscribe("/queue/CALVERA.REDUCED.ERROR", id="123", ack="auto")
 
-    assert client.canRead(5)
-    frame = client.receiveFrame()
+    # send data ready
+    conn.send("/queue/CALVERA.REDUCED.DATA_READY", json.dumps(message).encode())
 
-    client.disconnect()
+    listener.wait_for_message()
 
-    msg = json.loads(frame.body)
+    conn.disconnect()
+
+    header, body = listener.get_latest_message()
+
+    msg = json.loads(body)
     assert msg["run_number"] == message["run_number"]
     assert msg["instrument"] == message["instrument"]
     assert msg["ipts"] == message["ipts"]

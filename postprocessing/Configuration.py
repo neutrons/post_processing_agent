@@ -13,7 +13,7 @@ import logging
 import importlib
 
 
-class Configuration(object):
+class Configuration:
     """
     Read and process configuration file and provide an easy way to create a configured Client object
     """
@@ -21,10 +21,10 @@ class Configuration(object):
     def __init__(self, config_file):
         if os.access(config_file, os.R_OK) is False:
             raise RuntimeError(
-                "Configuration file doesn't exist or is not readable: %s" % config_file
+                f"Configuration file doesn't exist or is not readable: {config_file}"
             )
-        cfg = open(config_file, "r")
-        json_encoded = cfg.read()
+        with open(config_file, "r") as cfg:
+            json_encoded = cfg.read()
         config = json.loads(json_encoded)
 
         # Keep a record of which config file we are using
@@ -34,6 +34,7 @@ class Configuration(object):
         self.amq_pwd = config["amq_pwd"]
         # ActiveMQ broker information
         self.failover_uri = config["failover_uri"]
+        self.brokers = [(host, port) for host, port in config["brokers"]]
         self.queues = config["amq_queues"]
         self.sw_dir = config["sw_dir"] if "sw_dir" in config else "/opt/postprocessing"
         self.postprocess_error = config["postprocess_error"]
@@ -93,7 +94,7 @@ class Configuration(object):
             config["dev_output_dir"].strip() if "dev_output_dir" in config else ""
         )
         self.python_executable = (
-            config["python_exec"] if "python_exec" in config else "python"
+            config["python_exec"] if "python_exec" in config else "python3"
         )
 
         self.max_procs = config["max_procs"] if "max_procs" in config else 5
@@ -139,10 +140,10 @@ class Configuration(object):
                 if len(toks) == 2:
                     # for instance, emulate `from oncat_processor import ONCatProcessor`
                     processor_module = importlib.import_module(  # noqa: F841
-                        "postprocessing.processors.%s" % toks[0]
+                        f"postprocessing.processors.{toks[0]}"
                     )
                     try:
-                        processor_class = eval("processor_module.%s" % toks[1])
+                        processor_class = eval(f"processor_module.{toks[1]}")
                         self.queues.append(processor_class.get_input_queue_name())
                     except:  # noqa: E722
                         logging.error(
@@ -172,12 +173,7 @@ class Configuration(object):
         logger.info("  - Error exceptions: %s", str(self.exceptions))
 
 
-# Set the log level for the Stomp client
-stomp_logger = logging.getLogger("stompest.sync.client")
-stomp_logger.setLevel(logging.ERROR)
-
-
-class StreamToLogger(object):
+class StreamToLogger:
     r"""File-like stream object that redirects writes to a Logger instance."""
 
     def __init__(self, logger, log_level=logging.INFO):
@@ -256,8 +252,7 @@ def read_configuration(
                 break
         else:
             raise RuntimeError(
-                "Default configuration file(s) do not exist, or unreadable: %s"
-                % str(defaults)
+                f"Default configuration file(s) do not exist, or unreadable: {defaults}"
             )
 
     configuration = Configuration(config_file)
