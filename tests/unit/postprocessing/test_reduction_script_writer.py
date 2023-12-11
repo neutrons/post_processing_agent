@@ -13,7 +13,7 @@ import shutil
 import tempfile
 
 
-@pytest.yield_fixture(
+@pytest.fixture(
     scope="module"
 )  # 'yield_fixture' deprecated in favor of 'yield' when using python 3.x
 def writer_local(data_server):
