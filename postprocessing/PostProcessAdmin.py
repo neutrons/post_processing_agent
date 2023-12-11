@@ -19,9 +19,7 @@ import json
 import socket
 import os
 import sys
-import subprocess
 import importlib
-from postprocessing.processors import job_handling
 import stomp
 
 
@@ -57,7 +55,6 @@ class PostProcessAdmin:
 
 
 if __name__ == "__main__":
-
     import argparse
     from postprocessing.Configuration import read_configuration
 

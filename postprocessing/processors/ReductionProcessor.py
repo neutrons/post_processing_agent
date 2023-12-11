@@ -9,14 +9,12 @@ import sys
 
 
 class ReductionProcessor(BaseProcessor):
-
     _message_queue = "/queue/REDUCTION.DATA_READY"
 
     STARTED_QUEUE = "/queue/REDUCTION.STARTED"
     COMPLETED_QUEUE = "/queue/REDUCTION.COMPLETE"
     ERROR_QUEUE = "/queue/REDUCTION.ERROR"
     DISABLED_QUEUE = "/queue/REDUCTION.DISABLED"
-
 
     def __init__(self, data, conf, send_function):
         """
@@ -70,14 +68,14 @@ class ReductionProcessor(BaseProcessor):
                     "%s_%s_runsummary.csv" % (self.instrument, self.proposal),
                 )
                 cmd = (
-                        "python "
-                        + summary_script
-                        + " "
-                        + self.instrument
-                        + " "
-                        + self.data_file
-                        + " "
-                        + summary_output
+                    "python "
+                    + summary_script
+                    + " "
+                    + self.instrument
+                    + " "
+                    + self.data_file
+                    + " "
+                    + summary_output
                 )
                 logging.debug("Run summary subprocess started: " + cmd)
                 subprocess.call(cmd, shell=True)
@@ -88,9 +86,7 @@ class ReductionProcessor(BaseProcessor):
                 instrument_shared_dir, "reduce_%s.py" % self.instrument
             )
             if os.path.exists(reduce_script_path) is False:
-                self.send(
-                    ReductionProcessor.DISABLED_QUEUE, json.dumps(self.data)
-                )
+                self.send(ReductionProcessor.DISABLED_QUEUE, json.dumps(self.data))
                 return
 
             # Run the reduction
@@ -114,21 +110,10 @@ class ReductionProcessor(BaseProcessor):
             if success:
                 if os.path.isfile(out_err):
                     os.remove(out_err)
-                self.send(
-                    ReductionProcessor.COMPLETED_QUEUE, json.dumps(self.data)
-                )
+                self.send(ReductionProcessor.COMPLETED_QUEUE, json.dumps(self.data))
             else:
                 self.send(ReductionProcessor.ERROR_QUEUE, json.dumps(self.data))
         except:  # noqa: E722
             logging.error("reduce: %s" % sys.exc_info()[1])
             self.data["error"] = "Reduction: %s " % sys.exc_info()[1]
             self.send(ReductionProcessor.ERROR_QUEUE, json.dumps(self.data))
-
-
-
-
-
-
-
-
-

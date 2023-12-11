@@ -1,17 +1,12 @@
-
 from .base_processor import BaseProcessor
 from postprocessing import reduction_script_writer
 
 
 import logging
-import os
 import sys
 
 
-
 class CreateReductionScript_Processor(BaseProcessor):
-
-
     _message_queue = "/queue/REDUCTION.CREATE_SCRIPT"
 
     def __init__(self, data, conf, send_function):
@@ -35,10 +30,7 @@ class CreateReductionScript_Processor(BaseProcessor):
         except:  # noqa: E722
             logging.error("create_reduction_script: %s" % sys.exc_info()[1])
 
-
-
     def _process_data(self, data):
-
         """
         Retrieve run information from the data dictionary
         provided with an incoming message.
@@ -50,24 +42,12 @@ class CreateReductionScript_Processor(BaseProcessor):
         else:
             raise ValueError("Instrument is missing")
 
-
         if "use_default" in data:
             self.use_default = data["use_default"]
         else:
             raise ValueError("use_default is missing")
 
-
         if "template_data" in data:
             self.template_data = data["template_data"]
         else:
             raise ValueError("template_data is missing")
-
-
-
-
-
-
-
-
-
-
