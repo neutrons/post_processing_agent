@@ -1,12 +1,7 @@
-import shutil
-
 from postprocessing.PostProcessAdmin import PostProcessAdmin
 
 # third-party imports
-import os
 import pytest
-import tempfile
-from tests.conftest import getDevConfiguration
 
 
 def createEmptyFile(filename):
