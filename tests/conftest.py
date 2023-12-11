@@ -74,7 +74,7 @@ def docker_identify_container():
     container_id = container_id.strip()
     # verify it is non-empty
     if container_id:
-        return container_id
+        return container_id.decode()
     else:
         return "integration_post_processing_agent_1"  # default name on github
 
