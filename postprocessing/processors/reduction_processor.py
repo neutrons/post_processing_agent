@@ -51,7 +51,7 @@ class ReductionProcessor(BaseProcessor):
             # Allow for an alternate output directory, if defined
             if len(self.configuration.dev_output_dir) > 0:
                 proposal_shared_dir = self.configuration.dev_output_dir
-            logging.info("Using output directory: %s" % proposal_shared_dir)
+            logging.info(f"Using output directory: {proposal_shared_dir}")
 
             # Set logging directory
             log_dir = os.path.join(proposal_shared_dir, "reduction_log")
@@ -60,12 +60,12 @@ class ReductionProcessor(BaseProcessor):
 
             # Look for run summary script
             summary_script = os.path.join(
-                instrument_shared_dir, "sumRun_%s.py" % self.instrument
+                instrument_shared_dir, f"sumRun_{self.instrument}.py"
             )
             if os.path.exists(summary_script) is True:
                 summary_output = os.path.join(
                     proposal_shared_dir,
-                    "%s_%s_runsummary.csv" % (self.instrument, self.proposal),
+                    f"{self.instrument}_{self.proposal}_runsummary.csv"
                 )
                 cmd = (
                     "python "
@@ -77,21 +77,21 @@ class ReductionProcessor(BaseProcessor):
                     + " "
                     + summary_output
                 )
-                logging.debug("Run summary subprocess started: " + cmd)
+                logging.debug(f"Run summary subprocess started: {cmd}")
                 subprocess.call(cmd, shell=True)
-                logging.debug("Run summary subprocess completed, see " + summary_output)
+                logging.debug(f"Run summary subprocess completed, see {summary_output}")
 
             # Look for auto-reduction script
             reduce_script_path = os.path.join(
-                instrument_shared_dir, "reduce_%s.py" % self.instrument
+                instrument_shared_dir, f"reduce_{self.instrument}.py"
             )
             if os.path.exists(reduce_script_path) is False:
                 self.send(ReductionProcessor.DISABLED_QUEUE, json.dumps(self.data))
                 return
 
             # Run the reduction
-            out_log = os.path.join(log_dir, os.path.basename(self.data_file) + ".log")
-            out_err = os.path.join(log_dir, os.path.basename(self.data_file) + ".err")
+            out_log = os.path.join(log_dir, f"{os.path.basename(self.data_file)}.log")
+            out_err = os.path.join(log_dir, f"{os.path.basename(self.data_file)}.err")
             job_handling.local_submission(
                 self.configuration,
                 reduce_script_path,
@@ -114,6 +114,6 @@ class ReductionProcessor(BaseProcessor):
             else:
                 self.send(ReductionProcessor.ERROR_QUEUE, json.dumps(self.data))
         except:  # noqa: E722
-            logging.error("reduce: %s" % sys.exc_info()[1])
-            self.data["error"] = "Reduction: %s " % sys.exc_info()[1]
+            logging.error(f"reduce: {sys.exc_info()[1]}")
+            self.data["error"] = f"Reduction: {sys.exc_info()[1]} "
             self.send(ReductionProcessor.ERROR_QUEUE, json.dumps(self.data))

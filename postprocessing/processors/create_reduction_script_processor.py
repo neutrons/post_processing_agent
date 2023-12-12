@@ -6,7 +6,7 @@ import logging
 import sys
 
 
-class CreateReductionScript_Processor(BaseProcessor):
+class CreateReductionScriptProcessor(BaseProcessor):
     _message_queue = "/queue/REDUCTION.CREATE_SCRIPT"
 
     def __init__(self, data, conf, send_function):
@@ -16,7 +16,7 @@ class CreateReductionScript_Processor(BaseProcessor):
         @param conf: configuration object
         @param send_function: function to call to send AMQ messages
         """
-        super(CreateReductionScript_Processor, self).__init__(data, conf, send_function)
+        super(CreateReductionScriptProcessor, self).__init__(data, conf, send_function)
 
     def __call__(self):
         """
@@ -28,7 +28,7 @@ class CreateReductionScript_Processor(BaseProcessor):
                 self.data, configuration=self.configuration, send_function=self.send
             )
         except:  # noqa: E722
-            logging.error("create_reduction_script: %s" % sys.exc_info()[1])
+            logging.error(f"create_reduction_script: {sys.exc_info()[1]}")
 
     def _process_data(self, data):
         """

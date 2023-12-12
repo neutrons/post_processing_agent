@@ -38,7 +38,7 @@ def data_server():
 
 @pytest.fixture(
     scope="function"
-)  # 'yield_fixture' deprecated in favor of 'yield' when using python 3.x
+)
 def test_logger():
     r"""
     Instantiate a Logger that writes messages to a temporary file
