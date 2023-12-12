@@ -36,9 +36,7 @@ def data_server():
     return _DataServe()
 
 
-@pytest.yield_fixture(
-    scope="function"
-)  # 'yield_fixture' deprecated in favor of 'yield' when using python 3.x
+@pytest.fixture(scope="function")
 def test_logger():
     r"""
     Instantiate a Logger that writes messages to a temporary file
@@ -74,7 +72,7 @@ def docker_identify_container():
     container_id = container_id.strip()
     # verify it is non-empty
     if container_id:
-        return container_id
+        return container_id.decode()
     else:
         return "integration_post_processing_agent_1"  # default name on github
 

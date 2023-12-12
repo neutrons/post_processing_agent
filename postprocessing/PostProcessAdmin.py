@@ -19,9 +19,7 @@ import json
 import socket
 import os
 import sys
-import subprocess
 import importlib
-from postprocessing.processors import job_handling
 import stomp
 
 
@@ -42,151 +40,6 @@ class PostProcessAdmin:
         self.instrument = None
         self.proposal = None
         self.run_number = None
-
-    def _process_data(self, data):
-        """
-        Retrieve run information from the data dictionary
-        provided with an incoming message.
-        @param data: data dictionary
-        """
-        if "data_file" in data:
-            self.data_file = str(data["data_file"])
-            if os.access(self.data_file, os.R_OK) is False:
-                raise ValueError(
-                    f"Data file does not exist or is not readable: {self.data_file}"
-                )
-        else:
-            raise ValueError(f"data_file is missing: {self.data_file}")
-
-        if "facility" in data:
-            self.facility = str(data["facility"]).upper()
-        else:
-            raise ValueError("Facility is missing")
-
-        if "instrument" in data:
-            self.instrument = str(data["instrument"]).upper()
-        else:
-            raise ValueError("Instrument is missing")
-
-        if "ipts" in data:
-            self.proposal = str(data["ipts"]).upper()
-        else:
-            raise ValueError("IPTS is missing")
-
-        if "run_number" in data:
-            self.run_number = str(data["run_number"])
-        else:
-            raise ValueError("Run number is missing")
-
-    def reduce(self):
-        """
-        Reduction process using job submission.
-        """
-        self._process_data(self.data)
-        try:
-            self.send("/queue/" + self.conf.reduction_started, json.dumps(self.data))
-            # get instrument shared directory
-            instrument_shared_dir = os.path.join(
-                "/", self.facility, self.instrument, "shared", "autoreduce"
-            )
-            if len(self.conf.dev_instrument_shared) > 0:
-                instrument_shared_dir = self.conf.dev_instrument_shared
-
-            # get the proposal shared directory
-            proposal_shared_dir = os.path.join(
-                "/",
-                self.facility,
-                self.instrument,
-                self.proposal,
-                "shared",
-                "autoreduce",
-            )
-            # Allow for an alternate output directory, if defined
-            if len(self.conf.dev_output_dir) > 0:
-                proposal_shared_dir = self.conf.dev_output_dir
-            logging.info("Using output directory: %s", proposal_shared_dir)
-
-            # Set logging directory
-            log_dir = os.path.join(proposal_shared_dir, "reduction_log")
-            if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
-
-            # Look for run summary script
-            summary_script = os.path.join(
-                instrument_shared_dir, f"sumRun_{self.instrument}.py"
-            )
-            if os.path.exists(summary_script) is True:
-                summary_output = os.path.join(
-                    proposal_shared_dir,
-                    f"{self.instrument}_{self.proposal}_runsummary.csv",
-                )
-                cmd = (
-                    "python3 "
-                    + summary_script
-                    + " "
-                    + self.instrument
-                    + " "
-                    + self.data_file
-                    + " "
-                    + summary_output
-                )
-                logging.debug("Run summary subprocess started: " + cmd)
-                subprocess.call(cmd, shell=True)
-                logging.debug("Run summary subprocess completed, see " + summary_output)
-
-            # Look for auto-reduction script
-            reduce_script_path = os.path.join(
-                instrument_shared_dir, f"reduce_{self.instrument}.py"
-            )
-            if os.path.exists(reduce_script_path) is False:
-                self.send(
-                    "/queue/" + self.conf.reduction_disabled, json.dumps(self.data)
-                )
-                return
-
-            # Run the reduction
-            out_log = os.path.join(log_dir, os.path.basename(self.data_file) + ".log")
-            out_err = os.path.join(log_dir, os.path.basename(self.data_file) + ".err")
-            job_handling.local_submission(
-                self.conf,
-                reduce_script_path,
-                self.data_file,
-                proposal_shared_dir,
-                out_log,
-                out_err,
-            )
-
-            # Determine error condition
-            success, status_data = job_handling.determine_success_local(
-                self.conf, out_err
-            )
-            self.data.update(status_data)
-            if success:
-                if os.path.isfile(out_err):
-                    os.remove(out_err)
-                self.send(
-                    "/queue/" + self.conf.reduction_complete, json.dumps(self.data)
-                )
-            else:
-                self.send("/queue/" + self.conf.reduction_error, json.dumps(self.data))
-        except:  # noqa: E722
-            logging.error("reduce: %s", sys.exc_info()[1])
-            self.data["error"] = f"Reduction: {sys.exc_info()[1]}"
-            self.send("/queue/" + self.conf.reduction_error, json.dumps(self.data))
-
-    def create_reduction_script(self):
-        """
-        Create a new reduction script from a template
-        """
-        try:
-            from postprocessing import reduction_script_writer
-
-            writer = reduction_script_writer.ScriptWriter(self.data["instrument"])
-            writer.process_request(
-                self.data, configuration=self.conf, send_function=self.send
-            )
-        except:  # noqa: E722
-            logging.error("create_reduction_script: %s", sys.exc_info()[1])
 
     def send(self, destination, data):
         """
@@ -250,16 +103,6 @@ if __name__ == "__main__":
         # Process the data
         try:
             pp = PostProcessAdmin(data, configuration)
-            if isinstance(
-                configuration.reduction_data_ready, list
-            ) and namespace.queue in [
-                f"/queue/{q}" for q in configuration.reduction_data_ready
-            ]:
-                pp.reduce()
-            elif namespace.queue == f"/queue/{configuration.reduction_data_ready}":
-                pp.reduce()
-            elif namespace.queue == f"/queue/{configuration.create_reduction_script}":
-                pp.create_reduction_script()
 
             # Check for registered processors
             if isinstance(configuration.processors, list):
@@ -285,6 +128,7 @@ if __name__ == "__main__":
                                 "PostProcessAdmin: Processor error: %s",
                                 sys.exc_info()[1],
                             )
+                            raise
                     else:
                         logging.error(
                             "PostProcessAdmin: Processors can only be specified in the format module.Processor_class"
