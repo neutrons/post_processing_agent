@@ -65,7 +65,7 @@ class ReductionProcessor(BaseProcessor):
             if os.path.exists(summary_script) is True:
                 summary_output = os.path.join(
                     proposal_shared_dir,
-                    f"{self.instrument}_{self.proposal}_runsummary.csv"
+                    f"{self.instrument}_{self.proposal}_runsummary.csv",
                 )
                 cmd = (
                     "python "

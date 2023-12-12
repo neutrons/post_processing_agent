@@ -36,9 +36,7 @@ def data_server():
     return _DataServe()
 
 
-@pytest.fixture(
-    scope="function"
-)
+@pytest.fixture(scope="function")
 def test_logger():
     r"""
     Instantiate a Logger that writes messages to a temporary file
