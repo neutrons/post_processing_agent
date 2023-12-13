@@ -23,7 +23,7 @@ class ReductionProcessor(BaseProcessor):
         @param conf: configuration object
         @param send_function: function to call to send AMQ messages
         """
-        super(ReductionProcessor, self).__init__(data, conf, send_function)
+        super().__init__(data, conf, send_function)
 
     def __call__(self):
         """

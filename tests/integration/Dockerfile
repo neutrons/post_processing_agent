@@ -1,9 +1,7 @@
 FROM registry.access.redhat.com/ubi9/ubi
 
 RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-RUN dnf update
 RUN dnf install -y python3-requests python3-stomppy python3-pip python3-coverage
-RUN python3 -m pip install plotly
 
 COPY postprocessing /opt/postprocessing/postprocessing
 COPY tests/integration/post_processing.conf /etc/autoreduce/post_processing.conf

@@ -6,7 +6,7 @@
     "amq_pwd": "icat",
     "sw_dir": "/opt/postprocessing",
     "python_dir": "/opt/postprocessing/postprocessing",
-    "start_script": "python",
+    "start_script": "python3",
     "task_script": "PostProcessAdmin.py",
     "task_script_queue_arg": "-q",
     "task_script_data_arg": "-d",
@@ -20,5 +20,6 @@
     "dev_output_dir": "",
     "reduction_data_ready": "REDUCTION.DATA_READY",
     "communication_only": 0,
-    "max_procs": 5
+    "max_procs": 5,
+    "processors": ["reduction_processor.ReductionProcessor"]
 }

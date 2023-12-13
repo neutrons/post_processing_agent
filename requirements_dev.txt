@@ -1,4 +1,0 @@
-build
-flake8
-numpy
-pytest

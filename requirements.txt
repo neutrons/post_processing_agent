@@ -1,8 +1,0 @@
-h5py
-# mantidframework  # TODO: find the appropriate version
-git+https://github.com/nexusformat/python-nxs.git@master
-plotly
-stompest
-twisted
-requests
-

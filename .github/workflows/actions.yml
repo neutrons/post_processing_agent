@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set up MicroMamba
       uses: mamba-org/setup-micromamba@v1
@@ -39,7 +39,7 @@ jobs:
     needs: tests
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set up MicroMamba
       uses: mamba-org/setup-micromamba@v1
@@ -86,42 +86,45 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-# disable until spec file is updated to python 3
-#  rpm:
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#    - name: Checkout Repository
-#      uses: actions/checkout@v2
-#
-#    - name: Build RPM inside Docker
-#      run: |
-#        docker build --tag postprocess --target=package -f Dockerfile .
-#        fname=`docker run -v $(pwd):/store postprocess ls /root/rpmbuild/RPMS/noarch`
-#        docker run -v `pwd`:/store postprocess mv /root/rpmbuild/RPMS/noarch/$fname /store
-#        one=${fname#*postprocessing-}
-#        two=${one%.noarch*}
-#        echo "::set-output name=version::$two"
-#        echo "::set-output name=fname::$fname"
-#      continue-on-error: false
+  rpm:
+    runs-on: ubuntu-latest
+    needs: integration-tests
 
-# TODO: uncomment this once we have switched to python3 and can conda install the module build
-#  wheel:
-#    runs-on: ubuntu-latest
-#    steps:
-#    - name: Checkout Repository
-#      uses: actions/checkout@v2
-#
-#    - name: Set up MicroMamba
-#      uses: mamba-org/setup-micromamba@v1
-#      with:
-#        environment-file: environment.yml
-#        condarc: |
-#          channels:
-#            - conda-forge
-#            - default
-#        cache-environment: true
-#
-#    - name: Build wheel
-#      shell: bash -l {0}
-#      run: python -m build --wheel
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Build RPM inside Docker
+      run: |
+        docker build --tag postprocess -f Dockerfile .
+        fname=`docker run --name postprocess  postprocess ls /root/rpmbuild/RPMS/noarch`
+        docker cp postprocess:/root/rpmbuild/RPMS/noarch/$fname .
+        one=${fname#*postprocessing-}
+        two=${one%.noarch*}
+        echo "::set-output name=version::$two"
+        echo "::set-output name=fname::$fname"
+      continue-on-error: false
+
+    # now run a couple integration test with RPM installed package
+    - name: Set up MicroMamba
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        environment-file: environment.yml
+        condarc: |
+          channels:
+            - conda-forge
+            - default
+        cache-environment: true
+
+    - name: Start docker containers
+      run: docker-compose -f tests/integration/docker-compose-rpm.yml up --build -d
+
+    - name: Sleep, wait for containers to start up
+      run: sleep 2
+
+    - name: Run integration tests
+      shell: bash -l {0}
+      run: python -m pytest -k "test_heartbeat or test_missing_data"
+
+    - name: Bring down docker containers
+      run: docker-compose -f tests/integration/docker-compose-rpm.yml down
