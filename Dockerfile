@@ -1,31 +1,22 @@
-FROM --platform=linux/amd64 centos:7 as package
+FROM registry.access.redhat.com/ubi9/ubi
 
-RUN yum install -y make rpm-build
-# lots of packages don't exist in rhel7
-# the Makefile will print lots of warnings as a result
-
-WORKDIR /app
+RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+RUN dnf install -y make rpm-build python3-build python3-pip python-unversioned-command
 
 COPY scripts /app/scripts
 COPY configuration /app/configuration
 COPY postprocessing /app/postprocessing
+COPY pyproject.toml /app/
+COPY rpmbuild.sh /app/
+COPY README.md /app/
+COPY LICENSE.rst /app/
 COPY SPECS /app/SPECS
-COPY Makefile /app/
-
 
 RUN mkdir -p /root/rpmbuild/SOURCES
 
-RUN make rpm || exit 1
+RUN cd /app && ./rpmbuild.sh || exit 1
 
-FROM --platform=linux/amd64 centos:7 as app
-COPY --from=package /root/rpmbuild/RPMS/noarch/postprocessing-*-1.noarch.rpm /
-
-
-RUN curl http://packages.sns.gov/distros/rhel/7/sns/sns.repo -o /etc/yum.repos.d/sns.repo
-RUN yum install -y epel-release
-RUN yum updateinfo
-
-RUN yum install -y /postprocessing-*-1.noarch.rpm || exit 1
+RUN dnf install -y /root/rpmbuild/RPMS/noarch/postprocessing*.noarch.rpm || exit 1
 
 # This configuration allows it to run with docker-compose from https://github.com/neutrons/data_workflow
 COPY configuration/post_process_consumer.conf.development /etc/autoreduce/post_processing.conf
