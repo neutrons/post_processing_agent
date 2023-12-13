@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi9/ubi
 
 RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-RUN dnf install -y make rpm-build python3-build python3-pip
+RUN dnf install -y make rpm-build python3-build python3-pip python-unversioned-command
 
 COPY scripts /app/scripts
 COPY configuration /app/configuration

@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi9/ubi
 
 RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-RUN dnf install -y python3-requests python3-stomppy python3-pip python3-coverage
+RUN dnf install -y python3-requests python3-stomppy python3-pip python3-coverage python-unversioned-command
 
 COPY postprocessing /opt/postprocessing/postprocessing
 COPY tests/integration/post_processing.conf /etc/autoreduce/post_processing.conf

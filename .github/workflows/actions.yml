@@ -101,8 +101,8 @@ jobs:
         docker cp postprocess:/root/rpmbuild/RPMS/noarch/$fname .
         one=${fname#*postprocessing-}
         two=${one%.noarch*}
-        echo "::set-output name=version::$two"
-        echo "::set-output name=fname::$fname"
+        echo "{version}={$two}" >> $GITHUB_OUTPUT
+        echo "{fname}={$fname}" >> $GITHUB_OUTPUT
       continue-on-error: false
 
     # now run a couple integration test with RPM installed package
