@@ -18,6 +18,7 @@ BuildRequires:  python%{python3_pkgversion}-pip
 Requires: python%{python3_pkgversion}
 Requires: python%{python3_pkgversion}-requests
 Requires: python%{python3_pkgversion}-stomppy
+Requires: python-unversioned-command
 
 prefix: /opt/postprocessing
 
