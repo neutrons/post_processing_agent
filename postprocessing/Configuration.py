@@ -217,6 +217,25 @@ def initialize_logging(log_file, level=logging.INFO, preemptive_cleanup=False):
         filename=log_file,
         filemode="a",
     )
+
+    ### add a level for subprocess logging
+    # credit: https://stackoverflow.com/a/35804945
+    subprocess_level_str = "SUBPROCESS"
+    subprocess_level_int = logging.INFO + 1
+
+    def logForLevel(self, message, *args, **kwargs):
+        if self.isEnabledFor(subprocess_level_int):
+            self._log(subprocess_level_int, message, *args, **kwargs)
+
+    def logToRoot(message, *args, **kwargs):
+        logging.log(subprocess_level_int, message, *args, **kwargs)
+
+    logging.addLevelName(subprocess_level_int, subprocess_level_str)
+    setattr(logging, subprocess_level_str, subprocess_level_int)
+    setattr(logging.getLoggerClass(), subprocess_level_str.lower(), logForLevel)
+    setattr(logging, subprocess_level_str.lower(), logToRoot)
+
+    ###   redirect stderr
     stderr_logger = logging.getLogger("STDERR")
     sl = StreamToLogger(stderr_logger, logging.ERROR)
     sys.stderr = sl
