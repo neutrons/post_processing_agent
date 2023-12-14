@@ -114,11 +114,12 @@ class Listener(stomp.ConnectionListener):
             logging.warning("Command: %s", str(command_args))
 
             ### open and log subprocess
-            proc = subprocess.Popen(command_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)     ### start subprocess
+            proc = subprocess.Popen(
+                command_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )  ### start subprocess
 
-            for line in proc.stdout.readlines():                                                        ### log with custom level
+            for line in proc.stdout.readlines():  ### log with custom level
                 logging.subprocess(line.decode().strip())
-
 
             logging.warning("end")
             self.procList.append(proc)

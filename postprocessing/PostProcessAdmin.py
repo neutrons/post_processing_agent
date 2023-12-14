@@ -58,7 +58,9 @@ if __name__ == "__main__":
     import argparse
     from postprocessing.Configuration import read_configuration
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s/%(process)d %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s/%(process)d %(message)s"
+    )
 
     parser = argparse.ArgumentParser(description="Post-processing agent")
     parser.add_argument(
