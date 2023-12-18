@@ -370,7 +370,8 @@ def getOutFilename(propdir):
     return f"{inst}-{prop}.csv"
 
 
-if __name__ == "__main__":
+
+def main():
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -423,3 +424,9 @@ if __name__ == "__main__":
                 total_reduced += 1
             handle.write(",".join(report) + "\n")
     print(f"{total_reduced} of {total_runs} files reduced")
+
+
+
+if __name__ == "__main__":
+    main()
+
