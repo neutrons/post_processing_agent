@@ -370,7 +370,6 @@ def getOutFilename(propdir):
     return f"{inst}-{prop}.csv"
 
 
-
 def main():
     import argparse
 
@@ -426,7 +425,5 @@ def main():
     print(f"{total_reduced} of {total_runs} files reduced")
 
 
-
 if __name__ == "__main__":
     main()
-
