@@ -47,22 +47,22 @@ class GenericFile:
             return self.timeCreation.strftime("%Y-%m-%dT%H:%M")
 
     def filesizeMiB(self):
-        return "%.f" % (float(self.filesize) / 1024.0 / 1024.0)
+        return f"{float(self.filesize) / 1024.0 / 1024.0}"
 
     def filesizehuman(self):
         if self.filesize < 1024:
-            return "%dB" % (self.filesize)
+            return f"{self.filesize} B"
 
         filesize_converted = float(self.filesize) / 1024.0  # to kiB
         if filesize_converted < 1024.0:
-            return "%.1fkiB" % (filesize_converted)
+            return f"{filesize_converted:.1f} kiB"
 
         filesize_converted = float(filesize_converted) / 1024.0  # to MiB
         if filesize_converted < 1024.0:
-            return "%.1fMiB" % (filesize_converted)
+            return f"{filesize_converted:.1f} MiB"
 
         filesize_converted = float(filesize_converted) / 1024.0  # to GiB
-        return "%.1fGiB" % (filesize_converted)
+        return f"{filesize_converted:.1f} GiB"
 
 
 class ReductionLogFile(GenericFile):
@@ -83,13 +83,13 @@ class ReductionLogFile(GenericFile):
         self.__findMantidVersion()
 
         self.__findLongestDuration()
-        self.longestDuration = "%.1f" % self.longestDuration
+        self.longestDuration = f"{self.longestDuration:.1f}"
 
         self.__findLoadNexusTotal(eventfilename)
-        self.loadEventNexusDuration = "%.1f" % self.loadEventNexusDuration
+        self.loadEventNexusDuration = f"{self.loadEventNexusDuration:.1f}"
 
         self.__findLoadTotal()
-        self.loadDurationTotal = "%.1f" % self.loadDurationTotal
+        self.loadDurationTotal = f"{self.loadDurationTotal:.1f}"
 
     def durationToHuman(duration):
         (hours, minutes, seconds) = (0.0, 0.0, duration)
@@ -99,7 +99,7 @@ class ReductionLogFile(GenericFile):
             if minutes > 60:
                 hours = int(minutes / 60)
                 minutes = minutes % 60
-        return "%dh%02dm%02ds" % (hours, minutes, int(seconds))
+        return f"{hours:d}h{minutes:02d}m{int(seconds):02d}"
 
     def __findLoadNexusTotal(self, eventfilename):
         with open(self.filename, "r") as handle:
@@ -338,11 +338,11 @@ def getPropDir(descr):
 
     # error check the result
     if not os.path.exists(fullpath):
-        raise RuntimeError("%s does not exist" % fullpath)
+        raise RuntimeError(f"{fullpath} does not exist")
     if not os.path.isdir(fullpath):
-        raise RuntimeError("%s is not a directory" % fullpath)
+        raise RuntimeError(f"{fullpath} is not a directory")
     if not (fullpath.startswith("/SNS/") and ("IPTS" in fullpath)):
-        raise RuntimeError("%s does not appear to be a proposal directory" % fullpath)
+        raise RuntimeError(f"{fullpath} does not appear to be a proposal directory")
 
     return fullpath
 
@@ -367,10 +367,10 @@ def getRuns(propdir):
 def getOutFilename(propdir):
     (parent, prop) = os.path.split(propdir)
     (parten, inst) = os.path.split(parent)
-    return "%s-%s.csv" % (inst, prop)
+    return f"{inst}-{prop}.csv"
 
 
-if __name__ == "__main__":
+def main():
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -395,18 +395,19 @@ if __name__ == "__main__":
     if runfile == propdir:
         runfile = None
 
-    print("Finding event nexus files in '%s'" % propdir)
+    print(f"Finding event nexus files in '{propdir}'")
     if runfile is not None:
         runs = [EventFile(*(os.path.split(runfile)))]
     else:
         runs = getRuns(propdir)
     reducedir = os.path.join(propdir, "shared", "autoreduce")
-    shareddirlist = os.listdir(reducedir)
-    reduceloglist = os.listdir(os.path.join(reducedir, REDUCTION_LOG))
+
+    # shareddirlist = os.listdir(reducedir)
+    # reduceloglist = os.listdir(os.path.join(reducedir, REDUCTION_LOG))
 
     outfile = getOutFilename(propdir)
     outfile = os.path.join(args.outputdir, outfile)
-    print("Writing results to '%s'" % outfile)
+    print(f"Writing results to '{outfile}'")
     total_runs = len(runs)
     total_reduced = 0
     if runfile is None or (not os.path.exists(outfile)):
@@ -422,4 +423,8 @@ if __name__ == "__main__":
             if len(ar.reduxfiles) > 0:
                 total_reduced += 1
             handle.write(",".join(report) + "\n")
-    print("%d of %d files reduced" % (total_reduced, total_runs))
+    print(f"{total_reduced} of {total_runs} files reduced")
+
+
+if __name__ == "__main__":
+    main()
