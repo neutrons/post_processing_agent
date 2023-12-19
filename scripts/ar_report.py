@@ -370,7 +370,6 @@ def getOutFilename(propdir):
     return f"{inst}-{prop}.csv"
 
 
-
 def main():
     import argparse
 
@@ -402,8 +401,9 @@ def main():
     else:
         runs = getRuns(propdir)
     reducedir = os.path.join(propdir, "shared", "autoreduce")
-    shareddirlist = os.listdir(reducedir)
-    reduceloglist = os.listdir(os.path.join(reducedir, REDUCTION_LOG))
+
+    # shareddirlist = os.listdir(reducedir)
+    # reduceloglist = os.listdir(os.path.join(reducedir, REDUCTION_LOG))
 
     outfile = getOutFilename(propdir)
     outfile = os.path.join(args.outputdir, outfile)
@@ -426,7 +426,5 @@ def main():
     print(f"{total_reduced} of {total_runs} files reduced")
 
 
-
 if __name__ == "__main__":
     main()
-
