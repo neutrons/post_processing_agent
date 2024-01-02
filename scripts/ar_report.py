@@ -315,8 +315,9 @@ class EventFile(GenericFile):
 
         with h5py.File(self.filename, "r") as handle:
             entry = handle.get("entry")
-            self.timeStart = entry.get("start_time").value[0].decode("utf-8")[:16]
-            self.timeStop = entry.get("end_time").value[0].decode("utf-8")[:16]
+
+            self.timeStart = entry.get("start_time")[0].decode("utf-8")[:16]
+            self.timeStop = entry.get("end_time")[0].decode("utf-8")[:16]
 
     def __str__(self):
         return self.prefix
