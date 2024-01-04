@@ -48,8 +48,7 @@ logfile_path = "tests/unit/scripts/PG3_56301.nxs.log"
 
 
 def test_ReductionLogFile():
-    pass
-    # reduction_log_file = ReductionLogFile(logfile_path, "PG3_56301.nxs.log")
+    # reduction_log_file = ReductionLogFile(logfile_path, "PG3_56301")
 
     # assert reduction_log_file.mantidVersion ==
     # assert reduction_log_file.longestDuration ==
@@ -58,3 +57,5 @@ def test_ReductionLogFile():
     # assert reduction_log_file.loadEventNexusDuration ==
     # assert reduction_log_file.started ==
     # assert reduction_log_file.host ==
+
+    pass
