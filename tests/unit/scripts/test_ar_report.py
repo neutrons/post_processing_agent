@@ -1,4 +1,4 @@
-from ar_report import GenericFile, ReductionLogFile
+from ar_report import EventFile, GenericFile, ReductionLogFile
 
 import datetime
 import h5py
@@ -19,6 +19,9 @@ ZERO_STR = "0.0"
 
 @pytest.fixture(scope="function")
 def nexus_file():
+    start_time = "starting-time"
+    end_time = "starting-time"
+
     sns_dir = tempfile.mkdtemp(prefix="SNS")
     instrument_dir = tempfile.mkdtemp(dir=sns_dir)
     proposal_dir = tempfile.mkdtemp(prefix="IPTS-", dir=instrument_dir)
@@ -29,10 +32,24 @@ def nexus_file():
     with h5py.File(nexus_file.name, "w") as handle:
         entry = handle.create_group("entry")
 
-        entry.create_dataset("start_time", data=["test", "test"])
-        entry.create_dataset("end_time", data=["test", "test"])
+        entry.create_dataset(
+            "start_time",
+            data=[
+                start_time,
+            ],
+        )
+        entry.create_dataset(
+            "end_time",
+            data=[
+                end_time,
+            ],
+        )
 
-    yield nexus_file
+    yield {
+        "filepath": Path(nexus_file.name),
+        "start_time": start_time,
+        "end_time": end_time,
+    }
 
     shutil.rmtree(sns_dir)
 
@@ -43,6 +60,8 @@ def output_dir():
     yield output_dir
     shutil.rmtree(output_dir)
 
+
+########################################### end-to-end tests
 
 # def test_main_new(nexus_file, output_dir):
 #    main(nexus_file.name, output_dir)
@@ -57,7 +76,25 @@ def test_main_argError():
     pass
 
 
-def test_generic_file():
+########################################### unit tests of utility functions
+
+
+def test_getPropDir():
+    assert False, "test_getPropDir is not written"
+
+
+def test_getRuns():
+    assert False, "test_getRuns is not written"
+
+
+def test_getOutFilename():
+    assert False, "test_getOutFilename is not written"
+
+
+########################################### unit tests of GenericFile
+
+
+def test_GenericFile():
     CONTENTS = "hello!"
     NOW = datetime.datetime.now()
 
@@ -89,7 +126,7 @@ def test_generic_file():
             os.unlink(handle.name)
 
 
-def test_generic_file_empty():
+def test_GenericFile_empty():
     # create a file with empty contents
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as handle:
         handle.close()
@@ -101,26 +138,58 @@ def test_generic_file_empty():
             os.unlink(handle.name)
 
 
+########################################### unit tests of ReductionLogFile
+
+
 def test_ReductionLogFile():
     # double check that the file didn't get moved
     assert INPUT_LOGFILE.exists(), str(INPUT_LOGFILE) + " does not exist"
     # parse the file
-    reduction_log_file = ReductionLogFile(INPUT_LOGFILE, "PG3_56301")
+    reduction_log_file = ReductionLogFile(INPUT_LOGFILE, SHORT_NAME)
     assert reduction_log_file
 
+    # taken from staring at the logs
     assert reduction_log_file.mantidVersion == "6.7.0"
-    # assert reduction_log_file.longestDuration ==
-    # assert reduction_log_file.longestAlgorithm ==
-    # assert reduction_log_file.loadDurationTotal ==
-    # assert reduction_log_file.loadEventNexusDuration ==
-    assert (
-        reduction_log_file.started == "2023-08-16T13:36Z"
-    )  # may need to be a datetime object
+    assert reduction_log_file.longestDuration == pytest.approx(
+        2 * 60 + 3.72
+    ), "longestDuration"
+    assert reduction_log_file.longestAlgorithm == "SNSPowderReduction"
     assert reduction_log_file.host == "autoreducer3.sns.gov"
+    assert reduction_log_file.started == "2023-08-16T13:36Z"
+
+    # LoadEventNexus + PDLoadCharacterizations + Load + LoadDiffCal + LoadNexusProcessed + Load + Load + Load + LoadNexusProcessed + LoadNexusProcessed
+    duration = 4.62 + 0.06 + 0.74 + 0.42 + 2.99 + 23.42 + 1.07 + 7.41 + 5.08 + 3.83
+    assert reduction_log_file.loadDurationTotal == pytest.approx(
+        duration
+    ), "loadDurationTotal"
+    assert reduction_log_file.loadEventNexusDuration == pytest.approx(
+        4.6
+    ), "loadEventNexusDuration"
+
+
+def check_bad_ReductionLogFile_values(
+    reduction_log_file, mantidVersion="UNKNOWN", host="", started=""
+):
+    # fields are still the initial crappy values
+    assert reduction_log_file.mantidVersion == mantidVersion, "mantidVersion"
+    assert reduction_log_file.host == host, "host"
+    assert reduction_log_file.started == started, "started"
+    assert not reduction_log_file.longestAlgorithm, "longestAlgorithm"  # empty
+
+    assert float(reduction_log_file.longestDuration) == pytest.approx(
+        0.0
+    ), "longestDuration"
+    assert float(reduction_log_file.loadDurationTotal) == pytest.approx(
+        0.0
+    ), "loadDurationTotal"
+    assert float(reduction_log_file.loadEventNexusDuration) == pytest.approx(
+        0.0
+    ), "loadEventNexusDuration"
 
 
 def test_ReductionLogFile_partial_contents():
     # read in the first 8 lines from a "good" file
+    assert INPUT_LOGFILE.exists(), str(INPUT_LOGFILE) + " does not exist"
     with open(INPUT_LOGFILE) as handle:
         data = handle.readlines()
         data = data[:8]
@@ -131,45 +200,26 @@ def test_ReductionLogFile_partial_contents():
         handle.write(data)
         handle.close()
 
-        print(data)
-
         try:
-            reduction_log_file = ReductionLogFile("handle.name", "PG3_56301")
-            assert (
-                not reduction_log_file
-            )  # it is invalid because it doesn't have algorithm information
+            reduction_log_file = ReductionLogFile(handle.name, SHORT_NAME)
 
             # things that are in the file
-            assert reduction_log_file.mantidVersion == "6.7.0"
-            assert reduction_log_file.host == "autoreducer3.sns.gov"
-            assert reduction_log_file.started == "2023-08-16T13:36Z"
 
-            # fields are still the initial crappy values
-            assert reduction_log_file.longestDuration == 0.0
-            assert not reduction_log_file.longestAlgorithm  # empty
-            reduction_log_file.loadDurationTotal == 0.0
-            reduction_log_file.loadEventNexusDuration == 0.0
-            assert not reduction_log_file.started  # empty
+            check_bad_ReductionLogFile_values(
+                reduction_log_file,
+                mantidVersion="6.7.0",
+                host="autoreducer3.sns.gov",
+                started="2023-08-16T13:36Z",
+            )
         finally:
             # remove the temporary file
             os.unlink(handle.name)
 
 
-def check_bad_ReductionLogFile(reduction_log_file):
-    assert not reduction_log_file  # it is invalid
-    # fields are still the initial crappy values
-    assert reduction_log_file.mantidVersion == "UNKNOWN"
-    assert reduction_log_file.longestDuration == 0.0
-    assert reduction_log_file.longestAlgorithm == "UNKNOWN"
-    assert reduction_log_file.loadDurationTotal == 0.0
-    assert reduction_log_file.loadEventNexusDuration == 0.0
-    assert reduction_log_file.started == "UNKNOWN"
-    assert reduction_log_file.host == "UNKNOWN"
-
-
 def test_ReductionLogFile_empty_file():
-    reduction_log_file = ReductionLogFile("non-existant-file.log", "PG3_56301")
-    check_bad_ReductionLogFile(reduction_log_file)
+    reduction_log_file = ReductionLogFile("non-existant-file.log", SHORT_NAME)
+    assert not reduction_log_file  # it is invalid
+    check_bad_ReductionLogFile_values(reduction_log_file)
 
 
 def test_ReductionLogFile_junk_contents():
@@ -178,8 +228,31 @@ def test_ReductionLogFile_junk_contents():
         handle.close()
 
         try:
-            reduction_log_file = ReductionLogFile("non-existant-file.log", "PG3_56301")
-            check_bad_ReductionLogFile(reduction_log_file)
+            reduction_log_file = ReductionLogFile(handle.name, SHORT_NAME)
+            check_bad_ReductionLogFile_values(reduction_log_file)
         finally:
             # remove the temporary file
             os.unlink(handle.name)
+
+
+########################################### unit tests of EventFile
+
+
+def test_EventFile(nexus_file):
+    # calculate what the prefix should be - normally <instr>_<runnum>
+    prefix = str(nexus_file["filepath"].name).replace(".nxs.h5", "")
+
+    eventfile = EventFile(nexus_file["filepath"].parent, nexus_file["filepath"].name)
+    assert eventfile
+    assert eventfile.shortname == nexus_file["filepath"].name
+    assert str(eventfile) == prefix
+    assert eventfile.isThisRun(str(nexus_file["filepath"].name))
+    assert eventfile.timeStart == nexus_file["start_time"]
+    assert eventfile.timeStop == nexus_file["end_time"]
+
+
+########################################### unit tests of ARStatus
+
+
+def test_ARstatus():
+    assert False, "test_ARstatus is not written"
