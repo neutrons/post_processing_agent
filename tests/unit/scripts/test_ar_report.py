@@ -1,4 +1,4 @@
-from ar_report import GenericFile, ReductionLogFile
+from ar_report import EventFile, GenericFile, ReductionLogFile
 
 import datetime
 import h5py
@@ -19,6 +19,9 @@ ZERO_STR = "0.0"
 
 @pytest.fixture(scope="function")
 def nexus_file():
+    start_time = "starting-time"
+    end_time = "starting-time"
+
     sns_dir = tempfile.mkdtemp(prefix="SNS")
     instrument_dir = tempfile.mkdtemp(dir=sns_dir)
     proposal_dir = tempfile.mkdtemp(prefix="IPTS-", dir=instrument_dir)
@@ -29,10 +32,24 @@ def nexus_file():
     with h5py.File(nexus_file.name, "w") as handle:
         entry = handle.create_group("entry")
 
-        entry.create_dataset("start_time", data=["test", "test"])
-        entry.create_dataset("end_time", data=["test", "test"])
+        entry.create_dataset(
+            "start_time",
+            data=[
+                start_time,
+            ],
+        )
+        entry.create_dataset(
+            "end_time",
+            data=[
+                end_time,
+            ],
+        )
 
-    yield nexus_file
+    yield {
+        "filepath": Path(nexus_file.name),
+        "start_time": start_time,
+        "end_time": end_time,
+    }
 
     shutil.rmtree(sns_dir)
 
@@ -220,8 +237,17 @@ def test_ReductionLogFile_junk_contents():
 ########################################### unit tests of EventFile
 
 
-def test_EventFile():
-    assert False, "test_EventFile is not written"
+def test_EventFile(nexus_file):
+    # calculate what the prefix should be - normally <instr>_<runnum>
+    prefix = str(nexus_file["filepath"].name).replace(".nxs.h5", "")
+
+    eventfile = EventFile(nexus_file["filepath"].parent, nexus_file["filepath"].name)
+    assert eventfile
+    assert eventfile.shortname == nexus_file["filepath"].name
+    assert str(eventfile) == prefix
+    assert eventfile.isThisRun(str(nexus_file["filepath"].name))
+    assert eventfile.timeStart == nexus_file["start_time"]
+    assert eventfile.timeStop == nexus_file["end_time"]
 
 
 ########################################### unit tests of ARStatus
