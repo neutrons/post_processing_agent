@@ -106,10 +106,26 @@ def test_ReductionLogFile():
     reduction_log_file = ReductionLogFile(INPUT_LOGFILE, "PG3_56301")
     assert reduction_log_file
 
-    # assert reduction_log_file.mantidVersion ==
+    assert reduction_log_file.mantidVersion == "6.7.0"
     # assert reduction_log_file.longestDuration ==
     # assert reduction_log_file.longestAlgorithm ==
     # assert reduction_log_file.loadDurationTotal ==
     # assert reduction_log_file.loadEventNexusDuration ==
-    # assert reduction_log_file.started ==
-    # assert reduction_log_file.host ==
+    assert (
+        reduction_log_file.started == "2023-08-16T13:36Z"
+    )  # may need to be a datetime object
+    assert reduction_log_file.host == "autoreducer3.sns.gov"
+
+
+def test_ReductionLogFile_empty_file():
+    ZERO = "0.0"
+    reduction_log_file = ReductionLogFile("non-existant-file.log", "PG3_56301")
+    assert not reduction_log_file  # it is invalid
+    # fields are still the initial crappy values
+    assert reduction_log_file.mantidVersion == "UNKNOWN"
+    assert reduction_log_file.longestDuration == ZERO
+    assert not reduction_log_file.longestAlgorithm  # empty
+    reduction_log_file.loadDurationTotal == ZERO
+    reduction_log_file.loadEventNexusDuration == ZERO
+    assert not reduction_log_file.started  # empty
+    assert not reduction_log_file.host  # empty
