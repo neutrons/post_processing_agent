@@ -105,22 +105,51 @@ def test_ReductionLogFile():
     # double check that the file didn't get moved
     assert INPUT_LOGFILE.exists(), str(INPUT_LOGFILE) + " does not exist"
     # parse the file
-    reduction_log_file = ReductionLogFile(INPUT_LOGFILE, "PG3_56301")
+    reduction_log_file = ReductionLogFile(INPUT_LOGFILE, SHORT_NAME)
     assert reduction_log_file
 
+    # taken from staring at the logs
     assert reduction_log_file.mantidVersion == "6.7.0"
-    # assert reduction_log_file.longestDuration ==
-    # assert reduction_log_file.longestAlgorithm ==
-    # assert reduction_log_file.loadDurationTotal ==
-    # assert reduction_log_file.loadEventNexusDuration ==
-    assert (
-        reduction_log_file.started == "2023-08-16T13:36Z"
-    )  # may need to be a datetime object
+    assert reduction_log_file.longestDuration == pytest.approx(
+        2 * 60 + 3.72
+    ), "longestDuration"
+    assert reduction_log_file.longestAlgorithm == "SNSPowderReduction"
     assert reduction_log_file.host == "autoreducer3.sns.gov"
+    assert reduction_log_file.started == "2023-08-16T13:36Z"
+
+    # LoadEventNexus + PDLoadCharacterizations + Load + LoadDiffCal + LoadNexusProcessed + Load + Load + Load + LoadNexusProcessed + LoadNexusProcessed
+    duration = 4.62 + 0.06 + 0.74 + 0.42 + 2.99 + 23.42 + 1.07 + 7.41 + 5.08 + 3.83
+    assert reduction_log_file.loadDurationTotal == pytest.approx(
+        duration
+    ), "loadDurationTotal"
+    assert reduction_log_file.loadEventNexusDuration == pytest.approx(
+        4.6
+    ), "loadEventNexusDuration"
+
+
+def check_bad_ReductionLogFile_values(
+    reduction_log_file, mantidVersion="UNKNOWN", host="", started=""
+):
+    # fields are still the initial crappy values
+    assert reduction_log_file.mantidVersion == mantidVersion, "mantidVersion"
+    assert reduction_log_file.host == host, "host"
+    assert reduction_log_file.started == started, "started"
+    assert not reduction_log_file.longestAlgorithm, "longestAlgorithm"  # empty
+
+    assert float(reduction_log_file.longestDuration) == pytest.approx(
+        0.0
+    ), "longestDuration"
+    assert float(reduction_log_file.loadDurationTotal) == pytest.approx(
+        0.0
+    ), "loadDurationTotal"
+    assert float(reduction_log_file.loadEventNexusDuration) == pytest.approx(
+        0.0
+    ), "loadEventNexusDuration"
 
 
 def test_ReductionLogFile_partial_contents():
     # read in the first 8 lines from a "good" file
+    assert INPUT_LOGFILE.exists(), str(INPUT_LOGFILE) + " does not exist"
     with open(INPUT_LOGFILE) as handle:
         data = handle.readlines()
         data = data[:8]
@@ -132,42 +161,27 @@ def test_ReductionLogFile_partial_contents():
         handle.close()
 
         try:
-            reduction_log_file = ReductionLogFile("handle.name", "PG3_56301")
+            reduction_log_file = ReductionLogFile("handle.name", SHORT_NAME)
             assert (
                 not reduction_log_file
             )  # it is invalid because it doesn't have algorithm information
 
             # things that are in the file
-            assert reduction_log_file.mantidVersion == "6.7.0"
-            assert reduction_log_file.host == "autoreducer3.sns.gov"
-            assert reduction_log_file.started == "2023-08-16T13:36Z"
-
-            # fields are still the initial crappy values
-            assert reduction_log_file.longestDuration == ZERO_STR
-            assert not reduction_log_file.longestAlgorithm  # empty
-            reduction_log_file.loadDurationTotal == ZERO_STR
-            reduction_log_file.loadEventNexusDuration == ZERO_STR
-            assert not reduction_log_file.started  # empty
+            check_bad_ReductionLogFile_values(
+                reduction_log_file,
+                mantidVersion="6.7.0",
+                host="autoreducer3.sns.gov",
+                started="2023-08-16T13:36Z",
+            )
         finally:
             # remove the temporary file
             os.unlink(handle.name)
 
 
-def check_bad_ReductionLogFile(reduction_log_file):
-    assert not reduction_log_file  # it is invalid
-    # fields are still the initial crappy values
-    assert reduction_log_file.mantidVersion == "UNKNOWN"
-    assert reduction_log_file.longestDuration == ZERO_STR
-    assert not reduction_log_file.longestAlgorithm  # empty
-    reduction_log_file.loadDurationTotal == ZERO_STR
-    reduction_log_file.loadEventNexusDuration == ZERO_STR
-    assert not reduction_log_file.started  # empty
-    assert not reduction_log_file.host  # empty
-
-
 def test_ReductionLogFile_empty_file():
-    reduction_log_file = ReductionLogFile("non-existant-file.log", "PG3_56301")
-    check_bad_ReductionLogFile(reduction_log_file)
+    reduction_log_file = ReductionLogFile("non-existant-file.log", SHORT_NAME)
+    assert not reduction_log_file  # it is invalid
+    check_bad_ReductionLogFile_values(reduction_log_file)
 
 
 def test_ReductionLogFile_junk_contents():
@@ -176,8 +190,8 @@ def test_ReductionLogFile_junk_contents():
         handle.close()
 
         try:
-            reduction_log_file = ReductionLogFile("non-existant-file.log", "PG3_56301")
-            check_bad_ReductionLogFile(reduction_log_file)
+            reduction_log_file = ReductionLogFile(handle.name, SHORT_NAME)
+            check_bad_ReductionLogFile_values(reduction_log_file)
         finally:
             # remove the temporary file
             os.unlink(handle.name)
