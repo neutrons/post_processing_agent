@@ -98,7 +98,11 @@ class ReductionLogFile(GenericFile):
         with open(self.filename, "r") as handle:
             lookForDuration = False
             for line in handle:
-                if "Load" in line and eventfilename in line:
+                if (
+                    line.startswith("Load")
+                    and (f"{eventfilename}.nxs.h5" or f"{eventfilename}_event.nxs")
+                    in line
+                ):
                     lookForDuration = True
                 elif lookForDuration and self.hasLogDuration(line):
                     (_, duration) = self.logDurationToNameAndSeconds(line)
@@ -113,7 +117,7 @@ class ReductionLogFile(GenericFile):
             for line in handle:
                 if not self.hasLogDuration(line):
                     continue
-                if "Load" not in line:
+                if not line.startswith("Load"):
                     continue
                 line = line.strip()
                 (_, duration) = self.logDurationToNameAndSeconds(line)

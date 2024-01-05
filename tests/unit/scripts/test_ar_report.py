@@ -8,6 +8,7 @@ import pytest
 import shutil
 import tempfile
 
+
 # data directory is inside of tests/
 DATA_DIREC = Path(__file__).parent.parent.parent / "data"
 INPUT_LOGFILE = DATA_DIREC / "PG3_56301.nxs.h5.log"
@@ -59,21 +60,6 @@ def output_dir():
     output_dir = tempfile.mkdtemp()
     yield output_dir
     shutil.rmtree(output_dir)
-
-
-########################################### end-to-end tests
-
-# def test_main_new(nexus_file, output_dir):
-#    main(nexus_file.name, output_dir)
-#    pass
-
-
-def test_main_append():
-    pass
-
-
-def test_main_argError():
-    pass
 
 
 ########################################### unit tests of utility functions
@@ -157,24 +143,30 @@ def test_ReductionLogFile():
     assert reduction_log_file.host == "autoreducer3.sns.gov"
     assert reduction_log_file.started == "2023-08-16T13:36Z"
 
-    # LoadEventNexus + PDLoadCharacterizations + Load + LoadDiffCal + LoadNexusProcessed + Load + Load + Load + LoadNexusProcessed + LoadNexusProcessed
-    duration = 4.62 + 0.06 + 0.74 + 0.42 + 2.99 + 23.42 + 1.07 + 7.41 + 5.08 + 3.83
+    # LoadEventNexus + Load + LoadDiffCal + LoadNexusProcessed + Load + Load + Load + LoadNexusProcessed + LoadNexusProcessed
+    duration = 4.62 + 0.74 + 0.42 + 2.99 + 23.42 + 1.07 + 7.41 + 5.08 + 3.83
     assert reduction_log_file.loadDurationTotal == pytest.approx(
         duration
     ), "loadDurationTotal"
     assert reduction_log_file.loadEventNexusDuration == pytest.approx(
-        4.6
+        4.62 + 0.74
     ), "loadEventNexusDuration"
 
 
 def check_bad_ReductionLogFile_values(
-    reduction_log_file, mantidVersion="UNKNOWN", host="", started=""
+    reduction_log_file,
+    mantidVersion="UNKNOWN",
+    host="UNKNOWN",
+    started="UNKNOWN",
+    longestAlgorithm="UNKNOWN",
 ):
     # fields are still the initial crappy values
     assert reduction_log_file.mantidVersion == mantidVersion, "mantidVersion"
     assert reduction_log_file.host == host, "host"
     assert reduction_log_file.started == started, "started"
-    assert not reduction_log_file.longestAlgorithm, "longestAlgorithm"  # empty
+    assert (
+        reduction_log_file.longestAlgorithm == longestAlgorithm
+    ), "longestAlgorithm"  # empty
 
     assert float(reduction_log_file.longestDuration) == pytest.approx(
         0.0
@@ -256,3 +248,14 @@ def test_EventFile(nexus_file):
 
 def test_ARstatus():
     assert False, "test_ARstatus is not written"
+
+
+def test_main_append():
+    pass
+
+
+def test_main_argError():
+    pass
+
+
+logfile_path = "tests/unit/scripts/PG3_56301.nxs.log"
