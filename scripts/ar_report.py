@@ -146,8 +146,8 @@ class ReductionLogFile(GenericFile):
         elif len(duration) == 4:  # minutes and seconds
             duration = float(duration[0]) * 60.0 + float(duration[2])
         else:
-            print(duration)
-            raise ValueError("Don't know how to parse duration: " + " ".join(duration))
+            duration = " ".join(duration)
+            raise ValueError(f'Don\'t know how to parse duration: "{duration}"')
         return (algorithm, duration)
 
     def __findLongestDuration(self):
