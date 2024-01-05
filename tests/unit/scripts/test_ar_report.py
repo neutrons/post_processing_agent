@@ -1,11 +1,18 @@
-from ar_report import GenericFile
+from ar_report import GenericFile, ReductionLogFile
 
 import datetime
 import h5py
 import os
+from pathlib import Path
 import pytest
 import shutil
 import tempfile
+
+# data directory is inside of tests/
+DATA_DIREC = Path(__file__).parent.parent.parent / "data"
+INPUT_LOGFILE = DATA_DIREC / "PG3_56301.nxs.h5.log"
+# this should resolve to PG3_56301, but we are making it dynamic so things stay consistent
+SHORT_NAME = os.path.split(INPUT_LOGFILE)[-1].split(".")[0]
 
 
 @pytest.fixture(scope="function")
@@ -92,11 +99,12 @@ def test_generic_file_empty():
             os.unlink(handle.name)
 
 
-logfile_path = "tests/unit/scripts/PG3_56301.nxs.log"
-
-
 def test_ReductionLogFile():
-    # reduction_log_file = ReductionLogFile(logfile_path, "PG3_56301")
+    # double check that the file didn't get moved
+    assert INPUT_LOGFILE.exists(), str(INPUT_LOGFILE) + " does not exist"
+    # parse the file
+    reduction_log_file = ReductionLogFile(INPUT_LOGFILE, "PG3_56301")
+    assert reduction_log_file
 
     # assert reduction_log_file.mantidVersion ==
     # assert reduction_log_file.longestDuration ==
@@ -105,5 +113,3 @@ def test_ReductionLogFile():
     # assert reduction_log_file.loadEventNexusDuration ==
     # assert reduction_log_file.started ==
     # assert reduction_log_file.host ==
-
-    pass
