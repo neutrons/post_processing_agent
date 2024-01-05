@@ -69,26 +69,20 @@ class ReductionLogFile(GenericFile):
     def __init__(self, logfullname, eventfilename):
         super().__init__(logfullname)
         self.mantidVersion = "UNKNOWN"
-        self.longestDuration = "0.0"
-        self.longestAlgorithm = ""
-        self.loadDurationTotal = "0.0"
-        self.loadEventNexusDuration = "0.0"
-        self.started = ""
-        self.host = ""
+        self.longestDuration = 0.0
+        self.longestAlgorithm = "UNKNOWN"
+        self.loadDurationTotal = 0.0
+        self.loadEventNexusDuration = 0.0
+        self.started = "UNKNOWN"
+        self.host = "UNKNOWN"
 
         if not bool(self):  # something wrong with the log
             return
 
         self.__findMantidVersion()
-
         self.__findLongestDuration()
-        self.longestDuration = f"{self.longestDuration:.1}"
-
         self.__findLoadNexusTotal(eventfilename)
-        self.loadEventNexusDuration = f"{self.loadEventNexusDuration:.1}"
-
         self.__findLoadTotal()
-        self.loadDurationTotal = f"{self.loadDurationTotal:.1}"
 
     def durationToHuman(duration):
         (hours, minutes, seconds) = (0.0, 0.0, duration)
@@ -141,12 +135,14 @@ class ReductionLogFile(GenericFile):
 
         algorithm = line_split[0].split("-")[0]  # algorithm is first field, with a tag
 
+        # find index of time
+        # this method to avoid nuance of second/seconds ...
         i_seconds = (
             next((i for i, el in enumerate(line_split) if "second" in el), -1) - 1
-        )  # find index of time
+        )
         i_minutes = (
             next((i for i, el in enumerate(line_split) if "minute" in el), -1) - 1
-        )  # this method to avoid nuance of second/seconds ...
+        )
 
         duration = 0.0  # initialize to 0
 
@@ -158,8 +154,6 @@ class ReductionLogFile(GenericFile):
         return (algorithm, duration)
 
     def __findLongestDuration(self):
-        self.longestDuration = 0.0  # in seconds
-
         with open(self.filename, "r") as handle:
             for line in handle:
                 if self.hasLogDuration(line):
@@ -178,8 +172,10 @@ class ReductionLogFile(GenericFile):
                     self.mantidVersion = line.split("This is Mantid version")[-1]
                     self.mantidVersion = self.mantidVersion.strip().split()[0]
                 if "running on" in line and "starting" in line:
-                    line = line.split("running on")[-1].strip()
-                    (self.host, self.started) = line.split("starting")
+                    line = line.split()
+
+                    self.host = line[-3]
+                    self.started = line[-1]
 
 
 class ARstatus:

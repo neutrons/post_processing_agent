@@ -131,6 +131,8 @@ def test_ReductionLogFile_partial_contents():
         handle.write(data)
         handle.close()
 
+        print(data)
+
         try:
             reduction_log_file = ReductionLogFile("handle.name", "PG3_56301")
             assert (
@@ -143,10 +145,10 @@ def test_ReductionLogFile_partial_contents():
             assert reduction_log_file.started == "2023-08-16T13:36Z"
 
             # fields are still the initial crappy values
-            assert reduction_log_file.longestDuration == ZERO_STR
+            assert reduction_log_file.longestDuration == 0.0
             assert not reduction_log_file.longestAlgorithm  # empty
-            reduction_log_file.loadDurationTotal == ZERO_STR
-            reduction_log_file.loadEventNexusDuration == ZERO_STR
+            reduction_log_file.loadDurationTotal == 0.0
+            reduction_log_file.loadEventNexusDuration == 0.0
             assert not reduction_log_file.started  # empty
         finally:
             # remove the temporary file
@@ -157,12 +159,12 @@ def check_bad_ReductionLogFile(reduction_log_file):
     assert not reduction_log_file  # it is invalid
     # fields are still the initial crappy values
     assert reduction_log_file.mantidVersion == "UNKNOWN"
-    assert reduction_log_file.longestDuration == ZERO_STR
-    assert not reduction_log_file.longestAlgorithm  # empty
-    reduction_log_file.loadDurationTotal == ZERO_STR
-    reduction_log_file.loadEventNexusDuration == ZERO_STR
-    assert not reduction_log_file.started  # empty
-    assert not reduction_log_file.host  # empty
+    assert reduction_log_file.longestDuration == 0.0
+    assert reduction_log_file.longestAlgorithm == "UNKNOWN"
+    assert reduction_log_file.loadDurationTotal == 0.0
+    assert reduction_log_file.loadEventNexusDuration == 0.0
+    assert reduction_log_file.started == "UNKNOWN"
+    assert reduction_log_file.host == "UNKNOWN"
 
 
 def test_ReductionLogFile_empty_file():
