@@ -44,6 +44,8 @@ def output_dir():
     shutil.rmtree(output_dir)
 
 
+########################################### end-to-end tests
+
 # def test_main_new(nexus_file, output_dir):
 #    main(nexus_file.name, output_dir)
 #    pass
@@ -57,7 +59,25 @@ def test_main_argError():
     pass
 
 
-def test_generic_file():
+########################################### unit tests of utility functions
+
+
+def test_getPropDir():
+    assert False, "test_getPropDir is not written"
+
+
+def test_getRuns():
+    assert False, "test_getRuns is not written"
+
+
+def test_getOutFilename():
+    assert False, "test_getOutFilename is not written"
+
+
+########################################### unit tests of GenericFile
+
+
+def test_GenericFile():
     CONTENTS = "hello!"
     NOW = datetime.datetime.now()
 
@@ -89,7 +109,7 @@ def test_generic_file():
             os.unlink(handle.name)
 
 
-def test_generic_file_empty():
+def test_GenericFile_empty():
     # create a file with empty contents
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as handle:
         handle.close()
@@ -99,6 +119,9 @@ def test_generic_file_empty():
         finally:
             # remove the temporary file
             os.unlink(handle.name)
+
+
+########################################### unit tests of ReductionLogFile
 
 
 def test_ReductionLogFile():
@@ -192,3 +215,17 @@ def test_ReductionLogFile_junk_contents():
         finally:
             # remove the temporary file
             os.unlink(handle.name)
+
+
+########################################### unit tests of EventFile
+
+
+def test_EventFile():
+    assert False, "test_EventFile is not written"
+
+
+########################################### unit tests of ARStatus
+
+
+def test_ARstatus():
+    assert False, "test_ARstatus is not written"
