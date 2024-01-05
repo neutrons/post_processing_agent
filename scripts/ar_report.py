@@ -137,17 +137,24 @@ class ReductionLogFile(GenericFile):
 
     @staticmethod
     def logDurationToNameAndSeconds(line):
-        (algorithm, duration) = line.split("successful,")
-        algorithm = algorithm.split()[-1]
-        duration = duration.split()[1:]
+        line_split = line.split()
 
-        if len(duration) == 2:  # only seconds
-            duration = float(duration[0])
-        elif len(duration) == 4:  # minutes and seconds
-            duration = float(duration[0]) * 60.0 + float(duration[2])
-        else:
-            print(duration)
-            raise RuntimeError("Don't know how to parse duration")
+        algorithm = line_split[0].split("-")[0]  # algorithm is first field, with a tag
+
+        i_seconds = (
+            next((i for i, el in enumerate(line_split) if "second" in el), -1) - 1
+        )  # find index of time
+        i_minutes = (
+            next((i for i, el in enumerate(line_split) if "minute" in el), -1) - 1
+        )  # this method to avoid nuance of second/seconds ...
+
+        duration = 0.0  # initialize to 0
+
+        if i_seconds != -2:  # add times as reported
+            duration += float(line_split[i_seconds])
+        if i_minutes != -2:
+            duration += float(line_split[i_minutes]) * 60
+
         return (algorithm, duration)
 
     def __findLongestDuration(self):
