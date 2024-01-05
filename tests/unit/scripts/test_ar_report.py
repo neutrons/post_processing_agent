@@ -161,10 +161,7 @@ def test_ReductionLogFile_partial_contents():
         handle.close()
 
         try:
-            reduction_log_file = ReductionLogFile("handle.name", SHORT_NAME)
-            assert (
-                not reduction_log_file
-            )  # it is invalid because it doesn't have algorithm information
+            reduction_log_file = ReductionLogFile(handle.name, SHORT_NAME)
 
             # things that are in the file
             check_bad_ReductionLogFile_values(

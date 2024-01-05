@@ -172,7 +172,9 @@ class ReductionLogFile(GenericFile):
                     self.mantidVersion = self.mantidVersion.strip().split()[0]
                 if "running on" in line and "starting" in line:
                     line = line.split("running on")[-1].strip()
-                    (self.host, self.started) = line.split("starting")
+                    (self.host, self.started) = [
+                        item.strip() for item in line.split("starting")
+                    ]
 
 
 class ARstatus:
