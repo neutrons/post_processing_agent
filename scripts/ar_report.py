@@ -69,10 +69,10 @@ class ReductionLogFile(GenericFile):
     def __init__(self, logfullname, eventfilename):
         super().__init__(logfullname)
         self.mantidVersion = "UNKNOWN"
-        self.longestDuration = 0.0
+        self.longestDuration = "0.0"
         self.longestAlgorithm = ""
-        self.loadDurationTotal = 0.0
-        self.loadEventNexusDuration = 0.0
+        self.loadDurationTotal = "0.0"
+        self.loadEventNexusDuration = "0.0"
         self.started = ""
         self.host = ""
 
