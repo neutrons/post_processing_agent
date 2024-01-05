@@ -28,3 +28,6 @@ line-length = 120
 #select = ["A", "ARG", "BLE", "E", "F", "I", "PT"]
 ignore = ["E401", "E402", "F403", "F405" # issues with imports
 ]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "scripts"]

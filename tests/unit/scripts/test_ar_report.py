@@ -82,10 +82,14 @@ def test_getOutFilename():
     pass
 
 
+<<<<<<< HEAD
 ########################################### unit tests of GenericFile
 
 
 def test_GenericFile():
+=======
+def test_generic_file():
+>>>>>>> 6015614 (Add unit test for GenericFile)
     CONTENTS = "hello!"
     NOW = datetime.datetime.now()
 
@@ -117,7 +121,11 @@ def test_GenericFile():
             os.unlink(handle.name)
 
 
+<<<<<<< HEAD
 def test_GenericFile_empty():
+=======
+def test_generic_file_empty():
+>>>>>>> 6015614 (Add unit test for GenericFile)
     # create a file with empty contents
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as handle:
         handle.close()
@@ -129,7 +137,11 @@ def test_GenericFile_empty():
             os.unlink(handle.name)
 
 
+<<<<<<< HEAD
 ########################################### unit tests of ReductionLogFile
+=======
+logfile_path = "tests/unit/scripts/PG3_56301.nxs.log"
+>>>>>>> 6015614 (Add unit test for GenericFile)
 
 
 def test_ReductionLogFile():
