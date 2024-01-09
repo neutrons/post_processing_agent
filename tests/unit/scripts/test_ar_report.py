@@ -1,4 +1,4 @@
-from ar_report import EventFile, GenericFile, ReductionLogFile
+from ar_report import *
 
 import datetime
 import h5py
@@ -12,6 +12,7 @@ import tempfile
 # data directory is inside of tests/
 DATA_DIREC = Path(__file__).parent.parent.parent / "data"
 INPUT_LOGFILE = DATA_DIREC / "PG3_56301.nxs.h5.log"
+
 # this should resolve to PG3_56301, but we are making it dynamic so things stay consistent
 SHORT_NAME = os.path.split(INPUT_LOGFILE)[-1].split(".")[0]
 # for comparing contents in junk reduction logs
@@ -26,8 +27,7 @@ def nexus_file():
     sns_dir = tempfile.mkdtemp(prefix="SNS")
     instrument_dir = tempfile.mkdtemp(dir=sns_dir)
     proposal_dir = tempfile.mkdtemp(prefix="IPTS-", dir=instrument_dir)
-    nexus_dir = tempfile.mkdtemp(dir=proposal_dir)
-
+    nexus_dir = tempfile.mkdtemp(prefix="nexus", dir=proposal_dir)
     nexus_file = tempfile.NamedTemporaryFile(suffix=".nxs.h5", dir=nexus_dir)
 
     with h5py.File(nexus_file.name, "w") as handle:
@@ -52,8 +52,6 @@ def nexus_file():
         "end_time": end_time,
     }
 
-    shutil.rmtree(sns_dir)
-
 
 @pytest.fixture(scope="function")
 def output_dir():
@@ -65,16 +63,23 @@ def output_dir():
 ########################################### unit tests of utility functions
 
 
-def test_getPropDir():
-    assert False, "test_getPropDir is not written"
+def test_getPropDir(nexus_file):
+    prop_dir_correct = str(nexus_file["filepath"]).split("/")
+    prop_dir_correct = os.path.join("/", *prop_dir_correct[:5])
+
+    prop_dir_test = getPropDir(str(nexus_file["filepath"]))
+
+    assert prop_dir_test == prop_dir_correct
 
 
+@pytest.mark.skip("not yet implemented")
 def test_getRuns():
-    assert False, "test_getRuns is not written"
+    pass
 
 
+@pytest.mark.skip("not yet implemented")
 def test_getOutFilename():
-    assert False, "test_getOutFilename is not written"
+    pass
 
 
 ########################################### unit tests of GenericFile
@@ -246,16 +251,6 @@ def test_EventFile(nexus_file):
 ########################################### unit tests of ARStatus
 
 
-def test_ARstatus():
-    assert False, "test_ARstatus is not written"
-
-
-def test_main_append():
+@pytest.mark.skip("not yet implemented")
+def test_ARstatus(nexus_file):
     pass
-
-
-def test_main_argError():
-    pass
-
-
-logfile_path = "tests/unit/scripts/PG3_56301.nxs.log"

@@ -205,7 +205,7 @@ class ARstatus:
         ]
 
         # find longest running algorithm
-        self.longestAlgorithm = ""
+        self.longestAlgorithm = "UNKNOWN"
         self.longestDuration = 0.0
         for logfile in self.logfiles:
             if logfile.longestDuration > self.longestDuration:
@@ -217,7 +217,7 @@ class ARstatus:
         for logfile in self.logfiles:
             if len(logfile.host) > 0:
                 return logfile.host
-        return ""
+        return "UNKNOWN"
 
     @property
     def mantidVersion(self):
@@ -240,7 +240,7 @@ class ARstatus:
     def findOldest(times):
         times = [time for time in times if len(time) > 0]
         if len(times) <= 0:
-            return ""
+            return "UNKNOWN"
 
         oldest = THE_FUTURE
         for time in times:
@@ -249,7 +249,7 @@ class ARstatus:
         if oldest != THE_FUTURE:
             return oldest
         else:
-            return ""
+            return "UNKNOWN"
 
     @property
     def logstarted(self):
@@ -337,7 +337,7 @@ class EventFile(GenericFile):
 def getPropDir(descr):
     # if this points to a runfile, guess the proposal directory
     if os.path.isfile(descr):
-        parts = [str(item) for item in descr.split("/")[:-1]]
+        parts = [str(item) for item in descr.split("/")[:-2]]
         fullpath = os.path.join("/", *parts)
     else:
         fullpath = descr
@@ -418,6 +418,18 @@ def main(runfile, outputdir):
 
 
 if __name__ == "__main__":
+    raise Exception("This code is fatally bugged. See comments for details")
+
+    """
+    During testing, it was discovered code must be reworked to be functional.
+
+    Global variables 'shareddirlist' and 'reduceloglist' are empty lists and intended to be initialized in main()
+    After initializing in main(), they are not used except for in the ARstatus class
+    But pre-commit doesn't allow unused variables, causing a development contradiction
+
+    This code is also no longer in use and so it was decided to divert attention to other tasks.
+    """
+
     import argparse
 
     parser = argparse.ArgumentParser(
