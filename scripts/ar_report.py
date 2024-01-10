@@ -51,18 +51,18 @@ class GenericFile:
 
     def filesizehuman(self):
         if self.filesize < 1024:
-            return f"{self.filesize} B"
+            return f"{self.filesize}B"
 
         filesize_converted = float(self.filesize) / 1024.0  # to kiB
         if filesize_converted < 1024.0:
-            return f"{filesize_converted:.1f} kiB"
+            return f"{filesize_converted:.1}kiB"
 
         filesize_converted = float(filesize_converted) / 1024.0  # to MiB
         if filesize_converted < 1024.0:
-            return f"{filesize_converted:.1f} MiB"
+            return f"{filesize_converted:.1}MiB"
 
         filesize_converted = float(filesize_converted) / 1024.0  # to GiB
-        return f"{filesize_converted:.1f} GiB"
+        return f"{filesize_converted:.1}GiB"
 
 
 class ReductionLogFile(GenericFile):
@@ -70,26 +70,19 @@ class ReductionLogFile(GenericFile):
         super().__init__(logfullname)
         self.mantidVersion = "UNKNOWN"
         self.longestDuration = 0.0
-        self.longestAlgorithm = ""
+        self.longestAlgorithm = "UNKNOWN"
         self.loadDurationTotal = 0.0
         self.loadEventNexusDuration = 0.0
-        self.started = ""
-        self.host = ""
-        self.loadEventNexusDuration = 0.0
+        self.started = "UNKNOWN"
+        self.host = "UNKNOWN"
 
         if not bool(self):  # something wrong with the log
             return
 
         self.__findMantidVersion()
-
         self.__findLongestDuration()
-        self.longestDuration = f"{self.longestDuration:.1f}"
-
         self.__findLoadNexusTotal(eventfilename)
-        self.loadEventNexusDuration = f"{self.loadEventNexusDuration:.1f}"
-
         self.__findLoadTotal()
-        self.loadDurationTotal = f"{self.loadDurationTotal:.1f}"
 
     def durationToHuman(duration):
         (hours, minutes, seconds) = (0.0, 0.0, duration)
@@ -99,13 +92,17 @@ class ReductionLogFile(GenericFile):
             if minutes > 60:
                 hours = int(minutes / 60)
                 minutes = minutes % 60
-        return f"{hours:d}h{minutes:02d}m{int(seconds):02d}"
+        return f"{hours}h{minutes:02}m{int(seconds):02}s"
 
     def __findLoadNexusTotal(self, eventfilename):
         with open(self.filename, "r") as handle:
             lookForDuration = False
             for line in handle:
-                if "Load" in line and eventfilename in line:
+                if (
+                    line.startswith("Load")
+                    and (f"{eventfilename}.nxs.h5" or f"{eventfilename}_event.nxs")
+                    in line
+                ):
                     lookForDuration = True
                 elif lookForDuration and self.hasLogDuration(line):
                     (_, duration) = self.logDurationToNameAndSeconds(line)
@@ -120,7 +117,7 @@ class ReductionLogFile(GenericFile):
             for line in handle:
                 if not self.hasLogDuration(line):
                     continue
-                if "Load" not in line:
+                if not line.startswith("Load"):
                     continue
                 line = line.strip()
                 (_, duration) = self.logDurationToNameAndSeconds(line)
@@ -138,22 +135,29 @@ class ReductionLogFile(GenericFile):
 
     @staticmethod
     def logDurationToNameAndSeconds(line):
-        (algorithm, duration) = line.split("successful,")
-        algorithm = algorithm.split()[-1]
-        duration = duration.split()[1:]
+        line_split = line.split()
 
-        if len(duration) == 2:  # only seconds
-            duration = float(duration[0])
-        elif len(duration) == 4:  # minutes and seconds
-            duration = float(duration[0]) * 60.0 + float(duration[2])
-        else:
-            print(duration)
-            raise RuntimeError("Don't know how to parse duration")
+        algorithm = line_split[0].split("-")[0]  # algorithm is first field, with a tag
+
+        # find index of time
+        # this method to avoid nuance of second/seconds ...
+        i_seconds = (
+            next((i for i, el in enumerate(line_split) if "second" in el), -1) - 1
+        )
+        i_minutes = (
+            next((i for i, el in enumerate(line_split) if "minute" in el), -1) - 1
+        )
+
+        duration = 0.0  # initialize to 0
+
+        if i_seconds != -2:  # add times as reported
+            duration += float(line_split[i_seconds])
+        if i_minutes != -2:
+            duration += float(line_split[i_minutes]) * 60
+
         return (algorithm, duration)
 
     def __findLongestDuration(self):
-        self.longestDuration = 0.0  # in seconds
-
         with open(self.filename, "r") as handle:
             for line in handle:
                 if self.hasLogDuration(line):
@@ -172,8 +176,10 @@ class ReductionLogFile(GenericFile):
                     self.mantidVersion = line.split("This is Mantid version")[-1]
                     self.mantidVersion = self.mantidVersion.strip().split()[0]
                 if "running on" in line and "starting" in line:
-                    line = line.split("running on")[-1].strip()
-                    (self.host, self.started) = line.split("starting")
+                    line = line.split()
+
+                    self.host = line[-3]
+                    self.started = line[-1]
 
 
 class ARstatus:
@@ -199,7 +205,7 @@ class ARstatus:
         ]
 
         # find longest running algorithm
-        self.longestAlgorithm = ""
+        self.longestAlgorithm = "UNKNOWN"
         self.longestDuration = 0.0
         for logfile in self.logfiles:
             if logfile.longestDuration > self.longestDuration:
@@ -211,7 +217,7 @@ class ARstatus:
         for logfile in self.logfiles:
             if len(logfile.host) > 0:
                 return logfile.host
-        return ""
+        return "UNKNOWN"
 
     @property
     def mantidVersion(self):
@@ -234,7 +240,7 @@ class ARstatus:
     def findOldest(times):
         times = [time for time in times if len(time) > 0]
         if len(times) <= 0:
-            return ""
+            return "UNKNOWN"
 
         oldest = THE_FUTURE
         for time in times:
@@ -243,7 +249,7 @@ class ARstatus:
         if oldest != THE_FUTURE:
             return oldest
         else:
-            return ""
+            return "UNKNOWN"
 
     @property
     def logstarted(self):
@@ -315,7 +321,6 @@ class EventFile(GenericFile):
 
         with h5py.File(self.filename, "r") as handle:
             entry = handle.get("entry")
-
             self.timeStart = entry.get("start_time")[0].decode("utf-8")[:16]
             self.timeStop = entry.get("end_time")[0].decode("utf-8")[:16]
 
@@ -332,7 +337,7 @@ class EventFile(GenericFile):
 def getPropDir(descr):
     # if this points to a runfile, guess the proposal directory
     if os.path.isfile(descr):
-        parts = [str(item) for item in descr.split("/")[:4]]
+        parts = [str(item) for item in descr.split("/")[:-2]]
         fullpath = os.path.join("/", *parts)
     else:
         fullpath = descr
@@ -342,9 +347,8 @@ def getPropDir(descr):
         raise RuntimeError(f"{fullpath} does not exist")
     if not os.path.isdir(fullpath):
         raise RuntimeError(f"{fullpath} is not a directory")
-    if not (fullpath.startswith("/SNS/") and ("IPTS" in fullpath)):
+    if not (("SNS" in fullpath) and ("IPTS" in fullpath)):
         raise RuntimeError(f"{fullpath} does not appear to be a proposal directory")
-
     return fullpath
 
 
@@ -371,24 +375,8 @@ def getOutFilename(propdir):
     return f"{inst}-{prop}.csv"
 
 
-def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Report information on auto-" + "reduction in a proposal"
-    )
-    parser.add_argument(
-        "runfile",
-        metavar="NEXUSFILE",
-        help="path to a nexus file, changes to append " + "or proposal directory",
-    )
-    parser.add_argument(
-        "outputdir",
-        help="directory to write csv to, " + "defaults to instrument shared",
-    )
-    args = parser.parse_args()
-
-    runfile = os.path.abspath(args.runfile)
+def main(runfile, outputdir):
+    runfile = os.path.abspath(runfile)
     propdir = getPropDir(runfile)
 
     # one mode is to append a single run,
@@ -407,8 +395,10 @@ def main():
     # reduceloglist = os.listdir(os.path.join(reducedir, REDUCTION_LOG))
 
     outfile = getOutFilename(propdir)
-    outfile = os.path.join(args.outputdir, outfile)
+
+    outfile = os.path.join(outputdir, outfile)
     print(f"Writing results to '{outfile}'")
+
     total_runs = len(runs)
     total_reduced = 0
     if runfile is None or (not os.path.exists(outfile)):
@@ -428,4 +418,32 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise Exception("This code is fatally bugged. See comments for details")
+
+    """
+    During testing, it was discovered code must be reworked to be functional.
+
+    Global variables 'shareddirlist' and 'reduceloglist' are empty lists and intended to be initialized in main()
+    After initializing in main(), they are not used except for in the ARstatus class
+    But pre-commit doesn't allow unused variables, causing a development contradiction
+
+    This code is also no longer in use and so it was decided to divert attention to other tasks.
+    """
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Report information on auto-" + "reduction in a proposal"
+    )
+    parser.add_argument(
+        "runfile",
+        metavar="NEXUSFILE",
+        help="path to a nexus file, changes to append " + "or proposal directory",
+    )
+    parser.add_argument(
+        "outputdir",
+        help="directory to write csv to, " + "defaults to instrument shared",
+    )
+    args = parser.parse_args()
+
+    main(args.runfile, args.outputdir)
