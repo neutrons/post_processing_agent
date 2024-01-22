@@ -27,6 +27,7 @@ class TestConfiguration:
         assert conf.log_file == "/tmp/postprocessing.log"
         assert "/queue/CATALOG.ONCAT.DATA_READY" in conf.queues
         assert sys.path[0] == "/opt/postprocessing"
+        assert len(conf.processors) == 2
 
     def test_log_configuration(self, data_server, test_logger):
         conf = Configuration(data_server.path_to("post_processing.conf"))

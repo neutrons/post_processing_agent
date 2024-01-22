@@ -117,7 +117,7 @@ if __name__ == "__main__":
                             f"postprocessing.processors.{toks[0]}"
                         )
                         try:
-                            processor_class = eval(f"processor_module.{toks[1]}")
+                            processor_class = getattr(processor_module, toks[1])
                             if (
                                 namespace.queue
                                 == processor_class.get_input_queue_name()

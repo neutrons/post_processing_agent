@@ -12,16 +12,13 @@ Configuration
 -------------
 A configuration must be placed in `/etc/post_process_consumer.conf`.
 
-The `configuration/post_process_consumer.conf.developement` file will make a good starting
+The `configuration/post_process_consumer.conf.development` file will make a good starting
 point for configuration. Here are the entries to pay attention to:
 
     {
-        "uri": "failover:(tcp://localhost:61613)?randomize=false,startupMaxReconnectAttempts=100,initialReconnectDelay=1000,maxReconnectDelay=5000,maxReconnectAttempts=-1",
+        "brokers": [("localhost", 61613)],
         "amq_user": "",
         "amq_pwd": "",
-        "amq_queues": ["/queue/FERMI_REDUCTION.DATA_READY", "/queue/CATALOG.DATA_READY", "/queue/REDUCTION_CATALOG.DATA_READY"],
-        "reduction_data_ready": "FERMI_REDUCTION.DATA_READY",
-
         "sw_dir": "/opt/postprocessing",
         "python_dir": "/opt/postprocessing/postprocessing",
         "start_script": "python",
@@ -37,16 +34,11 @@ point for configuration. Here are the entries to pay attention to:
 #### ActiveMQ settings
 
    - The ActiveMQ server settings must be set by replacing localhost above
-     by the proper address and the "amq_user" and "amq_pwd" must be filled out.
-   - List the input queues in "amq_queues".
-   - Change the input queue names as needed. For example, if the standard
-     "REDUCTION.DATA_READY" queue is replaced by special-purpose queue like
-     "FERMI_REDUCTION.DATA_READY", you should change the name of that queue
-     on the configuration file.
+     by the proper address and the `"amq_user"` and `"amq_pwd"` must be filled out.
 
-   - If "jobs_per_instrument" is set to an integer greater than zero, no more than
+   - If `"jobs_per_instrument"` is set to an integer greater than zero, no more than
       that number of jobs will run on a given node for a given instrument.
-      Set "jobs_per_instrument" to zero to turn this feature off.
+      Set `"jobs_per_instrument"` to zero to turn this feature off.
 
       If this feature is used, you must add the following to activemq.xml:
 
