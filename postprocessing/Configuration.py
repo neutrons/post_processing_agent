@@ -35,7 +35,6 @@ class Configuration:
         # ActiveMQ broker information
         self.failover_uri = config["failover_uri"]
         self.brokers = [(host, port) for host, port in config["brokers"]]
-        self.queues = config["amq_queues"]
         self.sw_dir = config["sw_dir"] if "sw_dir" in config else "/opt/postprocessing"
         self.postprocess_error = config["postprocess_error"]
         # Reduction AMQ queues
@@ -133,7 +132,14 @@ class Configuration:
 
         sys.path.insert(0, self.sw_dir)
         # Configure processor plugins
-        self.processors = config["processors"] if "processors" in config else []
+        default_processors = [
+            "oncat_processor.ONCatProcessor",
+            "oncat_reduced_processor.ONCatProcessor",
+            "create_reduction_script_processor.CreateReductionScriptProcessor",
+            "reduction_processor.ReductionProcessor",
+        ]
+        self.processors = config.get("processors", default_processors)
+        self.queues = []
         if isinstance(self.processors, list):
             for p in self.processors:
                 toks = p.split(".")
@@ -143,7 +149,7 @@ class Configuration:
                         f"postprocessing.processors.{toks[0]}"
                     )
                     try:
-                        processor_class = eval(f"processor_module.{toks[1]}")
+                        processor_class = getattr(processor_module, toks[1])
                         self.queues.append(processor_class.get_input_queue_name())
                     except:  # noqa: E722
                         logging.error(

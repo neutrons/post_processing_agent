@@ -2,39 +2,24 @@
 
 ## Tasks and queues
 
-There are four tasks handled by the post processing agent:
+There are four tasks handled by the Post Processing Agent:
 
 1. Catalog raw data
 2. Reduce data
 3. Catalog reduced data
 4. Create reduction script
 
-The four tasks each correspond to one message queue in the ActiveMQ message broker. For historical reasons,
-there are two ways the queue - task connection is made, which will be described in the following two sections.
+The four tasks each correspond to one ActiveMQ message broker queue that the Post Processing Agent subscribes to.
 
-### Fixed tasks with configurable queue names
+### Task configuration
 
-The message queues for tasks 2. and 4. are configured in the postprocessor configuration file.
-
-| Configuration parameter | Description | Default value |
-| ----------------------- | --- | ------------- |
-| `"amq_queues"` | List of queues the agent will subscribe to |
-| `"reduction_data_ready"` | Messages from this queue will be handled by the `reduce` method | `REDUCTION.DATA_READY` |
-| `"create_reduction_script"` | Messages from this queue will be handled by the `create_reduction_script` method | `REDUCTION.CREATE_SCRIPT` |
-
-The Post Processing Agent subscribes to the queues in `"amq_queues"`. When a message is received,
-the handler of the message is determined by checking if the queue matches one of the queues
-`"reduction_data_ready"` or `"create_reduction_script"`.
-
-### Optional tasks with fixed queue names
-
-The message queues for tasks 1. and 3. are hard coded in their respective post processor classes.
-Instead, the user configures the active post processors using the parameter `"processors"` and the Post
-Processing Agent subscribes to the queues for the registered post processors.
+The user can configure the active post processors using the parameter `"processors"`. The Post
+Processing Agent subscribes to the queues for the registered post processors. The queue names are hard coded
+in their respective post processor classes.
 
 | Configuration parameter | Description | Default value |
 | ----------------------- | --- | ------------- |
-| `"processors"` | List of post-processors to register | `[]`, but should probably be `["oncat_processor.ONCatProcessor", "oncat_reduced_processor.ONCatProcessor"]` |
+| `"processors"` | List of post-processors to register | `["oncat_processor.ONCatProcessor", "oncat_reduced_processor.ONCatProcessor", "create_reduction_script_processor.CreateReductionScriptProcessor", "reduction_processor.ReductionProcessor"]` |
 
 ## Starting the Post Processing Agent
 
@@ -47,15 +32,14 @@ subscribes to the required queues, as described in [Tasks and queues](#tasks-and
 
 #### Related configuration parameters
 
-| Configuration parameter | Description | Default value |
-| ----------------------- | --- | ------------- |
-| `"failover_uri"` | URI of the message broker (the first argument to `StompConfig`) | `tcp://amqbroker.sns.gov:61613` |
-| `"amq_queues"` | List of queues the agent will subscribe to |
-| `"amq_user"` | Message broker username |
-| `"amq_pwd"` | Message broker password |
-| `"log_file"` | Path to the log file | `post_processing.log` |
-| `"heart_beat"` | Topic the agent will send heartbeats to | `/topic/SNS.COMMON.STATUS.AUTOREDUCE.0` |
-| `"heartbeat_ping"` | Topic the agent will subscribe to for ping requests | `/topic/SNS.COMMON.STATUS.PING` |
+| Configuration parameter | Description                                                                                                 | Default value |
+| ----------------------- |-------------------------------------------------------------------------------------------------------------| ------------- |
+| `"brokers"` | List of tuples containing host name and port of ActiveMQ broker(s), for example: `[("localhost", 61613)]` |  |
+| `"amq_user"` | Message broker username                                                                                     |
+| `"amq_pwd"` | Message broker password                                                                                     |
+| `"log_file"` | Path to the log file                                                                                        | `post_processing.log` |
+| `"heart_beat"` | Topic the agent will send heartbeats to                                                                     | `/topic/SNS.COMMON.STATUS.AUTOREDUCE.0` |
+| `"heartbeat_ping"` | Topic the agent will subscribe to for ping requests                                                         | `/topic/SNS.COMMON.STATUS.PING` |
 
 ## Consuming a message
 
@@ -84,12 +68,10 @@ The class `PostProcessorAdmin` routes the consumed message based on the queue na
 
 | Configuration parameter | Description | Default value |
 | ----------------------- | --- | ------------- |
-| `"failover_uri"` | URI of the message broker | `tcp://amqbroker.sns.gov:61613` |
+| `"brokers"` | List of tuples containing host name and port of ActiveMQ broker(s), for example: `[("localhost", 61613)]` |  |
 | `"amq_user"` | Message broker username |
 | `"amq_pwd"` | Message broker password |
 | `"exceptions"` | List of exceptions (exception messages) that are not treated as errors | |
-| `"reduction_data_ready"` | Messages from this queue will be handled by the `reduce` method | `REDUCTION.DATA_READY` |
-| `"create_reduction_script"` | Messages from this queue will be handled by the `create_reduction_script` method | `REDUCTION.CREATE_SCRIPT` |
 
 ## Tasks handled by Post Processing Agent
 
@@ -102,16 +84,15 @@ create reduction script, catalog raw data and catalog reduced data.
 
 | Configuration parameter | Description | Default value |
 | ----------------------- | ------ | ------------- |
-| `"reduction_data_ready"` | Messages from this queue will be handled by the `reduce` method | `REDUCTION.DATA_READY` |
 | `"reduction_started"` | Topic for status message | |
 | `"reduction_complete"` | Topic for status message | |
 | `"reduction_error"` | Topic for status message | |
 | `"reduction_disabled"` | Topic for status message | |
 | `"python_exec"` | Python executable used to run the reduction script | `python` |
 
-#### Test message
+#### Example message
 
-Default ActiveMQ queue: `REDUCTION.DATA_READY`.
+Queue name: `REDUCTION.DATA_READY`.
 
     {
       "information": "mac83808.sns.gov",
@@ -128,21 +109,20 @@ Default ActiveMQ queue: `REDUCTION.DATA_READY`.
 
 | Configuration parameter | Description | Default value |
 | ----------------------- | ------ | ------------- |
-| `"create_reduction_script"` | Messages from this queue will be handled by the `create_reduction_script` method | `REDUCTION.CREATE_SCRIPT` |
 | `"service_status"` | Topic for status messages related to creating a reduction script | `/topic/SNS.${instrument}.STATUS.POSTPROCESS` |
 
-#### Test message
+#### Example message
 
-Default ActiveMQ queue: `REDUCTION.CREATE_SCRIPT`.
+Queue name: `REDUCTION.CREATE_SCRIPT`.
 
-Test message using default parameters in the template:
+Example message using default parameters in the template:
 
     {
        'instrument': 'EQSANS',
        'use_default': True
     }
 
-Test message with custom parameter values:
+Example message with custom parameter values:
 
     {
       'instrument': 'SEQ',
@@ -152,53 +132,20 @@ Test message with custom parameter values:
 
 ### Catalog raw data
 
-Listens to queue: `CATALOG.ONCAT.DATA_READY`. The queue name is hard coded and
-automatically subscribed to if the configuration parameter `"processors"`
-contains `"oncat_processor.ONCatProcessor"`.
+Queue name: `CATALOG.ONCAT.DATA_READY`.
 
 #### Related configuration parameters
 
 | Configuration parameter | Description | Default value |
 | ----------------------- | --- | ------------- |
-| `"processors"` | List of post-processors to register | `[]`, but should probably be `["oncat_processor.ONCatProcessor", "oncat_reduced_processor.ONCatProcessor"]` |
 | `"python_exec"` | Python executable used to run the ONCat ingest script | `python` |
 
 ### Catalog reduced data
 
-Listens to queue: `REDUCTION_CATALOG.DATA_READY`. The queue name is hard coded and
-automatically subscribed to if the configuration parameter `"processors"`
-contains `"oncat_reduced_processor.ONCatProcessor"`.
+Queue name: `REDUCTION_CATALOG.DATA_READY`.
 
 #### Related configuration parameters
 
 | Configuration parameter | Description | Default value |
 | ----------------------- | --- | ------------- |
-| `"processors"` | List of post-processors to register | `[]`, but should probably be `["oncat_processor.ONCatProcessor", "oncat_reduced_processor.ONCatProcessor"]` |
 | `"python_exec"` | Python executable used to run the ONCat reduced ingest script | `python` |
-
-## Testing Post Processing Agent locally
-
-### To run a local ActiveMQ message broker
-
-1. Download ActiveMQ from the website: https://activemq.apache.org/.
-2. Install Java using `sudo apt install default-jdk`
-3. Start the message broker using `apache-activemq-*.*.*/bin/activemq start`
-4. Access the Apache ActiveMQ Console at ``http://localhost:8161/`` to add queues etc. (Default user/password is admin/admin.)
-5. Purge pending messages using `activemq purge`
-6. Stop the message broker using `activemq stop`
-
-### To simulate incoming messages
-
-With a local ActiveMQ message broker running, we can simulate messages from the workflow manager by publishing messages to the queues, either using the ActiveMQ Console or the `stompy.py` command-line client.
-
-#### Use ActiveMQ Console
-
-Open the Apache ActiveMQ Console at ``http://localhost:8161/`` (default user/password is admin/admin). Locate the queue and
-the "Send To" operation, paste the JSON in the Message body and press "Send".
-
-#### Use `stomp.py` command-line client
-
-Install `stomp.py` and use its [command-line client](https://jasonrbriggs.github.io/stomp.py/commandline.html).
-
-    $ python -m stomp -H localhost -P 61613
-    > send /queue/REDUCTION.DATA_READY {"information":"mac83808.sns.gov", "run_number":"30892", "instrument":"EQSANS", "ipts":"IPTS-10674", "facility":"SNS", "data_file":"/Volumes/RAID/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs"}

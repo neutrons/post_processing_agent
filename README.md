@@ -10,18 +10,15 @@ For the old version of the post-processing agent, see https://github.com/mantidp
 
 Configuration
 -------------
-A configuration must be placed in `/etc/post_process_consumer.conf`.
+A configuration must be placed in `/etc/autoreduce/post_processing.conf`.
 
-The `configuration/post_process_consumer.conf.developement` file will make a good starting
+The `configuration/post_process_consumer.conf.development` file will make a good starting
 point for configuration. Here are the entries to pay attention to:
 
     {
-        "uri": "failover:(tcp://localhost:61613)?randomize=false,startupMaxReconnectAttempts=100,initialReconnectDelay=1000,maxReconnectDelay=5000,maxReconnectAttempts=-1",
+        "brokers": [("localhost", 61613)],
         "amq_user": "",
         "amq_pwd": "",
-        "amq_queues": ["/queue/FERMI_REDUCTION.DATA_READY", "/queue/CATALOG.DATA_READY", "/queue/REDUCTION_CATALOG.DATA_READY"],
-        "reduction_data_ready": "FERMI_REDUCTION.DATA_READY",
-
         "sw_dir": "/opt/postprocessing",
         "python_dir": "/opt/postprocessing/postprocessing",
         "start_script": "python",
@@ -36,17 +33,12 @@ point for configuration. Here are the entries to pay attention to:
 
 #### ActiveMQ settings
 
-   - The ActiveMQ server settings must be set by replacing localhost above
-     by the proper address and the "amq_user" and "amq_pwd" must be filled out.
-   - List the input queues in "amq_queues".
-   - Change the input queue names as needed. For example, if the standard
-     "REDUCTION.DATA_READY" queue is replaced by special-purpose queue like
-     "FERMI_REDUCTION.DATA_READY", you should change the name of that queue
-     on the configuration file.
+   - The ActiveMQ server settings must be set by replacing `localhost` above
+     by the proper address and the `"amq_user"` and `"amq_pwd"` must be filled out.
 
-   - If "jobs_per_instrument" is set to an integer greater than zero, no more than
+   - If `"jobs_per_instrument"` is set to an integer greater than zero, no more than
       that number of jobs will run on a given node for a given instrument.
-      Set "jobs_per_instrument" to zero to turn this feature off.
+      Set `"jobs_per_instrument"` to zero to turn this feature off.
 
       If this feature is used, you must add the following to activemq.xml:
 
@@ -85,32 +77,23 @@ calling scripts hosted on the analysis cluster.
 
 Installation
 ------------
-The typical installation is designed to be similar to earlier versions of this service.
-You can modify where the software is installed by modifying the prefix at the top of the Makefile.
 
-   - Create the configuration files:
+Create the configuration files and edit according to your installation.
 
     cd configuration
-    cp post_process_consumer.conf.developement post_process_consumer.conf
+    cp post_process_consumer.conf.developement /etc/autoreduce/post_processing.conf
 
-   Edit the file according to your installation.
-
-   - From the top source directory, run
-
-    sudo make install
-
-   - Alternatively, you can package your configured installation as an RPM:
-
-    make rpm
-
-   - To install on a compute node with limited access, you can also do the following:
-
-    sudo make install/isolated
-
-   - To run, simply call
+To run, simply call
 
     python [installation path]/queueProcessor.py
 
+Development environment
+-----------------------
+
+The conda environment for running `queueProcessor.py` and tests locally is defined in `environment.yml`. Create and activate the conda environment for development.
+
+    conda env create  # or: mamba env create
+    conda activate post_processing_agent
 
 Running the tests
 -----------------
@@ -149,7 +132,7 @@ or
 
     $ python scripts/mantidpython.py tests/reduce_CONDA.py [Data file]  [Output dir]
 
-as an example for how to activating a specific conda environment for reduction.
+as an example for how to activate a specific conda environment for reduction.
 
 
 Running with docker
