@@ -1,4 +1,4 @@
-name: post_processing_agent_py3
+name: post_processing_agent
 channels:
   - conda-forge
   - defaults
@@ -12,5 +12,3 @@ dependencies:
   - requests=2.25
   - stomp.py=7
   - h5py
-# needed for wheel - add when switching to python3
-#  - build
