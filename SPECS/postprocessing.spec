@@ -3,7 +3,7 @@
 %define release 1
 
 Name: %{srcname}
-Version: 2.8.0
+Version: 3.0.0
 Release: %{release}%{?dist}
 Summary: %{summary}
 

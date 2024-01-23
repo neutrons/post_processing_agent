@@ -12,3 +12,4 @@ dependencies:
   - requests=2.25
   - stomp.py=7
   - h5py
+  - build
