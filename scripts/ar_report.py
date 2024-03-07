@@ -187,6 +187,7 @@ class ReductionLogFile(GenericFile):
 class ARstatus:
     def __init__(self, direc, eventfile):
         self.eventfile = eventfile
+        shareddirlist = os.listdir(direc)
         self.reduxfiles = [
             os.path.join(direc, name)
             for name in shareddirlist
@@ -391,26 +392,27 @@ def main(runfile, outputdir):
         runs = [EventFile(*(os.path.split(runfile)))]
     else:
         runs = getRuns(propdir)
-    reducedir = os.path.join(propdir, "shared", "autoreduce")
 
-    # shareddirlist = os.listdir(reducedir)
-    # reduceloglist = os.listdir(os.path.join(reducedir, REDUCTION_LOG))
+    print(f"Processing {len(runs)} nexus files")
 
     outfile = getOutFilename(propdir)
-
     outfile = os.path.join(outputdir, outfile)
-    print(f"Writing results to '{outfile}'")
+
+    reducedir = os.path.join(propdir, "shared", "autoreduce")
 
     total_runs = len(runs)
     total_reduced = 0
     if runfile is None or (not os.path.exists(outfile)):
+        print(f"Writing results to '{outfile}'")
         mode = "w"
     else:
+        print(f"Appending results to '{outfile}'")
         mode = "a"
     with open(outfile, mode) as handle:
         if mode == "w":
             handle.write(",".join(ARstatus.header()) + "\n")
-        for eventfile in runs:
+        for i, eventfile in enumerate(runs):
+            print("Processing", eventfile, i+1, "of", total_runs)
             ar = ARstatus(reducedir, eventfile)
             report = [str(item) for item in ar.report()]
             if len(ar.reduxfiles) > 0:
