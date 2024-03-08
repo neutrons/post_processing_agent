@@ -172,6 +172,8 @@ class ReductionLogFile(GenericFile):
         with open(self.filename, "r") as handle:
             for line in handle:
                 line = line.strip()
+                if not line:
+                    continue  # skip empty lines
                 if "This is Mantid version" in line:
                     self.mantidVersion = line.split("This is Mantid version")[-1]
                     self.mantidVersion = self.mantidVersion.strip().split()[0]
@@ -185,6 +187,7 @@ class ReductionLogFile(GenericFile):
 class ARstatus:
     def __init__(self, direc, eventfile):
         self.eventfile = eventfile
+        shareddirlist = os.listdir(direc)
         self.reduxfiles = [
             os.path.join(direc, name)
             for name in shareddirlist
@@ -196,7 +199,7 @@ class ARstatus:
 
         self.logfiles = [
             os.path.join(logdir, filename)
-            for filename in reduceloglist
+            for filename in os.listdir(logdir)
             if filename.startswith(eventfile.shortname)
         ]
         self.logfiles = [
@@ -321,8 +324,8 @@ class EventFile(GenericFile):
 
         with h5py.File(self.filename, "r") as handle:
             entry = handle.get("entry")
-            self.timeStart = entry.get("start_time")[0].decode("utf-8")[:16]
-            self.timeStop = entry.get("end_time")[0].decode("utf-8")[:16]
+            self.timeStart = entry.get("start_time")[0].decode("utf-8")[:19]
+            self.timeStop = entry.get("end_time")[0].decode("utf-8")[:19]
 
     def __str__(self):
         return self.prefix
@@ -347,7 +350,7 @@ def getPropDir(descr):
         raise RuntimeError(f"{fullpath} does not exist")
     if not os.path.isdir(fullpath):
         raise RuntimeError(f"{fullpath} is not a directory")
-    if not (("SNS" in fullpath) and ("IPTS" in fullpath)):
+    if not ((("SNS" in fullpath) or ("HFIR" in fullpath)) and ("IPTS" in fullpath)):
         raise RuntimeError(f"{fullpath} does not appear to be a proposal directory")
     return fullpath
 
@@ -389,26 +392,27 @@ def main(runfile, outputdir):
         runs = [EventFile(*(os.path.split(runfile)))]
     else:
         runs = getRuns(propdir)
-    reducedir = os.path.join(propdir, "shared", "autoreduce")
 
-    # shareddirlist = os.listdir(reducedir)
-    # reduceloglist = os.listdir(os.path.join(reducedir, REDUCTION_LOG))
+    print(f"Processing {len(runs)} nexus files")
 
     outfile = getOutFilename(propdir)
-
     outfile = os.path.join(outputdir, outfile)
-    print(f"Writing results to '{outfile}'")
+
+    reducedir = os.path.join(propdir, "shared", "autoreduce")
 
     total_runs = len(runs)
     total_reduced = 0
     if runfile is None or (not os.path.exists(outfile)):
+        print(f"Writing results to '{outfile}'")
         mode = "w"
     else:
+        print(f"Appending results to '{outfile}'")
         mode = "a"
     with open(outfile, mode) as handle:
         if mode == "w":
             handle.write(",".join(ARstatus.header()) + "\n")
-        for eventfile in runs:
+        for i, eventfile in enumerate(runs):
+            print("Processing", eventfile, i+1, "of", total_runs)
             ar = ARstatus(reducedir, eventfile)
             report = [str(item) for item in ar.report()]
             if len(ar.reduxfiles) > 0:
@@ -418,8 +422,6 @@ def main(runfile, outputdir):
 
 
 if __name__ == "__main__":
-    raise Exception("This code is fatally bugged. See comments for details")
-
     """
     During testing, it was discovered code must be reworked to be functional.
 
@@ -433,12 +435,12 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Report information on auto-" + "reduction in a proposal"
+        description="Report information on auto-reduction in a proposal"
     )
     parser.add_argument(
         "runfile",
         metavar="NEXUSFILE",
-        help="path to a nexus file, changes to append " + "or proposal directory",
+        help="path to a nexus file (changes are appended) or entire proposal directory",
     )
     parser.add_argument(
         "outputdir",
