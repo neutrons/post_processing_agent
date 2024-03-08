@@ -47,7 +47,7 @@ class GenericFile:
             return self.timeCreation.strftime("%Y-%m-%dT%H:%M")
 
     def filesizeMiB(self):
-        return f"{float(self.filesize) / 1024.0 / 1024.0}"
+        return f"{float(self.filesize) / 1024.0 / 1024.0:.1f}"
 
     def filesizehuman(self):
         if self.filesize < 1024:
@@ -284,6 +284,7 @@ class ARstatus:
             "runID",
             "runStart",
             "runStop",
+            "runDuration",
             "runCTime",
             "eventSizeMiB",
             "host",
@@ -302,6 +303,7 @@ class ARstatus:
             str(self.eventfile),
             self.eventfile.timeStart,
             self.eventfile.timeStop,
+            f"{self.eventfile.duration:.1f}",
             self.eventfile.iso8601(),
             self.eventfile.filesizeMiB(),
             self.host,
@@ -310,9 +312,9 @@ class ARstatus:
             self.logstarted,
             self.logiso8601,
             self.longestAlgorithm,
-            self.longestDuration,
-            self.loadDurationTotal,
-            self.loadEventNexusDuration,
+            f"{self.longestDuration:.1f}",
+            f"{self.loadDurationTotal:.1f}",
+            f"{self.loadEventNexusDuration:.1f}",
         )
 
 
@@ -326,6 +328,7 @@ class EventFile(GenericFile):
             entry = handle.get("entry")
             self.timeStart = entry.get("start_time")[0].decode("utf-8")[:19]
             self.timeStop = entry.get("end_time")[0].decode("utf-8")[:19]
+            self.duration = float(entry.get("duration").value[0])
 
     def __str__(self):
         return self.prefix
@@ -366,8 +369,7 @@ def getRuns(propdir):
 
     # get a list of event files in that directory
     files = os.listdir(datadirs[0])
-    files = [name for name in files if not name.endswith("_histo.nxs")]
-    files = [EventFile(datadirs[0], name) for name in files]
+    files = [EventFile(datadirs[0], name) for name in files if not name.endswith("_histo.nxs")]
 
     return files
 
