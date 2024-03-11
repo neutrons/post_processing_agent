@@ -2,7 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import h5py
 import os
-import datetime
+from datetime import datetime, timedelta
 
 __version__ = "0.0.1"
 
@@ -25,7 +25,7 @@ class GenericFile:
             return
 
         stat = os.stat(self.filename)
-        self.timeCreation = datetime.datetime.fromtimestamp(stat.st_ctime)
+        self.timeCreation = datetime.fromtimestamp(stat.st_ctime)
         self.filesize = stat.st_size
 
     # called for bool(obj) in python 3.x
@@ -47,7 +47,7 @@ class GenericFile:
             return self.timeCreation.strftime("%Y-%m-%dT%H:%M")
 
     def filesizeMiB(self):
-        return f"{float(self.filesize) / 1024.0 / 1024.0}"
+        return f"{float(self.filesize) / 1024.0 / 1024.0:.1f}"
 
     def filesizehuman(self):
         if self.filesize < 1024:
@@ -73,6 +73,10 @@ class ReductionLogFile(GenericFile):
         self.longestAlgorithm = "UNKNOWN"
         self.loadDurationTotal = 0.0
         self.loadEventNexusDuration = 0.0
+        self.firstAlgName="UNKNOWN"
+        self.firstAlgStart="UNKNOWN"
+        self.lastAlgName="UNKNOWN"
+        self.lastAlgFinish="UNKNOWN"
         self.started = "UNKNOWN"
         self.host = "UNKNOWN"
 
@@ -83,6 +87,7 @@ class ReductionLogFile(GenericFile):
         self.__findLongestDuration()
         self.__findLoadNexusTotal(eventfilename)
         self.__findLoadTotal()
+        self.__estimateReductionTime()
 
     def durationToHuman(duration):
         (hours, minutes, seconds) = (0.0, 0.0, duration)
@@ -122,6 +127,33 @@ class ReductionLogFile(GenericFile):
                 line = line.strip()
                 (_, duration) = self.logDurationToNameAndSeconds(line)
                 self.loadDurationTotal += duration
+
+    def __estimateReductionTime(self):
+        with open(self.filename, "r") as handle:
+            algName = ''
+            algStart = None
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                if "Execution Date:" in line:
+                    algName = line.split('-')[0]
+
+                    # very convoluted way to get datetime in python 3.6
+                    algStart = line.split('Execution Date:')[-1].strip()
+                    algStart, fraction = algStart.split('.') # strptime doesn't like decimals in seconds
+                    # datetime.fromisoformat isn't available in python3.6
+                    algStart = datetime.strptime(algStart, r"%Y-%m-%d %H:%M:%S")
+                    algStart += timedelta(seconds=float('.'+fraction))
+                    if self.firstAlgName == "UNKNOWN":
+                        self.firstAlgName = algName
+                        self.firstAlgStart = algStart
+                elif self.hasLogDuration(line):
+                    if algName and line.startswith(algName):
+                        self.lastAlgName=algName
+                        (_, duration) = self.logDurationToNameAndSeconds(line)
+                        self.lastAlgFinish = algStart + timedelta(seconds=duration)
+                        algName = '' # clear it out for the next round
 
     @staticmethod
     def hasLogDuration(line):
@@ -278,12 +310,28 @@ class ARstatus:
             total += float(logfile.loadEventNexusDuration)
         return total
 
+    @property
+    def reduxTime(self):
+        '''This estimates the time for autoreduction to be the time between when mantid was first imported and
+        when the last algorithm finished'''
+        logfiles = [logfile for logfile in self.logfiles
+                    if (logfile.firstAlgStart != "UNKNOWN" and logfile.lastAlgFinish != "UNKNOWN")]
+        if len(logfiles) == 0:
+            return 0.
+
+        start = logfiles[0].firstAlgStart
+        finish = logfiles[0].lastAlgFinish
+
+        # calculate and return the duration
+        return (finish-start) / timedelta(seconds=1)
+
     @staticmethod
     def header():
         return (
             "runID",
             "runStart",
             "runStop",
+            "runDuration",
             "runCTime",
             "eventSizeMiB",
             "host",
@@ -295,13 +343,17 @@ class ARstatus:
             "algoSec",
             "loadSecTotal",
             "loadNexusSecTotal",
+            "reduxEstTime",
+            "meas-redux"
         )
 
     def report(self):
+        reduxTime = self.reduxTime
         return (
             str(self.eventfile),
             self.eventfile.timeStart,
             self.eventfile.timeStop,
+            f"{self.eventfile.duration:.1f}",
             self.eventfile.iso8601(),
             self.eventfile.filesizeMiB(),
             self.host,
@@ -310,9 +362,11 @@ class ARstatus:
             self.logstarted,
             self.logiso8601,
             self.longestAlgorithm,
-            self.longestDuration,
-            self.loadDurationTotal,
-            self.loadEventNexusDuration,
+            f"{self.longestDuration:.1f}",
+            f"{self.loadDurationTotal:.1f}",
+            f"{self.loadEventNexusDuration:.1f}",
+            f"{reduxTime:.1f}",
+            f"{self.eventfile.duration-reduxTime:.1f}"
         )
 
 
@@ -326,6 +380,10 @@ class EventFile(GenericFile):
             entry = handle.get("entry")
             self.timeStart = entry.get("start_time")[0].decode("utf-8")[:19]
             self.timeStop = entry.get("end_time")[0].decode("utf-8")[:19]
+            try:
+                self.duration = float(entry.get("duration").value[0])
+            except AttributeError:
+                self.duration = float(entry.get("duration")[0])
 
     def __str__(self):
         return self.prefix
@@ -366,8 +424,7 @@ def getRuns(propdir):
 
     # get a list of event files in that directory
     files = os.listdir(datadirs[0])
-    files = [name for name in files if not name.endswith("_histo.nxs")]
-    files = [EventFile(datadirs[0], name) for name in files]
+    files = [EventFile(datadirs[0], name) for name in files if not name.endswith("_histo.nxs")]
 
     return files
 
