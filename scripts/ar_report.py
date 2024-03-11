@@ -380,7 +380,10 @@ class EventFile(GenericFile):
             entry = handle.get("entry")
             self.timeStart = entry.get("start_time")[0].decode("utf-8")[:19]
             self.timeStop = entry.get("end_time")[0].decode("utf-8")[:19]
-            self.duration = float(entry.get("duration").value[0])
+            try:
+                self.duration = float(entry.get("duration").value[0])
+            except AttributeError:
+                self.duration = float(entry.get("duration")[0])
 
     def __str__(self):
         return self.prefix

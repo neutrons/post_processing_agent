@@ -23,6 +23,7 @@ ZERO_STR = "0.0"
 def nexus_file():
     start_time = "starting-time"
     end_time = "starting-time"
+    duration = 42.
 
     sns_dir = tempfile.mkdtemp(prefix="SNS")
     instrument_dir = tempfile.mkdtemp(dir=sns_dir)
@@ -45,11 +46,13 @@ def nexus_file():
                 end_time,
             ],
         )
+        entry.create_dataset("duration", (1,), data=[duration])
 
     yield {
         "filepath": Path(nexus_file.name),
         "start_time": start_time,
         "end_time": end_time,
+        "duration": duration,
     }
 
 
@@ -246,6 +249,7 @@ def test_EventFile(nexus_file):
     assert eventfile.isThisRun(str(nexus_file["filepath"].name))
     assert eventfile.timeStart == nexus_file["start_time"]
     assert eventfile.timeStop == nexus_file["end_time"]
+    assert eventfile.duration == nexus_file["duration"]
 
 
 ########################################### unit tests of ARStatus
