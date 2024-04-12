@@ -21,6 +21,7 @@ RUN mkdir -p /opt/postprocessing/log && \
     mkdir -p /SNS/EQSANS/IPTS-10674/0/30892/NeXus && \
     mkdir -p /SNS/EQSANS/IPTS-10674/shared/autoreduce && \
     touch /SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs && \
+    touch /SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30893_event.nxs && \
     mkdir -p /SNS/EQSANS/shared/autoreduce && \
     echo "import sys;print(sys.argv[1:])" > /SNS/EQSANS/shared/autoreduce/reduce_EQSANS.py && \
     \

@@ -117,3 +117,7 @@ class ReductionProcessor(BaseProcessor):
             logging.error(f"reduce: {sys.exc_info()[1]}")
             self.data["error"] = f"Reduction: {sys.exc_info()[1]} "
             self.send(ReductionProcessor.ERROR_QUEUE, json.dumps(self.data))
+
+
+class ReductionProcessorHighMemory(ReductionProcessor):
+    _message_queue = "/queue/REDUCTION.HIMEM.DATA_READY"
