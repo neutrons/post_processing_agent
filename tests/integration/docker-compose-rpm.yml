@@ -8,7 +8,7 @@ services:
       dockerfile: ./Dockerfile
 
   activemq:
-    image: rmohr/activemq
+    image: apache/activemq-classic
     hostname: activemq
     ports:
       - 8161:8161
