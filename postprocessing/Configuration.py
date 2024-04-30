@@ -10,6 +10,7 @@ import sys
 import os
 import json
 import logging
+from logging.handlers import RotatingFileHandler
 import importlib
 
 
@@ -218,10 +219,9 @@ def initialize_logging(log_file, level=logging.INFO, preemptive_cleanup=False):
             logging.root.removeHandler(handler)
 
     logging.basicConfig(
+        handlers=[RotatingFileHandler(log_file, maxBytes=10_000_000, backupCount=100)],
         level=level,
         format="%(asctime)s %(levelname)s/%(process)d %(message)s",
-        filename=log_file,
-        filemode="a",
     )
 
     ### add a level for subprocess logging
