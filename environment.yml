@@ -13,3 +13,4 @@ dependencies:
   - stomp.py=7
   - h5py
   - build
+  - psutil

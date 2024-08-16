@@ -1,13 +1,17 @@
 from postprocessing.processors.job_handling import (
     local_submission,
     determine_success_local,
+    terminate_or_kill_process_tree,
 )
 from postprocessing.Configuration import Configuration
 
 import os
+import psutil
 import pytest
+import subprocess
 import sys
 import tempfile
+import time
 
 
 @pytest.mark.parametrize(
@@ -21,6 +25,8 @@ def test_local_submission(mocker, script, output_expected, error_expected):
     mock_configuration = mocker.Mock(spec=Configuration)
     mock_configuration.python_executable = sys.executable
     mock_configuration.comm_only = False
+    mock_configuration.system_mem_limit_perc = 60.0
+    mock_configuration.mem_check_limit_sec = 0.5
 
     tempFile_script = tempfile.NamedTemporaryFile()
     tempFile_input = tempfile.NamedTemporaryFile()
@@ -74,3 +80,78 @@ def test_determine_success_local(
         success, data = determine_success_local(configuration_mock, error_file.name)
         assert success == success_expected
         assert data == data_expected
+
+
+def test_memory_limit(mocker, tmp_path, caplog):
+    """Test monitoring memory usage and terminating a job that exceeds the usage limit"""
+    mock_configuration = mocker.Mock(spec=Configuration)
+    mock_configuration.python_executable = sys.executable
+    mock_configuration.comm_only = False
+    mock_configuration.exceptions = []
+    # set too small memory limit of 1 MB
+    mock_configuration.system_mem_limit_perc = (
+        1024 * 1024 / psutil.virtual_memory().total
+    )
+    mock_configuration.mem_check_interval_sec = 0.05
+
+    # Script that will consume a lot of memory
+    script = """import numpy as np
+import time
+while True:
+    _ = np.random.rand(100000, 1000)
+    time.sleep(1)
+    """
+    tmp_file_script = tmp_path / "script.py"
+    tmp_file_script.write_text(script)
+    tmp_file_input = tmp_path / "in"
+    tmp_file_output = tmp_path / "out"
+    tmp_file_error = tmp_path / "err"
+
+    local_submission(
+        mock_configuration,
+        tmp_file_script,
+        tmp_file_input,
+        tmp_file_output.parent,
+        tmp_file_output,
+        tmp_file_error,
+    )
+    assert "Total memory usage exceeded limit" in caplog.text
+
+    # Verify that a message was added in the reduction error log
+    success, status_data = determine_success_local(mock_configuration, tmp_file_error)
+    assert not success
+    assert "error" in status_data
+    assert "Total memory usage exceeded limit" in status_data["error"]
+
+
+def test_terminate_or_kill_process_tree(tmp_path):
+    """Test function terminate_or_kill_process tree for process with child process"""
+    script = """
+import subprocess
+import time
+
+subprocess.run(["python", "-c", "import time; time.sleep(10); print('Child Process')"])
+time.sleep(30)  # Keep parent process alive
+"""
+
+    parent_script_file = tmp_path / "script.py"
+    parent_script_file.write_text(script)
+
+    # Start the parent process that starts a child process
+    proc = subprocess.Popen(["python", parent_script_file.as_posix()])
+    time.sleep(2)
+    parent_psutil = psutil.Process(proc.pid)
+
+    # Store list of started processes
+    procs_psutil = parent_psutil.children(recursive=True)
+    procs_psutil.append(parent_psutil)
+
+    # Try to terminate the processes
+    terminate_or_kill_process_tree(proc.pid)
+
+    # Verify processes were terminated
+    for p in procs_psutil:
+        try:
+            assert p.status() == psutil.STATUS_ZOMBIE
+        except psutil.NoSuchProcess:
+            pass
