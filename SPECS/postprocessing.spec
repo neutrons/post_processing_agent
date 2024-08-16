@@ -3,7 +3,7 @@
 %define release 1
 
 Name: %{srcname}
-Version: 3.2.0
+Version: 3.3.0
 Release: %{release}%{?dist}
 Summary: %{summary}
 
@@ -14,11 +14,16 @@ Group: Applications/Engineering
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 BuildArch: noarch
+
 BuildRequires:  python%{python3_pkgversion}-pip
+BuildRequires: systemd-rpm-macros
+
 Requires: python%{python3_pkgversion}
+Requires: python%{python3_pkgversion}-psutil
 Requires: python%{python3_pkgversion}-requests
 Requires: python%{python3_pkgversion}-stomppy
 Requires: python-unversioned-command
+Requires: systemd
 
 prefix: /opt/postprocessing
 
@@ -31,20 +36,23 @@ Post-processing agent to automatically catalog and reduce neutron data
 %autosetup -p1 -n %{srcname}-%{version}
 
 %build
+# no build step
 
 %install
 %{python3} -m pip install --target %{buildroot}%{prefix} --no-deps .
-mv %{buildroot}%{prefix}/postprocessing/queueProcessor.py %{buildroot}%{prefix}
-mkdir -p %{buildroot}%{prefix}/log
-mkdir -p %{buildroot}%{site_packages}
+%{__install} -m 755 %{buildroot}%{prefix}/postprocessing/queueProcessor.py %{buildroot}%{prefix}
+%{__mkdir} -p %{buildroot}%{prefix}/log
+%{__mkdir} -p %{buildroot}%{site_packages}
 echo %{prefix} > %{buildroot}%{site_packages}/postprocessing.pth
-mkdir -p %{buildroot}/var/log/SNS_applications
+%{__mkdir} -p %{buildroot}/var/log/SNS_applications
+%{__mkdir} -p %{buildroot}%{_unitdir}/
+%{__install} -m 644 %{_sourcedir}/autoreduce-queue-processor.service %{buildroot}%{_unitdir}/
 
 %files
 %doc README.md
 %license LICENSE.rst
 %{prefix}/*
 %attr(755, -, -) %{prefix}/scripts
-%attr(755, -, -) %{prefix}/queueProcessor.py
 %{site_packages}/postprocessing.pth
 /var/log/SNS_applications
+%{_unitdir}/autoreduce-queue-processor.service

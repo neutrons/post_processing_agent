@@ -1,0 +1,12 @@
+[Unit]
+Description=Postprocessing service
+
+[Service]
+WorkingDirectory=/opt/postprocessing
+User=snsdata
+Restart=on-failure
+RestartSec=5s
+ExecStart=/usr/bin/python queueProcessor.py
+
+[Install]
+WantedBy=multi-user.target
