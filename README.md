@@ -110,7 +110,7 @@ Specifying a regular expression using ``-k`` will select all tests that match th
 
 The integration tests requires activemq and the queueprocessor to be running, they will be automatically skipped if activemq is not running. This can be achieved using the docker-compose file provided,
 
-    docker-compose -f tests/integration/docker-compose.yml up -d --build
+    docker compose -f tests/integration/docker-compose.yml up -d --build
 
 then run
 
@@ -118,7 +118,7 @@ then run
 
 after which you can stop docker with
 
-    docker-compose -f tests/integration/docker-compose.yml down
+    docker compose -f tests/integration/docker-compose.yml down
 
 
 Running manual tests for mantidpython.py
@@ -142,3 +142,12 @@ Running with docker
 docker build --tag postprocessing .
 docker run --network host postprocessing
 ```
+
+Creating a new release
+----------------------
+1. Update the version number in [SPECS/postprocessing.spec](SPECS/postprocessing.spec) and
+   [pyproject.toml](pyproject.toml) and commit the change to `main`.
+2. Create a new tag and create a release from the tag (see the three dots menu
+   for the tag at https://github.com/neutrons/post_processing_agent/tags).
+3. Build the RPM using [rpmbuild.sh](rpmbuild.sh) and upload the `.rpm` and `.srpm` files as release
+   assets to the GitHub release page.
