@@ -11,6 +11,7 @@ COPY rpmbuild.sh /app/
 COPY README.md /app/
 COPY LICENSE.rst /app/
 COPY SPECS /app/SPECS
+COPY systemd /app/systemd
 
 RUN mkdir -p /root/rpmbuild/SOURCES
 
@@ -18,7 +19,7 @@ RUN cd /app && ./rpmbuild.sh || exit 1
 
 RUN dnf install -y /root/rpmbuild/RPMS/noarch/postprocessing*.noarch.rpm || exit 1
 
-# This configuration allows it to run with docker-compose from https://github.com/neutrons/data_workflow
+# This configuration allows it to run with docker compose from https://github.com/neutrons/data_workflow
 COPY configuration/post_process_consumer.conf.development /etc/autoreduce/post_processing.conf
 RUN sed -i 's/localhost/activemq/' /etc/autoreduce/post_processing.conf
 
