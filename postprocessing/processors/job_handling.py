@@ -53,7 +53,7 @@ def local_submission(configuration, script, input_file, output_dir, out_log, out
                     )
                     if total_mem_usage_mb > mem_limit_mb:
                         err_message = f"Total memory usage exceeded limit ({total_mem_usage_mb} MB > {mem_limit_mb} MB). Terminating subprocess and any child processes."
-                        logging.error(err_message)
+                        logging.warning(err_message)
                         # Terminate process and its child processes
                         terminate_or_kill_process_tree(proc.pid)
                         # Add message in the run reduction error log file
@@ -140,7 +140,11 @@ def terminate_or_kill_process_tree(pid, timeout=3):
     """
 
     def on_terminate(proc):
-        logging.warning(f"process {proc} terminated with exit code {proc.returncode}")
+        warn_msg = ""
+        if proc.pid != pid:
+            warn_msg += "child "
+        warn_msg += f"process {proc} terminated with exit code {proc.returncode}"
+        logging.warning(warn_msg)
 
     parent = psutil.Process(pid)
     procs = parent.children(recursive=True)
