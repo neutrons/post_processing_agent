@@ -162,6 +162,10 @@ class Configuration:
                         "Configuration: Processors can only be specified in the format module.Processor_class"
                     )
 
+        # Job memory monitoring
+        self.system_mem_limit_perc = config.get("system_mem_limit_perc", 70.0)
+        self.mem_check_interval_sec = config.get("mem_check_interval_sec", 0.2)
+
     def log_configuration(self, logger=logging):
         """
         Log the current configuration

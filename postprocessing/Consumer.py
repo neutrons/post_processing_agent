@@ -211,10 +211,15 @@ class Consumer:
         self._connection = None
         self._exit = False
 
+        # Signals registered for systemd
         signal.signal(signal.SIGTERM, self.exit_gracefully)
         signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGQUIT, self.exit_gracefully)
 
     def exit_gracefully(self, *args):
+        """
+        Tells Consumer to stop listening after current job is finished
+        """
         self._exit = True
 
     def get_connection(self, listener=None):
