@@ -69,6 +69,8 @@ class Configuration:
         self.log_file = (
             config["log_file"] if "log_file" in config else "post_processing.log"
         )
+        # log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
+        self.log_level = getattr(logging, config.get("log_level", ""), logging.INFO)
         self.start_script = (
             config["start_script"] if "start_script" in config else "python"
         )
@@ -287,6 +289,6 @@ def read_configuration(
     configuration = Configuration(config_file)
     if log_file:
         configuration.log_file = str(log_file)
-    initialize_logging(configuration.log_file)
+    initialize_logging(configuration.log_file, configuration.log_level)
 
     return configuration

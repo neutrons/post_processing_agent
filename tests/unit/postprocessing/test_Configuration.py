@@ -15,6 +15,7 @@ import os
 import sys
 import tempfile
 import importlib
+import json
 
 
 class TestConfiguration:
@@ -63,6 +64,28 @@ def test_read_configuration(data_server, caplog):
         # python3 version raise IOError("Log file not found") from e
     finally:
         sys.stderr = backup
+
+
+@pytest.fixture
+def config(data_server):
+    return Configuration(data_server.path_to("post_processing.conf"))
+
+
+@pytest.mark.parametrize(
+    "log_level_str", ["DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"]
+)
+def test_log_level(log_level_str, config, tmp_path):
+    """Test setting log level in the configuration file"""
+    config.log_level = log_level_str
+    expected_log_level = getattr(logging, log_level_str)
+    # we need to reload logging so that the new config gets set correctly
+    importlib.reload(logging)
+    # create a copy of the config file
+    tmp_conf_file = tmp_path / "post_processing.conf"
+    tmp_conf_file.write_text(json.dumps(config, default=lambda o: o.__dict__))
+    # read configuration file, which initializes logging
+    read_configuration(config_file=tmp_conf_file.as_posix())
+    assert logging.root.level == expected_log_level
 
 
 class TestStreamToLogger:

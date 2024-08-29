@@ -5,6 +5,7 @@ from postprocessing.processors.job_handling import (
 )
 from postprocessing.Configuration import Configuration
 
+import logging
 import os
 import psutil
 import pytest
@@ -88,11 +89,14 @@ def test_memory_limit(mocker, tmp_path, caplog):
     mock_configuration.python_executable = sys.executable
     mock_configuration.comm_only = False
     mock_configuration.exceptions = []
-    # set too small memory limit of 1 MB
-    mock_configuration.system_mem_limit_perc = (
+    # set too small memory limit of 1 MiB
+    mock_configuration.system_mem_limit_perc = 100.0 * (
         1024 * 1024 / psutil.virtual_memory().total
     )
     mock_configuration.mem_check_interval_sec = 0.05
+
+    # Modify log level to capture memory usage debug log
+    caplog.set_level(logging.DEBUG)
 
     # Script that will consume a lot of memory
     script = """import numpy as np
@@ -115,6 +119,7 @@ while True:
         tmp_file_output,
         tmp_file_error,
     )
+    assert "Subprocess memory usage" in caplog.text
     assert "Total memory usage exceeded limit" in caplog.text
 
     # Verify that a message was added in the reduction error log
