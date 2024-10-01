@@ -107,6 +107,7 @@ def determine_success_local(configuration, out_err):
 
         if not success:
             data["error"] = f"REDUCTION: {error_line}"
+            logging.error(f"REDUCTION: {error_line}")
 
     return success, data
 
