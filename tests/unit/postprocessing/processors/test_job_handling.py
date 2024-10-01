@@ -5,6 +5,7 @@ from postprocessing.processors.job_handling import (
 )
 from postprocessing.Configuration import Configuration
 
+from io import StringIO
 import logging
 import os
 import psutil
@@ -74,6 +75,14 @@ def test_determine_success_local(
     configuration_mock = mocker.Mock(spec=Configuration)
     configuration_mock.exceptions = configuration
 
+    logging_stream = StringIO()
+
+    logging_handler = logging.StreamHandler(logging_stream)
+
+    logger = logging.getLogger()
+    logger.addHandler(logging_handler)
+    logger.setLevel(logging.DEBUG)
+
     with tempfile.NamedTemporaryFile() as error_file:
         error_file.write(out_err)
         error_file.seek(0)
@@ -81,6 +90,13 @@ def test_determine_success_local(
         success, data = determine_success_local(configuration_mock, error_file.name)
         assert success == success_expected
         assert data == data_expected
+
+        if data_expected:
+            assert list(data_expected.values())[0] in logging_stream.getvalue().rstrip()
+        else:
+            assert logging_stream.getvalue() == ""
+
+    logger.removeHandler(logging_handler)
 
 
 def test_memory_limit(mocker, tmp_path, caplog):
