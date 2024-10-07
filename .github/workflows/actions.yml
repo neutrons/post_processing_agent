@@ -16,7 +16,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up MicroMamba
-      uses: mamba-org/setup-micromamba@v1
+      uses: mamba-org/setup-micromamba@v2
       with:
         environment-file: environment.yml
         condarc: |
@@ -44,7 +44,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up MicroMamba
-      uses: mamba-org/setup-micromamba@v1
+      uses: mamba-org/setup-micromamba@v2
       with:
         environment-file: environment.yml
         condarc: |
@@ -111,7 +111,7 @@ jobs:
 
     # now run a couple integration test with RPM installed package
     - name: Set up MicroMamba
-      uses: mamba-org/setup-micromamba@v1
+      uses: mamba-org/setup-micromamba@v2
       with:
         environment-file: environment.yml
         condarc: |
