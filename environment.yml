@@ -3,14 +3,14 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.9
+  - h5py
   - plotly
   - pre-commit
+  - psutil
   - pytest
   - pytest-cov
   - pytest-mock
+  - python=3.9
+  - python-build
   - requests=2.25
   - stomp.py=7
-  - h5py
-  - build
-  - psutil
