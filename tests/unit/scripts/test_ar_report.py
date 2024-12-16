@@ -23,7 +23,7 @@ ZERO_STR = "0.0"
 def nexus_file():
     start_time = "starting-time"
     end_time = "starting-time"
-    duration = 42.
+    duration = 42.0
 
     sns_dir = tempfile.mkdtemp(prefix="SNS")
     instrument_dir = tempfile.mkdtemp(dir=sns_dir)
