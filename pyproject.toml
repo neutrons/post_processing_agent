@@ -1,7 +1,7 @@
 [project]
 name = "postprocessing"
 description = "Post-processing agent to automatically catalog and reduce neutron data"
-version = "3.3.3"
+version = "3.3.4"
 requires-python = ">=3.9"
 dependencies = [
     "requests",
