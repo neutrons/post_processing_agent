@@ -15,6 +15,10 @@ COPY systemd /app/systemd
 
 RUN mkdir -p /root/rpmbuild/SOURCES
 
+# The RPM build assumes that user "snsdata" and group "snswheel" exist
+RUN useradd snsdata
+RUN groupadd snswheel
+
 RUN cd /app && ./rpmbuild.sh || exit 1
 
 RUN dnf install -y /root/rpmbuild/RPMS/noarch/postprocessing*.noarch.rpm || exit 1
