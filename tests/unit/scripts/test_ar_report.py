@@ -1,4 +1,4 @@
-from scripts.ar_report import *
+from ar_report import *
 
 import datetime
 import h5py
