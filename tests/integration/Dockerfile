@@ -4,7 +4,11 @@ RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.n
 RUN dnf install -y python3-requests python3-stomppy python3-pip python3-coverage python3-psutil python-unversioned-command
 
 COPY postprocessing /opt/postprocessing/postprocessing
+COPY scripts /opt/postprocessing/scripts
+COPY pyproject.toml /opt/postprocessing/
 COPY tests/integration/post_processing.conf /etc/autoreduce/post_processing.conf
+
+RUN pip install --no-cache-dir /opt/postprocessing/
 
 RUN echo \#\!/bin/bash > /usr/bin/coverage_run && \
     echo coverage run \$@ >> /usr/bin/coverage_run && \
