@@ -31,6 +31,8 @@ def local_submission(configuration, script, input_file, output_dir, out_log, out
     )
     # Get process memory usage limit
     mem_limit_mb = get_memory_limit_mb(configuration)
+    # Get process time limit
+    time_limit_sec = get_time_limit_sec(configuration)
     with open(out_log, "w") as logFile, open(out_err, "w") as errFile:
         if configuration.comm_only is False:
             proc = subprocess.Popen(
@@ -42,25 +44,39 @@ def local_submission(configuration, script, input_file, output_dir, out_log, out
                 universal_newlines=True,
                 cwd=output_dir,
             )
+            start_time = time.time()
             proc_psutil = psutil.Process(proc.pid)
 
-            # Monitor the total memory usage of the subprocess and its children
+            # Monitor the elapsed time and the total memory usage of the subprocess and its children
             try:
+                terminate = False
                 while proc.poll() is None:  # process is still running
                     total_mem_usage_mb = (
                         get_total_memory_usage(proc_psutil)
                         * CONVERSION_FACTOR_BYTES_TO_MB
                     )
+                    elapsed_time = time.time() - start_time
                     logging.debug(
                         f"Subprocess memory usage: {total_mem_usage_mb} MiB. Max limit: {mem_limit_mb} MiB."
                     )
+                    logging.debug(
+                        f"Elapsed time: {elapsed_time} s. Max time limit: {time_limit_sec} s."
+                    )
+
                     if total_mem_usage_mb > mem_limit_mb:
-                        err_message = f"Total memory usage exceeded limit ({total_mem_usage_mb} MiB > {mem_limit_mb} MiB). Terminating subprocess and any child processes."
+                        err_message = f"Total memory usage exceeded limit ({total_mem_usage_mb / 1024:2f} GiB > {mem_limit_mb / 1024:2f} GiB). Terminating job."
+                        terminate = True
+                    elif elapsed_time > time_limit_sec:
+                        err_message = f"Time limit exceeded ({elapsed_time:2f} s > {time_limit_sec:2f} s). Terminating job."
+                        terminate = True
+
+                    if terminate:
                         logging.warning(err_message)
                         # Terminate process and its child processes
                         terminate_or_kill_process_tree(proc.pid)
                         # Add message in the run reduction error log file
                         errFile.write(err_message)
+                        break
 
                     time.sleep(configuration.mem_check_interval_sec)
 
@@ -121,6 +137,15 @@ def get_memory_limit_mb(configuration):
     mem_total = psutil.virtual_memory().total
     mem_fraction = configuration.system_mem_limit_perc / 100.0
     return mem_total * mem_fraction * CONVERSION_FACTOR_BYTES_TO_MB
+
+
+def get_time_limit_sec(configuration):
+    """
+    Get the task time limit in seconds
+    @param Configuration configuration: configuration
+    @return float: time in seconds
+    """
+    return configuration.task_time_limit_minutes / 60.0
 
 
 def get_total_memory_usage(proc):
