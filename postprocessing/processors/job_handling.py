@@ -145,7 +145,7 @@ def get_time_limit_sec(configuration):
     @param Configuration configuration: configuration
     @return float: time in seconds
     """
-    return configuration.task_time_limit_minutes / 60.0
+    return configuration.task_time_limit_minutes * 60.0
 
 
 def get_total_memory_usage(proc):
