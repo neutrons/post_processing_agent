@@ -29,6 +29,7 @@ def test_local_submission(mocker, script, output_expected, error_expected):
     mock_configuration.comm_only = False
     mock_configuration.system_mem_limit_perc = 60.0
     mock_configuration.mem_check_limit_sec = 0.5
+    mock_configuration.task_time_limit_minutes = 60.0
 
     tempFile_script = tempfile.NamedTemporaryFile()
     tempFile_input = tempfile.NamedTemporaryFile()
@@ -110,6 +111,7 @@ def test_memory_limit(mocker, tmp_path, caplog):
         1024 * 1024 / psutil.virtual_memory().total
     )
     mock_configuration.mem_check_interval_sec = 0.05
+    mock_configuration.task_time_limit_minutes = 60.0
 
     # Modify log level to capture memory usage debug log
     caplog.set_level(logging.DEBUG)
@@ -176,3 +178,45 @@ time.sleep(30)  # Keep parent process alive
             assert p.status() == psutil.STATUS_ZOMBIE
         except psutil.NoSuchProcess:
             pass
+
+
+def test_time_limit(mocker, tmp_path, caplog):
+    """Test the job time limit"""
+    mock_configuration = mocker.Mock(spec=Configuration)
+    mock_configuration.python_executable = sys.executable
+    mock_configuration.comm_only = False
+    mock_configuration.exceptions = []
+    mock_configuration.mem_check_interval_sec = 0.01
+    mock_configuration.system_mem_limit_perc = 50.0
+    # Set time limit to 0.02 s
+    mock_configuration.task_time_limit_minutes = 0.02 / 60.0
+
+    # Modify log level to capture memory usage debug log
+    caplog.set_level(logging.DEBUG)
+
+    # Script that will sleep
+    script = """import time
+time.sleep(1)
+    """
+    tmp_file_script = tmp_path / "script.py"
+    tmp_file_script.write_text(script)
+    tmp_file_input = tmp_path / "in"
+    tmp_file_output = tmp_path / "out"
+    tmp_file_error = tmp_path / "err"
+
+    local_submission(
+        mock_configuration,
+        tmp_file_script,
+        tmp_file_input,
+        tmp_file_output.parent,
+        tmp_file_output,
+        tmp_file_error,
+    )
+    assert "Elapsed time" in caplog.text
+    assert "Time limit exceeded" in caplog.text
+
+    # Verify that a message was added in the reduction error log
+    success, status_data = determine_success_local(mock_configuration, tmp_file_error)
+    assert not success
+    assert "error" in status_data
+    assert "Time limit exceeded" in status_data["error"]

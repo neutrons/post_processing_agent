@@ -58,6 +58,19 @@ point for configuration. Here are the entries to pay attention to:
               </redeliveryPlugin>
             </plugins>
 
+#### Task time and memory limits
+
+Post-Processing Agent will terminate a post-processing task that exceeds either the time limit or
+memory usage limit. The limits and the time interval between checks are configurable in the
+configuration file. The same time interval between checks applies to both the time limit and memory
+usage limit.
+
+    {
+        "system_mem_limit_perc": 70.0,
+        "mem_check_interval_sec": 0.2,
+        "task_time_limit_minutes": 60.0
+    }
+
 #### Installation settings
 
 

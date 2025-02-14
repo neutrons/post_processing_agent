@@ -168,6 +168,9 @@ class Configuration:
         self.system_mem_limit_perc = config.get("system_mem_limit_perc", 70.0)
         self.mem_check_interval_sec = config.get("mem_check_interval_sec", 0.2)
 
+        # Job runtime monitoring
+        self.task_time_limit_minutes = config.get("task_time_limit_minutes", 60.0)
+
     def log_configuration(self, logger=logging):
         """
         Log the current configuration
