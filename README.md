@@ -68,7 +68,7 @@ usage limit.
     {
         "system_mem_limit_perc": 70.0,
         "mem_check_interval_sec": 0.2,
-        "task_max_time_min": 60.0
+        "task_time_limit_minutes": 60.0
     }
 
 #### Installation settings
