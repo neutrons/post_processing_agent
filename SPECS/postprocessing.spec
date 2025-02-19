@@ -45,7 +45,7 @@ Post-processing agent to automatically catalog and reduce neutron data
 %{__mkdir} -p %{buildroot}%{site_packages}
 echo %{prefix} > %{buildroot}%{site_packages}/postprocessing.pth
 %{__mkdir} -p -m 1755 %{buildroot}/var/log/SNS_applications/
-%{__chown} snsdata:snswheel %{buildroot}/var/log/SNS_applications/
+%{__chown} snsdata:users %{buildroot}/var/log/SNS_applications/
 %{__mkdir} -p %{buildroot}%{_unitdir}/
 %{__install} -m 644 %{_sourcedir}/autoreduce-queue-processor.service %{buildroot}%{_unitdir}/
 

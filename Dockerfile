@@ -15,9 +15,9 @@ COPY systemd /app/systemd
 
 RUN mkdir -p /root/rpmbuild/SOURCES
 
-# The RPM build assumes that user "snsdata" and group "snswheel" exist
+# The RPM build assumes that user "snsdata" and group "users" exist
 RUN useradd snsdata
-RUN groupadd snswheel
+RUN groupadd users
 
 RUN cd /app && ./rpmbuild.sh || exit 1
 
