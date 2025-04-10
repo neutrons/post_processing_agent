@@ -20,12 +20,13 @@ class Configuration:
     """
 
     def __init__(self, config_file):
-        if os.access(config_file, os.R_OK) is False:
+        try:
+            with open(config_file, "r") as cfg:
+                json_encoded = cfg.read()
+        except (PermissionError, FileNotFoundError, OSError):
             raise RuntimeError(
                 f"Configuration file doesn't exist or is not readable: {config_file}"
             )
-        with open(config_file, "r") as cfg:
-            json_encoded = cfg.read()
         config = json.loads(json_encoded)
 
         # Keep a record of which config file we are using

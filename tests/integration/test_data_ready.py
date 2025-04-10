@@ -37,10 +37,7 @@ def test_missing_data():
     header, body = listener.get_latest_message()
 
     msg = json.loads(body)
-    assert (
-        msg["error"]
-        == "Data file does not exist or is not readable: /SNS/DOES_NOT_EXIST.nxs"
-    )
+    assert msg["error"] == "Data file not found: /SNS/DOES_NOT_EXIST.nxs"
 
 
 def test_disabled_reduction():

@@ -96,9 +96,15 @@ class BaseProcessor:
         """
         if "data_file" in data:
             self.data_file = str(data["data_file"])
-            if os.access(self.data_file, os.R_OK) is False:
+            try:
+                open(self.data_file)
+            except PermissionError:
+                raise ValueError(f"Data file permission denied: {self.data_file}")
+            except FileNotFoundError:
+                raise ValueError(f"Data file not found: {self.data_file}")
+            except OSError as e:
                 raise ValueError(
-                    f"Data file does not exist or is not readable: {self.data_file}"
+                    f"Data file open error for file {self.data_file} error: {e}"
                 )
         else:
             raise ValueError(f"data_file is missing: {self.data_file}")
