@@ -23,10 +23,10 @@ class Configuration:
         try:
             with open(config_file, "r") as cfg:
                 json_encoded = cfg.read()
-        except (PermissionError, FileNotFoundError, OSError):
+        except (PermissionError, FileNotFoundError, OSError) as e:
             raise RuntimeError(
                 f"Configuration file doesn't exist or is not readable: {config_file}"
-            )
+            ) from e
         config = json.loads(json_encoded)
 
         # Keep a record of which config file we are using
