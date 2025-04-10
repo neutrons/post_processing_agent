@@ -98,14 +98,16 @@ class BaseProcessor:
             self.data_file = str(data["data_file"])
             try:
                 open(self.data_file)
-            except PermissionError:
-                raise ValueError(f"Data file permission denied: {self.data_file}")
-            except FileNotFoundError:
-                raise ValueError(f"Data file not found: {self.data_file}")
+            except PermissionError as e:
+                raise ValueError(
+                    f"Data file permission denied: {self.data_file}"
+                ) from e
+            except FileNotFoundError as e:
+                raise ValueError(f"Data file not found: {self.data_file}") from e
             except OSError as e:
                 raise ValueError(
-                    f"Data file open error for file {self.data_file} error: {e}"
-                )
+                    f"Data file open error for file {self.data_file}"
+                ) from e
         else:
             raise ValueError(f"data_file is missing: {self.data_file}")
 
