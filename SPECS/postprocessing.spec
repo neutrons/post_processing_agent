@@ -54,7 +54,7 @@ echo %{prefix} > %{buildroot}%{site_packages}/postprocessing.pth
 %doc README.md
 %license LICENSE.rst
 %{prefix}/*
-%attr(755, -, -) %{prefix}/scripts
+%attr(0755, -, -) %{prefix}/scripts
 %{site_packages}/postprocessing.pth
-/var/log/SNS_applications
+%attr(1755, snsdata, users) /var/log/SNS_applications
 %{_unitdir}/autoreduce-queue-processor.service
