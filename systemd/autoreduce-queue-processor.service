@@ -1,5 +1,7 @@
 [Unit]
 Description=Postprocessing service
+Requires=sssd.service
+After=sssd.service
 
 [Service]
 WorkingDirectory=/opt/postprocessing
