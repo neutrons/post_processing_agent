@@ -15,4 +15,4 @@ dependencies:
   - stomp.py=7
   - pip
   - pip:
-    - --editable ../plot_publisher
+    - git+https://github.com/neutrons/plot_publisher.git@feature/dynamic-plotly-version-injection
