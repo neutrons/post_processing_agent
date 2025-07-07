@@ -108,6 +108,31 @@ The conda environment for running `queueProcessor.py` and tests locally is defin
     conda env create  # or: mamba env create
     conda activate post_processing_agent
 
+### Local development with plot_publisher
+
+For developers working on both `post_processing_agent` and `plot_publisher` simultaneously, you may want to use an editable install of `plot_publisher`. After setting up both repositories locally:
+
+1. Clone both repositories as siblings:
+   ```
+   /your/workspace/
+   ├── post_processing_agent/
+   └── plot_publisher/
+   ```
+
+2. Modify `environment.yml` to use the local editable install:
+   ```yaml
+   - pip:
+     - --editable ../plot_publisher
+   ```
+
+3. Recreate the conda environment:
+   ```bash
+   conda env remove -n post_processing_agent
+   conda env create
+   ```
+
+Note: The default configuration installs `plot_publisher` from GitHub to ensure CI compatibility.
+
 Running the tests
 -----------------
 

@@ -4,13 +4,15 @@ channels:
   - defaults
 dependencies:
   - h5py
-  - plotly
   - pre-commit
   - psutil
   - pytest
   - pytest-cov
   - pytest-mock
-  - python=3.9
+  - python>=3.10
   - python-build
-  - requests=2.25
+  - requests
   - stomp.py=7
+  - pip
+  - pip:
+    - git+https://github.com/neutrons/plot_publisher.git@feature/dynamic-plotly-version-injection
