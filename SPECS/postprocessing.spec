@@ -1,7 +1,5 @@
 %global srcname postprocessing
 %global summary postprocessing
-%global python3_pkgversion 3
-
 %define release 1
 
 Name: %{srcname}
