@@ -250,11 +250,13 @@ class Consumer:
                 self.config.queues.append(self.config.heartbeat_ping)
 
         for q in self.config.queues:
-            # set prefetchSize to 1 to only prefetch one message at a time (default is 1000)
-            # prefetching a large number of messages prevents effective load balancing
+            # set prefetchSize to 0 to disable prefetching and force consumer to poll for messages
+            # prefetching may cause issues with load balancing and dropped messages if the performance varies
+            # between consumers
+            # See https://stackoverflow.com/questions/76653908
             # https://activemq.apache.org/components/classic/documentation/what-is-the-prefetch-limit-for
             self._connection.subscribe(
-                destination=q, id=q, ack="client", headers={"activemq.prefetchSize": 1}
+                destination=q, id=q, ack="client", headers={"activemq.prefetchSize": 0}
             )
 
     def _disconnect(self):
