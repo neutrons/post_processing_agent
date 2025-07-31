@@ -187,5 +187,5 @@ Creating a new release
    [pyproject.toml](pyproject.toml) and commit the change to `main`.
 2. Create a new tag and create a release from the tag (see the three dots menu
    for the tag at https://github.com/neutrons/post_processing_agent/tags).
-3. Build the RPM using [rpmbuild.sh](rpmbuild.sh) and upload the `.rpm` and `.srpm` files as release
+3. Build the RPM using `make build/rpm` and upload the `.rpm` and `.srpm` files as release
    assets to the GitHub release page.
