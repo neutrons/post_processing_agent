@@ -34,4 +34,4 @@ RUN echo "#!/bin/bash" > /usr/bin/run_postprocessing && \
     echo "tail -F /opt/postprocessing/log/postprocessing.log" >> /usr/bin/run_postprocessing && \
     chmod +x /usr/bin/run_postprocessing
 
-CMD run_postprocessing
+CMD ["run_postprocessing"]
