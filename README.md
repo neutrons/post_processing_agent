@@ -103,46 +103,27 @@ To run, simply call
 Development environment
 -----------------------
 
-The conda environment for running `queueProcessor.py` and tests locally is defined in `environment.yml`. Create and activate the conda environment for development.
+The pixi environment for running `queueProcessor.py` and tests locally is defined in `pyproject.toml`. Create and activate the pixi environment for development.
 
-    conda env create  # or: mamba env create
-    conda activate post_processing_agent
+    pixi install
+    pixi shell
 
 ### Local development with plot_publisher
 
-For developers working on both `post_processing_agent` and `plot_publisher` simultaneously, you may want to use an editable install of `plot_publisher`. After setting up both repositories locally:
-
-1. Clone both repositories as siblings:
-   ```
-   /your/workspace/
-   ├── post_processing_agent/
-   └── plot_publisher/
-   ```
-
-2. Modify `environment.yml` to use the local editable install:
-   ```yaml
-   - pip:
-     - --editable ../plot_publisher
-   ```
-
-3. Recreate the conda environment:
-   ```bash
-   conda env remove -n post_processing_agent
-   conda env create
-   ```
-
-Note: The default configuration installs `plot_publisher` from GitHub to ensure CI compatibility.
+For developers working on both `post_processing_agent` and `plot_publisher` simultaneously, you may want to use an editable install of `plot_publisher`. This is already configured in the pyproject.toml to install from the git repository.
 
 Running the tests
 -----------------
 
 The tests for this project are all written using [pytest](https://docs.pytest.org/en/latest>).
 
-    python -m pytest tests/
+    pixi run test
 
-This is one of the ways [pytest allows for selecting tests](https://docs.pytest.org/en/latest/usage.html#specifying-tests-selecting-tests).
-Specifying a directory or file will run all tests within that directory (recursively) or file.
-Specifying a regular expression using ``-k`` will select all tests that match the regular expression independent of where they are defined
+You can also run specific test suites:
+
+    pixi run test-unit        # Unit tests only
+    pixi run test-integration # Integration tests only
+    pixi run test-cov        # Tests with coverage
 
 ### Integration tests
 
@@ -152,23 +133,22 @@ The integration tests requires activemq and the queueprocessor to be running, th
 
 then run
 
-    python -m pytest tests/integration
+    pixi run test-integration
 
 after which you can stop docker with
 
     docker compose -f tests/integration/docker-compose.yml down
-
 
 Running manual tests for mantidpython.py
 ----------------------------------------
 
 Manual tests can be executed as
 
-    $ python scripts/mantidpython.py /SNS/HYP/shared/auto_reduction/reduce_HYS.py [HYS nexus file] [Output Dir]
+    $ pixi run python scripts/mantidpython.py /SNS/HYP/shared/auto_reduction/reduce_HYS.py [HYS nexus file] [Output Dir]
 
 or
 
-    $ python scripts/mantidpython.py tests/reduce_CONDA.py [Data file]  [Output dir]
+    $ pixi run python scripts/mantidpython.py tests/reduce_CONDA.py [Data file]  [Output dir]
 
 as an example for how to activate a specific conda environment for reduction.
 

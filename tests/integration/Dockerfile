@@ -39,7 +39,7 @@ RUN mkdir -p /opt/postprocessing/log && \
     echo "a=1" > /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ_default.py && \
     echo "a=\${value}" > /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ.py.template && \
     \
-    chown -R $MAMBA_USER:$MAMBA_USER /opt/postprocessing /SNS
+    chown -R root:root /opt/postprocessing /SNS
 
 WORKDIR /opt/postprocessing
 ENV COVERAGE_PROCESS_START /opt/postprocessing/.coveragerc

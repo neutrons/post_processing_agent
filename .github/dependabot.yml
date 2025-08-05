@@ -9,3 +9,10 @@ updates:
     directory: "/" # Workflow files stored in the default location of `.github/workflows`
     schedule:
       interval: "weekly"
+
+  # Monitor pyproject.toml for dependency updates
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10

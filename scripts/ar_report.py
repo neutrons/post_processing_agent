@@ -73,10 +73,10 @@ class ReductionLogFile(GenericFile):
         self.longestAlgorithm = "UNKNOWN"
         self.loadDurationTotal = 0.0
         self.loadEventNexusDuration = 0.0
-        self.firstAlgName="UNKNOWN"
-        self.firstAlgStart="UNKNOWN"
-        self.lastAlgName="UNKNOWN"
-        self.lastAlgFinish="UNKNOWN"
+        self.firstAlgName = "UNKNOWN"
+        self.firstAlgStart = "UNKNOWN"
+        self.lastAlgName = "UNKNOWN"
+        self.lastAlgFinish = "UNKNOWN"
         self.started = "UNKNOWN"
         self.host = "UNKNOWN"
 
@@ -103,11 +103,7 @@ class ReductionLogFile(GenericFile):
         with open(self.filename, "r") as handle:
             lookForDuration = False
             for line in handle:
-                if (
-                    line.startswith("Load")
-                    and (f"{eventfilename}.nxs.h5" or f"{eventfilename}_event.nxs")
-                    in line
-                ):
+                if line.startswith("Load") and (f"{eventfilename}.nxs.h5" or f"{eventfilename}_event.nxs") in line:
                     lookForDuration = True
                 elif lookForDuration and self.hasLogDuration(line):
                     (_, duration) = self.logDurationToNameAndSeconds(line)
@@ -130,30 +126,30 @@ class ReductionLogFile(GenericFile):
 
     def __estimateReductionTime(self):
         with open(self.filename, "r") as handle:
-            algName = ''
+            algName = ""
             algStart = None
             for line in handle:
                 line = line.strip()
                 if not line:
                     continue
                 if "Execution Date:" in line:
-                    algName = line.split('-')[0]
+                    algName = line.split("-")[0]
 
                     # very convoluted way to get datetime in python 3.6
-                    algStart = line.split('Execution Date:')[-1].strip()
-                    algStart, fraction = algStart.split('.') # strptime doesn't like decimals in seconds
+                    algStart = line.split("Execution Date:")[-1].strip()
+                    algStart, fraction = algStart.split(".")  # strptime doesn't like decimals in seconds
                     # datetime.fromisoformat isn't available in python3.6
                     algStart = datetime.strptime(algStart, r"%Y-%m-%d %H:%M:%S")
-                    algStart += timedelta(seconds=float('.'+fraction))
+                    algStart += timedelta(seconds=float("." + fraction))
                     if self.firstAlgName == "UNKNOWN":
                         self.firstAlgName = algName
                         self.firstAlgStart = algStart
                 elif self.hasLogDuration(line):
                     if algName and line.startswith(algName):
-                        self.lastAlgName=algName
+                        self.lastAlgName = algName
                         (_, duration) = self.logDurationToNameAndSeconds(line)
                         self.lastAlgFinish = algStart + timedelta(seconds=duration)
-                        algName = '' # clear it out for the next round
+                        algName = ""  # clear it out for the next round
 
     @staticmethod
     def hasLogDuration(line):
@@ -173,12 +169,8 @@ class ReductionLogFile(GenericFile):
 
         # find index of time
         # this method to avoid nuance of second/seconds ...
-        i_seconds = (
-            next((i for i, el in enumerate(line_split) if "second" in el), -1) - 1
-        )
-        i_minutes = (
-            next((i for i, el in enumerate(line_split) if "minute" in el), -1) - 1
-        )
+        i_seconds = next((i for i, el in enumerate(line_split) if "second" in el), -1) - 1
+        i_minutes = next((i for i, el in enumerate(line_split) if "minute" in el), -1) - 1
 
         duration = 0.0  # initialize to 0
 
@@ -220,11 +212,7 @@ class ARstatus:
     def __init__(self, direc, eventfile):
         self.eventfile = eventfile
         shareddirlist = os.listdir(direc)
-        self.reduxfiles = [
-            os.path.join(direc, name)
-            for name in shareddirlist
-            if eventfile.isThisRun(name)
-        ]
+        self.reduxfiles = [os.path.join(direc, name) for name in shareddirlist if eventfile.isThisRun(name)]
 
         logdir = os.path.join(direc, REDUCTION_LOG)
         os.path.join(logdir, eventfile.shortname)
@@ -234,10 +222,7 @@ class ARstatus:
             for filename in os.listdir(logdir)
             if filename.startswith(eventfile.shortname)
         ]
-        self.logfiles = [
-            ReductionLogFile(filename, eventfile.shortname)
-            for filename in self.logfiles
-        ]
+        self.logfiles = [ReductionLogFile(filename, eventfile.shortname) for filename in self.logfiles]
 
         # find longest running algorithm
         self.longestAlgorithm = "UNKNOWN"
@@ -257,11 +242,7 @@ class ARstatus:
     @property
     def mantidVersion(self):
         # collect possible mantid version
-        choices = [
-            logfile.mantidVersion
-            for logfile in self.logfiles
-            if len(logfile.mantidVersion) > 0
-        ]
+        choices = [logfile.mantidVersion for logfile in self.logfiles if len(logfile.mantidVersion) > 0]
         # remove all of the unknowns
         choices = [choice for choice in choices if choice != "UNKNOWN"]
         choices = set(choices)
@@ -312,18 +293,21 @@ class ARstatus:
 
     @property
     def reduxTime(self):
-        '''This estimates the time for autoreduction to be the time between when mantid was first imported and
-        when the last algorithm finished'''
-        logfiles = [logfile for logfile in self.logfiles
-                    if (logfile.firstAlgStart != "UNKNOWN" and logfile.lastAlgFinish != "UNKNOWN")]
+        """This estimates the time for autoreduction to be the time between when mantid was first imported and
+        when the last algorithm finished"""
+        logfiles = [
+            logfile
+            for logfile in self.logfiles
+            if (logfile.firstAlgStart != "UNKNOWN" and logfile.lastAlgFinish != "UNKNOWN")
+        ]
         if len(logfiles) == 0:
-            return 0.
+            return 0.0
 
         start = logfiles[0].firstAlgStart
         finish = logfiles[0].lastAlgFinish
 
         # calculate and return the duration
-        return (finish-start) / timedelta(seconds=1)
+        return (finish - start) / timedelta(seconds=1)
 
     @staticmethod
     def header():
@@ -344,7 +328,7 @@ class ARstatus:
             "loadSecTotal",
             "loadNexusSecTotal",
             "reduxEstTime",
-            "meas-redux"
+            "meas-redux",
         )
 
     def report(self):
@@ -366,7 +350,7 @@ class ARstatus:
             f"{self.loadDurationTotal:.1f}",
             f"{self.loadEventNexusDuration:.1f}",
             f"{reduxTime:.1f}",
-            f"{self.eventfile.duration-reduxTime:.1f}"
+            f"{self.eventfile.duration-reduxTime:.1f}",
         )
 
 
@@ -418,9 +402,7 @@ def getRuns(propdir):
     datadirs = [os.path.join(propdir, subdir) for subdir in ["data", "nexus"]]
     datadirs = [direc for direc in datadirs if os.path.isdir(direc)]
     if len(datadirs) != 1:
-        raise RuntimeError(
-            "Expected only one data directory, found " + ",".join(datadirs)
-        )
+        raise RuntimeError("Expected only one data directory, found " + ",".join(datadirs))
 
     # get a list of event files in that directory
     files = os.listdir(datadirs[0])
@@ -469,7 +451,7 @@ def main(runfile, outputdir):
         if mode == "w":
             handle.write(",".join(ARstatus.header()) + "\n")
         for i, eventfile in enumerate(runs):
-            print("Processing", eventfile, i+1, "of", total_runs)
+            print("Processing", eventfile, i + 1, "of", total_runs)
             ar = ARstatus(reducedir, eventfile)
             report = [str(item) for item in ar.report()]
             if len(ar.reduxfiles) > 0:
@@ -491,9 +473,7 @@ if __name__ == "__main__":
 
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Report information on auto-reduction in a proposal"
-    )
+    parser = argparse.ArgumentParser(description="Report information on auto-reduction in a proposal")
     parser.add_argument(
         "runfile",
         metavar="NEXUSFILE",
