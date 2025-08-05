@@ -156,4 +156,4 @@ jobs:
     - name: Test package install and import
       run: |
         pixi run pip install dist/*.whl
-        pixi run python -c "import postprocessing; print('Successfully imported ' + postprocessing.__name__)"
+        pixi run python -c 'import postprocessing; print("Successfully imported " + postprocessing.__name__)'
