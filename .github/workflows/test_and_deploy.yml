@@ -7,6 +7,8 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+env:
+  PACKAGE_NAME: postprocessing
 
 jobs:
   tests:
@@ -15,19 +17,13 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Set up MicroMamba
-      uses: mamba-org/setup-micromamba@v2
+    - name: Setup pixi
+      uses: prefix-dev/setup-pixi@v0.8.14
       with:
-        environment-file: environment.yml
-        condarc: |
-          channels:
-            - conda-forge
-            - default
-        cache-environment: true
+        environments: test
 
     - name: Unit test with code coverage
-      shell: bash -l {0}
-      run: python -m pytest -vv --cov=postprocessing --cov=scripts --cov-report=xml --cov-report=term
+      run: pixi run test-cov
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
@@ -43,15 +39,10 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Set up MicroMamba
-      uses: mamba-org/setup-micromamba@v2
+    - name: Setup pixi
+      uses: prefix-dev/setup-pixi@v0.8.14
       with:
-        environment-file: environment.yml
-        condarc: |
-          channels:
-            - conda-forge
-            - default
-        cache-environment: true
+        environments: test
 
     - name: Start docker containers
       run: docker compose -f tests/integration/docker-compose.yml up --build -d
@@ -60,8 +51,7 @@ jobs:
       run: sleep 2
 
     - name: Run integration tests
-      shell: bash -l {0}
-      run: python -m pytest tests/integration
+      run: pixi run test-integration
 
     - name: Stop but dont remove docker containers
       # Stopping the containers allows the code coverage to be written to disk
@@ -71,13 +61,12 @@ jobs:
       run: docker cp integration-post_processing_agent-1:/opt/postprocessing/ /tmp/
 
     - name: Combine and show code coverage
-      shell: bash -l {0}
       run: |
         cd /tmp/postprocessing
-        coverage combine
-        coverage xml
+        pixi run -e test python -m coverage combine
+        pixi run -e test python -m coverage xml
         cp coverage.xml $OLDPWD
-        coverage report
+        pixi run -e test python -m coverage report
 
     - name: Bring down docker containers completely now
       # This will completely remove the containers
@@ -90,9 +79,30 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  rpm:
+  build:
     runs-on: ubuntu-latest
     needs: integration-tests
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup pixi
+      uses: prefix-dev/setup-pixi@v0.8.14
+      with:
+        environments: build
+
+    - name: Build package
+      run: pixi run -e build build
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+  rpm:
+    runs-on: ubuntu-latest
+    needs: build
 
     steps:
     - name: Checkout Repository
@@ -110,15 +120,10 @@ jobs:
       continue-on-error: false
 
     # now run a couple integration test with RPM installed package
-    - name: Set up MicroMamba
-      uses: mamba-org/setup-micromamba@v2
+    - name: Setup pixi
+      uses: prefix-dev/setup-pixi@v0.8.14
       with:
-        environment-file: environment.yml
-        condarc: |
-          channels:
-            - conda-forge
-            - default
-        cache-environment: true
+        environments: test
 
     - name: Start docker containers
       run: docker compose -f tests/integration/docker-compose-rpm.yml up --build -d
@@ -127,8 +132,28 @@ jobs:
       run: sleep 2
 
     - name: Run integration tests
-      shell: bash -l {0}
-      run: python -m pytest -k "test_heartbeat or test_missing_data"
+      run: pixi run -e test pytest -k "test_heartbeat or test_missing_data"
 
     - name: Bring down docker containers
       run: docker compose -f tests/integration/docker-compose-rpm.yml down
+
+  verify:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+    - name: Setup pixi
+      uses: prefix-dev/setup-pixi@v0.8.14
+
+    - name: Test package install and import
+      run: |
+        pixi run pip install dist/*.whl
+        pixi run python -c 'import postprocessing; print("Successfully imported " + postprocessing.__name__)'

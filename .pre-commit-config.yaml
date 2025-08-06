@@ -1,8 +1,9 @@
-default_language_version:
-  python: python3
-
 ci:
   autofix_prs: true
+  skip: [pixi-lock-check]
+
+default_language_version:
+  python: python3
 
 repos:
   # Run fast code improvement/checks before running PR specific helpers.
@@ -25,13 +26,16 @@ repos:
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.1.9
-    # ruff must appear before black in the list of hooks
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
 
-  - repo: https://github.com/psf/black
-    rev: 23.12.1
+  # PIXI lock file check
+  - repo: local
     hooks:
-      - id: black
-        args: [--fast]  # argument can be removed once stomp.sync/async are removed
+      - id: pixi-lock-check
+        name: pixi-lock-check
+        entry: bash -c "pixi lock --check"
+        stage: pre-push
+        language: system

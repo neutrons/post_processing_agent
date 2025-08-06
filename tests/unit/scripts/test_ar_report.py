@@ -105,9 +105,7 @@ def test_GenericFile():
 
             # length is compatible with contents written
             assert genericfile.filesize == len(CONTENTS)
-            pytest.approx(
-                genericfile.filesizeMiB(), float(len(CONTENTS)) / 1024.0 / 1024.0
-            )
+            pytest.approx(genericfile.filesizeMiB(), float(len(CONTENTS)) / 1024.0 / 1024.0)
             assert genericfile.filesizehuman() == f"{len(CONTENTS)}B"  # bytes
 
             # creation time is within 0.1s of when the test was started
@@ -144,21 +142,15 @@ def test_ReductionLogFile():
 
     # taken from staring at the logs
     assert reduction_log_file.mantidVersion == "6.7.0"
-    assert reduction_log_file.longestDuration == pytest.approx(
-        2 * 60 + 3.72
-    ), "longestDuration"
+    assert reduction_log_file.longestDuration == pytest.approx(2 * 60 + 3.72), "longestDuration"
     assert reduction_log_file.longestAlgorithm == "SNSPowderReduction"
     assert reduction_log_file.host == "autoreducer3.sns.gov"
     assert reduction_log_file.started == "2023-08-16T13:36Z"
 
     # LoadEventNexus + Load + LoadDiffCal + LoadNexusProcessed + Load + Load + Load + LoadNexusProcessed + LoadNexusProcessed
     duration = 4.62 + 0.74 + 0.42 + 2.99 + 23.42 + 1.07 + 7.41 + 5.08 + 3.83
-    assert reduction_log_file.loadDurationTotal == pytest.approx(
-        duration
-    ), "loadDurationTotal"
-    assert reduction_log_file.loadEventNexusDuration == pytest.approx(
-        4.62 + 0.74
-    ), "loadEventNexusDuration"
+    assert reduction_log_file.loadDurationTotal == pytest.approx(duration), "loadDurationTotal"
+    assert reduction_log_file.loadEventNexusDuration == pytest.approx(4.62 + 0.74), "loadEventNexusDuration"
 
 
 def check_bad_ReductionLogFile_values(
@@ -172,19 +164,11 @@ def check_bad_ReductionLogFile_values(
     assert reduction_log_file.mantidVersion == mantidVersion, "mantidVersion"
     assert reduction_log_file.host == host, "host"
     assert reduction_log_file.started == started, "started"
-    assert (
-        reduction_log_file.longestAlgorithm == longestAlgorithm
-    ), "longestAlgorithm"  # empty
+    assert reduction_log_file.longestAlgorithm == longestAlgorithm, "longestAlgorithm"  # empty
 
-    assert float(reduction_log_file.longestDuration) == pytest.approx(
-        0.0
-    ), "longestDuration"
-    assert float(reduction_log_file.loadDurationTotal) == pytest.approx(
-        0.0
-    ), "loadDurationTotal"
-    assert float(reduction_log_file.loadEventNexusDuration) == pytest.approx(
-        0.0
-    ), "loadEventNexusDuration"
+    assert float(reduction_log_file.longestDuration) == pytest.approx(0.0), "longestDuration"
+    assert float(reduction_log_file.loadDurationTotal) == pytest.approx(0.0), "loadDurationTotal"
+    assert float(reduction_log_file.loadEventNexusDuration) == pytest.approx(0.0), "loadEventNexusDuration"
 
 
 def test_ReductionLogFile_partial_contents():
@@ -255,6 +239,131 @@ def test_EventFile(nexus_file):
 ########################################### unit tests of ARStatus
 
 
-@pytest.mark.skip("not yet implemented")
-def test_ARstatus(nexus_file):
-    pass
+def test_ARstatus_reduxTime_no_valid_logfiles():
+    """Test reduxTime when no logfiles have valid start/finish times"""
+    # Create a mock ARstatus object with logfiles that don't have valid times
+
+    # Create temporary directory structure
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create shared/autoreduce directory
+        shared_dir = os.path.join(temp_dir, "shared", "autoreduce")
+        os.makedirs(shared_dir)
+
+        # Create reduction_log directory
+        log_dir = os.path.join(shared_dir, "reduction_log")
+        os.makedirs(log_dir)
+
+        # Create a mock event file
+        event_file = type(
+            "MockEventFile",
+            (),
+            {
+                "shortname": "TEST_123",
+                "isThisRun": lambda self, name: name.startswith("TEST_123"),
+            },
+        )()
+
+        # Create log file with no valid algorithm times
+        log_file_path = os.path.join(log_dir, "TEST_123.log")
+        with open(log_file_path, "w") as f:
+            f.write("This is Mantid version 6.7.0\n")
+            f.write("Some log content without algorithm timing info\n")
+
+        # Create ARstatus instance
+        ar_status = ARstatus(shared_dir, event_file)
+
+        # Test reduxTime - should return 0.0 when no valid logfiles
+        assert ar_status.reduxTime == 0.0
+
+
+def test_ARstatus_reduxTime_with_valid_logfiles():
+    """Test reduxTime when logfiles have valid start/finish times"""
+
+    # Create temporary directory structure
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create shared/autoreduce directory
+        shared_dir = os.path.join(temp_dir, "shared", "autoreduce")
+        os.makedirs(shared_dir)
+
+        # Create reduction_log directory
+        log_dir = os.path.join(shared_dir, "reduction_log")
+        os.makedirs(log_dir)
+
+        # Create a mock event file
+        event_file = type(
+            "MockEventFile",
+            (),
+            {
+                "shortname": "TEST_123",
+                "isThisRun": lambda self, name: name.startswith("TEST_123"),
+            },
+        )()
+
+        # Create log file with valid algorithm timing info
+        log_file_path = os.path.join(log_dir, "TEST_123.log")
+        with open(log_file_path, "w") as f:
+            f.write("This is Mantid version 6.7.0\n")
+            f.write("running on autoreducer3.sns.gov starting 2023-08-16T13:36Z\n")
+            f.write("LoadEventNexus-[Information] Execution Date: 2023-08-16 13:36:10.123456\n")
+            f.write("LoadEventNexus-[Notice] LoadEventNexus successful, Duration 4.62 seconds\n")
+            f.write("SNSPowderReduction-[Information] Execution Date: 2023-08-16 13:36:15.789012\n")
+            f.write("SNSPowderReduction-[Notice] SNSPowderReduction successful, Duration 2 minutes 3.72 seconds\n")
+
+        # Create ARstatus instance
+        ar_status = ARstatus(shared_dir, event_file)
+
+        # Test reduxTime - should calculate duration between first start and last finish
+        redux_time = ar_status.reduxTime
+        assert redux_time > 0.0
+        # Should be approximately 2 minutes 9.34 seconds (difference between start times + last duration)
+        expected_time = 5.665556 + (2 * 60 + 3.72)  # time diff + duration of last algorithm
+        assert abs(redux_time - expected_time) < 1.0  # Allow 1 second tolerance
+
+
+def test_ARstatus_properties():
+    """Test various properties of ARstatus class"""
+    # Create temporary directory structure
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create shared/autoreduce directory
+        shared_dir = os.path.join(temp_dir, "shared", "autoreduce")
+        os.makedirs(shared_dir)
+
+        # Create reduction_log directory
+        log_dir = os.path.join(shared_dir, "reduction_log")
+        os.makedirs(log_dir)
+
+        # Create some reduced files
+        reduced_file1 = os.path.join(shared_dir, "TEST_123_reduced.nxs")
+        reduced_file2 = os.path.join(shared_dir, "TEST_123_peaks.integrate")
+        with open(reduced_file1, "w") as f:
+            f.write("reduced data")
+        with open(reduced_file2, "w") as f:
+            f.write("peaks data")
+
+        # Create a mock event file
+        event_file = type(
+            "MockEventFile",
+            (),
+            {
+                "shortname": "TEST_123",
+                "isThisRun": lambda self, name: name.startswith("TEST_123"),
+            },
+        )()
+
+        # Create log file
+        log_file_path = os.path.join(log_dir, "TEST_123.log")
+        with open(log_file_path, "w") as f:
+            f.write("This is Mantid version 6.7.0\n")
+            f.write("running on autoreducer3.sns.gov starting 2023-08-16T13:36Z\n")
+            f.write("LoadEventNexus-[Notice] LoadEventNexus successful, Duration 4.62 seconds\n")
+
+        # Create ARstatus instance
+        ar_status = ARstatus(shared_dir, event_file)
+
+        # Test properties
+        assert ar_status.host == "autoreducer3.sns.gov"
+        assert ar_status.mantidVersion == "6.7.0"
+        assert ar_status.logstarted == "2023-08-16T13:36Z"
+        assert len(ar_status.reduxfiles) == 2
+        assert ar_status.loadDurationTotal > 0.0
+        assert ar_status.loadEventNexusDuration >= 0.0
