@@ -4,3 +4,4 @@ build
 dist
 postprocessing.egg-info
 .idea
+.coverage
