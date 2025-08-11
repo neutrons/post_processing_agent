@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Setup pixi
       uses: prefix-dev/setup-pixi@v0.8.14
@@ -37,7 +37,7 @@ jobs:
     needs: tests
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Setup pixi
       uses: prefix-dev/setup-pixi@v0.8.14
@@ -84,7 +84,7 @@ jobs:
     needs: integration-tests
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Setup pixi
       uses: prefix-dev/setup-pixi@v0.8.14
@@ -106,7 +106,7 @@ jobs:
 
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Build RPM inside Docker
       run: |
@@ -142,7 +142,7 @@ jobs:
     needs: build
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Download build artifacts
       uses: actions/download-artifact@v5
