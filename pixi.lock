@@ -3271,8 +3271,8 @@ packages:
   timestamp: 1747339794916
 - pypi: ./
   name: postprocessing
-  version: 3.4.3
-  sha256: a9151b4c92e8061a87fcaa83b1e55ce87ebb831dcdef9f397b53c8c56ef43a3e
+  version: 3.5.0
+  sha256: f0dbe7b1827d6b91e6bcbddab819397134f1d21c5b8a556b7b5b10aa68a83a91
   requires_dist:
   - requests
   - plotly
