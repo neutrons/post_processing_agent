@@ -6,8 +6,11 @@ services:
       dockerfile: ./tests/integration/Dockerfile
 
   activemq:
-    image: apache/activemq-classic
+    user: root
+    image: apache/activemq-artemis:latest-alpine
     hostname: activemq
     ports:
       - 8161:8161
       - 61613:61613
+    volumes:
+      - ./config/artemis:/var/lib/artemis-instance/etc-override

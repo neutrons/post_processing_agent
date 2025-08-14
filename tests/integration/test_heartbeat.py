@@ -12,7 +12,7 @@ def test_heartbeat():
     conn.set_listener("", listener)
 
     try:
-        conn.connect()
+        conn.connect('icat', 'icat')
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -40,7 +40,7 @@ def test_heartbeat_ping():
     conn.set_listener("", listener)
 
     try:
-        conn.connect()
+        conn.connect('icat', 'icat')
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 

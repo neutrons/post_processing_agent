@@ -19,7 +19,7 @@ def test_oncat_catalog():
     conn.set_listener("", listener)
 
     try:
-        conn.connect()
+        conn.connect('icat', 'icat')
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -59,7 +59,7 @@ def test_oncat_reduction_catalog():
     conn.set_listener("", listener)
 
     try:
-        conn.connect()
+        conn.connect('icat', 'icat')
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -99,7 +99,7 @@ def test_calvera():
     conn.set_listener("", listener)
 
     try:
-        conn.connect()
+        conn.connect('icat', 'icat')
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -144,7 +144,7 @@ def test_calvera_reduced():
     conn.set_listener("", listener)
 
     try:
-        conn.connect()
+        conn.connect('icat', 'icat')
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 

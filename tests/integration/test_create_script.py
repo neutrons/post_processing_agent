@@ -13,7 +13,7 @@ def test_default():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
     try:
-        conn.connect()
+        conn.connect('icat', 'icat')
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -41,7 +41,7 @@ def test_template():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
     try:
-        conn.connect()
+        conn.connect('icat', 'icat')
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
