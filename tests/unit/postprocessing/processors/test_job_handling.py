@@ -70,9 +70,7 @@ def test_local_submission(mocker, script, output_expected, error_expected):
         ),
     ],
 )
-def test_determine_success_local(
-    mocker, configuration, out_err, success_expected, data_expected
-):
+def test_determine_success_local(mocker, configuration, out_err, success_expected, data_expected):
     configuration_mock = mocker.Mock(spec=Configuration)
     configuration_mock.exceptions = configuration
 
@@ -107,9 +105,7 @@ def test_memory_limit(mocker, tmp_path, caplog):
     mock_configuration.comm_only = False
     mock_configuration.exceptions = []
     # set too small memory limit of 1 MiB
-    mock_configuration.system_mem_limit_perc = 100.0 * (
-        1024 * 1024 / psutil.virtual_memory().total
-    )
+    mock_configuration.system_mem_limit_perc = 100.0 * (1024 * 1024 / psutil.virtual_memory().total)
     mock_configuration.mem_check_interval_sec = 0.05
     mock_configuration.task_time_limit_minutes = 60.0
 
@@ -220,3 +216,42 @@ time.sleep(1)
     assert not success
     assert "error" in status_data
     assert "Time limit exceeded" in status_data["error"]
+
+
+def test_conda_env_error_propagation(mocker, tmp_path):
+    """Test that missing CONDA_ENV error is properly propagated to user/CIS"""
+    mock_configuration = mocker.Mock(spec=Configuration)
+    mock_configuration.python_executable = "python"  # Would normally be mantidpython.py
+    mock_configuration.comm_only = False
+    mock_configuration.exceptions = []
+    mock_configuration.mem_check_interval_sec = 0.01
+    mock_configuration.system_mem_limit_perc = 50.0
+    mock_configuration.task_time_limit_minutes = 60.0
+
+    # Create a reduction script that would cause CONDA_ENV error if run through mantidpython.py
+    script_content = """import sys
+print("This script lacks CONDA_ENV specification")
+# Legacy mantid script without CONDA_ENV
+sys.path.insert(0, "/opt/mantid50/bin")
+from mantid.simpleapi import *
+print("Would fail in new version")
+"""
+    tmp_file_script = tmp_path / "legacy_script.py"
+    tmp_file_script.write_text(script_content)
+    tmp_file_input = tmp_path / "in"  # noqa: F841
+    tmp_file_output = tmp_path / "out"  # noqa: F841
+    tmp_file_error = tmp_path / "err"
+
+    # Simulate the error by creating an error that matches what mantidpython.py would generate
+    error_message = f"RuntimeError: Reduction script {tmp_file_script} does not specify a CONDA_ENV. A conda environment must be specified using 'CONDA_ENV=<environment_name>'."
+
+    # Write the error to the error file to simulate what would happen
+    with open(tmp_file_error, "w") as err_file:
+        err_file.write(error_message)
+
+    # Verify that the error message is properly extracted
+    success, status_data = determine_success_local(mock_configuration, tmp_file_error)
+    assert not success
+    assert "error" in status_data
+    assert "does not specify a CONDA_ENV" in status_data["error"]
+    assert "conda environment must be specified" in status_data["error"]
