@@ -117,16 +117,16 @@ def test_conda_environment_extraction(auto_reduce_script, expected_conda_env):
 @pytest.mark.parametrize(
     "auto_reduce_script",
     [
-        "tests/reduce_EQSANS.py",
-        "tests/reduce_Mantid50.py",
         "tests/reduce_HYS.py",
-        "tests/reduce_REF_L.py",
-        "tests/reduce_SNAP.py",
     ],
-    ids=("eqsans", "mantid50", "hyspec", "ref_l", "snap"),
+    ids=("hyspec",),
 )
 def test_legacy_scripts_fail(auto_reduce_script):
-    """Test that legacy scripts without CONDA_ENV fail with appropriate error messages"""
+    """Test that legacy scripts using system python fail with appropriate error messages
+
+    reduce_HYS.py is a good example of a script that used to work with system python
+    (it uses 'python3' directly) but should now fail since only conda environments are supported.
+    """
     # set up test cases
     auto_reduce_script = os.path.join(os.getcwd(), auto_reduce_script)
     nexus_file_name = "/SNS/INS/IPTS-1234/nexus/INS_98765_events.nxs.h5"
