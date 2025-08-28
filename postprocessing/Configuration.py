@@ -133,6 +133,7 @@ class Configuration:
         self.publisher_password = config.get("publisher_password", "")
 
         self.calvera_ingest_url = config.get("calvera_ingest_url", "")
+        self.intersect_ingest_url = config.get("intersect_ingest_url", "")
 
         sys.path.insert(0, self.sw_dir)
         # Configure processor plugins
