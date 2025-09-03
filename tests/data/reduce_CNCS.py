@@ -10,9 +10,6 @@ except ImportError:
 sys.path.insert(0, "/opt/mantidnightly/bin")
 sys.path.insert(0, "/opt/mantidnightly/lib")
 sys.path.append("/SNS/CNCS/shared/autoreduce")
-sys.path.append("/SNS/CNCS/shared/autoreduce/autoreduction_utils/plotting_utils/")
-sys.path.append("/SNS/CNCS/shared/autoreduce/autoreduction_utils/plotting_gui/")
-import plotting_utils as pu
 import copy_script
 
 from ARLibrary import *  # note that ARLibrary would set mantidpath as well
@@ -511,30 +508,6 @@ if __name__ == "__main__":
                 KiOverKfScaling="1",
             )
             change_permissions(nxspe_filename, 0o664)
-    try:
-        plot_html = pu.create_powder_plots(
-            mtd["reduce"], plot_type="both"
-        )  # default 'both', alternatives 1D', '2D'
-        logger.notice(str(DGSdict))
-        EGuess = DGSdict["IncidentEnergyGuess"]
-        DGSdict["IncidentBeamNormalisation"] = "None"
-        DGSdict["SofPhiEIsDistribution"] = False
-        DGSdict["GroupingFile"] = ""
-        DGSdict["UseProcessedDetVan"] = False
-        DGSdict["DetectorVanadiumInputWorkspace"] = ""
-        DGSdict["OutputWorkspace"] = "reduce_ev"
-        DGSdict["EnergyTransferRange"] = preprocessEnergyTransfer(EGuess)
-        DgsReduction(**DGSdict)
-
-        if mtd.doesExist("__VAN"):
-            sa = mtd["__VAN"]
-        else:
-            sa = None
-
-        plot_html += pu.create_plots(mtd["reduce_ev"], output_directory, solid_angle=sa)
-        pu.publish_plot("CNCS", run_number, plot_html)
-    except Exception as e:
-        logger.error("Failed to publish plot\n" + str(e))
 
     if create_MDnxs:
         try:

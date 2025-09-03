@@ -127,11 +127,6 @@ class Configuration:
             config["jobs_per_instrument"] if "jobs_per_instrument" in config else 2
         )
 
-        # plot publishing
-        self.publish_url = config.get("publish_url_template", "")
-        self.publisher_username = config.get("publisher_username", "")
-        self.publisher_password = config.get("publisher_password", "")
-
         self.calvera_ingest_url = config.get("calvera_ingest_url", "")
         self.intersect_ingest_url = config.get("intersect_ingest_url", "")
 

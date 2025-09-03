@@ -33,23 +33,3 @@ if __name__ == "__main__":
     data2 = data[:, [0, 4, 1, 5, 2, 6, 3, 7], :]
     data2 = data2.transpose().reshape(-1, 256)
     Z = ma.masked_where(data2 < 1, data2)
-
-    try:
-        from postprocessing.publish_plot import plot_heatmap
-    except ImportError:
-        from finddata.publish_plot import plot_heatmap
-    x = arange(192) + 1
-    y = arange(256) + 1
-    Z = np.log(np.transpose(Z))
-    plot_heatmap(
-        w.getRunNumber(),
-        x.tolist(),
-        y.tolist(),
-        Z.tolist(),
-        x_title="Tube",
-        y_title="Pixel",
-        x_log=False,
-        y_log=False,
-        instrument="EQSANS",
-        publish=True,
-    )
