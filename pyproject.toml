@@ -5,7 +5,6 @@ version = "4.0.0"
 requires-python = ">=3.9"
 dependencies = [
     "requests",
-    "plotly",
     "stomp.py",
 ]
 license = { text = "MIT" }
@@ -39,7 +38,6 @@ platforms = ["linux-64", "win-64", "osx-64", "osx-arm64"]
 
 [tool.pixi.pypi-dependencies]
 postprocessing = { path = ".", editable = true }
-plot_publisher = { git = "https://github.com/neutrons/plot_publisher.git", branch = "main" }
 
 [tool.pixi.dependencies]
 python = ">=3.9"
@@ -47,7 +45,6 @@ h5py = "*"
 psutil = "*"
 requests = "*"
 "stomp.py" = "7.*"
-plotly = "*"
 
 [tool.pixi.feature.test.dependencies]
 pytest = "*"
