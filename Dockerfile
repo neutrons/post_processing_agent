@@ -22,6 +22,10 @@ RUN getent group users || groupadd users
 
 RUN cd /app && ./rpmbuild.sh || exit 1
 
+# manually install python3-pyoncat as dnf install fails due to a missing dependency
+COPY tests/integration/python3-pyoncat-2.1-1.noarch.rpm /root/rpmbuild/SOURCES/
+RUN dnf install -y /root/rpmbuild/SOURCES/python3-pyoncat-2.1-1.noarch.rpm || exit 1
+
 RUN dnf install -y /root/rpmbuild/RPMS/noarch/postprocessing*.noarch.rpm || exit 1
 
 # This configuration allows it to run with docker compose from https://github.com/neutrons/data_workflow

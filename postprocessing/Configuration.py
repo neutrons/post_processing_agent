@@ -24,9 +24,7 @@ class Configuration:
             with open(config_file, "r") as cfg:
                 json_encoded = cfg.read()
         except (PermissionError, FileNotFoundError, OSError) as e:
-            raise RuntimeError(
-                f"Configuration file doesn't exist or is not readable: {config_file}"
-            ) from e
+            raise RuntimeError(f"Configuration file doesn't exist or is not readable: {config_file}") from e
         config = json.loads(json_encoded)
 
         # Keep a record of which config file we are using
@@ -41,94 +39,57 @@ class Configuration:
         self.postprocess_error = config["postprocess_error"]
         # Reduction AMQ queues
         self.reduction_data_ready = (
-            config["reduction_data_ready"]
-            if "reduction_data_ready" in config
-            else "REDUCTION.DATA_READY"
+            config["reduction_data_ready"] if "reduction_data_ready" in config else "REDUCTION.DATA_READY"
         )
         self.reduction_started = config["reduction_started"]
         self.reduction_complete = config["reduction_complete"]
         self.reduction_error = config["reduction_error"]
         self.reduction_disabled = config["reduction_disabled"]
         self.heartbeat_ping = (
-            config["heartbeat_ping"]
-            if "heartbeat_ping" in config
-            else "/topic/SNS.COMMON.STATUS.PING"
+            config["heartbeat_ping"] if "heartbeat_ping" in config else "/topic/SNS.COMMON.STATUS.PING"
         )
         # Reduction script writer
         self.create_reduction_script = (
-            config["create_reduction_script"]
-            if "create_reduction_script" in config
-            else "REDUCTION.CREATE_SCRIPT"
+            config["create_reduction_script"] if "create_reduction_script" in config else "REDUCTION.CREATE_SCRIPT"
         )
         self.service_status = (
-            config["service_status"]
-            if "service_status" in config
-            else "/topic/SNS.${instrument}.STATUS.POSTPROCESS"
+            config["service_status"] if "service_status" in config else "/topic/SNS.${instrument}.STATUS.POSTPROCESS"
         )
 
         self.heart_beat = config["heart_beat"]
-        self.log_file = (
-            config["log_file"] if "log_file" in config else "post_processing.log"
-        )
+        self.log_file = config["log_file"] if "log_file" in config else "post_processing.log"
         # log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
         self.log_level = getattr(logging, config.get("log_level", ""), logging.INFO)
-        self.start_script = (
-            config["start_script"] if "start_script" in config else "python"
-        )
-        self.task_script = (
-            config["task_script"] if "task_script" in config else "PostProcessAdmin.py"
-        )
+        self.start_script = config["start_script"] if "start_script" in config else "python"
+        self.task_script = config["task_script"] if "task_script" in config else "PostProcessAdmin.py"
         self.python_dir = (
-            config["python_dir"]
-            if "python_dir" in config
-            else os.path.join(self.sw_dir, "postprocessing")
+            config["python_dir"] if "python_dir" in config else os.path.join(self.sw_dir, "postprocessing")
         )
-        self.mantid_path = (
-            config["mantid_path"] if "mantid_path" in config else "/opt/Mantid/bin"
-        )
+        self.mantid_path = config["mantid_path"] if "mantid_path" in config else "/opt/Mantid/bin"
         # used to override /facility/instrument/shared
         self.dev_instrument_shared = (
-            config["dev_instrument_shared"].strip()
-            if "dev_instrument_shared" in config
-            else ""
+            config["dev_instrument_shared"].strip() if "dev_instrument_shared" in config else ""
         )
         # used to override /facility/instrument/proposal/shared
-        self.dev_output_dir = (
-            config["dev_output_dir"].strip() if "dev_output_dir" in config else ""
-        )
-        self.python_executable = (
-            config["python_exec"] if "python_exec" in config else "python3"
-        )
+        self.dev_output_dir = config["dev_output_dir"].strip() if "dev_output_dir" in config else ""
+        self.python_executable = config["python_exec"] if "python_exec" in config else "python3"
 
         self.max_procs = config["max_procs"] if "max_procs" in config else 5
 
-        self.comm_only = (
-            config["communication_only"] == 1
-            if "communication_only" in config
-            else False
-        )
+        self.comm_only = config["communication_only"] == 1 if "communication_only" in config else False
 
-        self.task_script_queue_arg = (
-            config["task_script_queue_arg"]
-            if "task_script_queue_arg" in config
-            else None
-        )
-        self.task_script_data_arg = (
-            config["task_script_data_arg"] if "task_script_data_arg" in config else None
-        )
+        self.task_script_queue_arg = config["task_script_queue_arg"] if "task_script_queue_arg" in config else None
+        self.task_script_data_arg = config["task_script_data_arg"] if "task_script_data_arg" in config else None
 
-        self.exceptions = (
-            config["exceptions"]
-            if "exceptions" in config
-            else ["Error in logging framework"]
-        )
+        self.exceptions = config["exceptions"] if "exceptions" in config else ["Error in logging framework"]
 
-        self.jobs_per_instrument = (
-            config["jobs_per_instrument"] if "jobs_per_instrument" in config else 2
-        )
+        self.jobs_per_instrument = config["jobs_per_instrument"] if "jobs_per_instrument" in config else 2
 
         self.calvera_ingest_url = config.get("calvera_ingest_url", "")
         self.intersect_ingest_url = config.get("intersect_ingest_url", "")
+
+        self.oncat_url = config.get("oncat_url", "")
+        self.oncat_api_token = config.get("oncat_api_token", "")
 
         sys.path.insert(0, self.sw_dir)
         # Configure processor plugins
@@ -174,9 +135,7 @@ class Configuration:
         """
         logger.info("Using %s", self.config_file)
         if self.comm_only:
-            logger.info(
-                "  - Running in COMMUNICATION ONLY mode: no post-processing will be performed"
-            )
+            logger.info("  - Running in COMMUNICATION ONLY mode: no post-processing will be performed")
         logger.info("  - LOCAL execution")
         logger.info("  - Max number of processes: %s", self.max_procs)
         logger.info("  - Input queues: %s", self.queues)
@@ -255,14 +214,10 @@ def initialize_logging(log_file, level=logging.INFO, preemptive_cleanup=False):
 
 # Default locations for configurationss
 CONFIG_FILE = "/etc/autoreduce/post_processing.conf"
-CONFIG_FILE_ALTERNATE = (
-    "/sw/fermi/autoreduce/postprocessing/configuration/post_processing.conf"
-)
+CONFIG_FILE_ALTERNATE = "/sw/fermi/autoreduce/postprocessing/configuration/post_processing.conf"
 
 
-def read_configuration(
-    config_file=None, defaults=[CONFIG_FILE, CONFIG_FILE_ALTERNATE], log_file=""
-):
+def read_configuration(config_file=None, defaults=[CONFIG_FILE, CONFIG_FILE_ALTERNATE], log_file=""):
     r"""
     Returns a new configuration object for a given configuration file, and initializes the basic configuration
     of all log messages.
@@ -282,9 +237,7 @@ def read_configuration(
                 config_file = config_default
                 break
         else:
-            raise RuntimeError(
-                f"Default configuration file(s) do not exist, or unreadable: {defaults}"
-            )
+            raise RuntimeError(f"Default configuration file(s) do not exist, or unreadable: {defaults}")
 
     configuration = Configuration(config_file)
     if log_file:

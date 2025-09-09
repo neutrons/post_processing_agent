@@ -1,0 +1,9 @@
+FROM python:3-alpine
+COPY tests/integration/oncat_server.py .
+RUN mkdir -p /SNS/CORELLI/IPTS-15526/nexus && \
+    touch /SNS/CORELLI/IPTS-15526/nexus/CORELLI_29666.nxs.h5 && \
+    mkdir -p /SNS/CORELLI/IPTS-15526/images/det_main && \
+    touch /SNS/CORELLI/IPTS-15526/images/det_main/CORELLI_29666_det_main_000001.tiff && \
+    mkdir -p /SNS/CORELLI/IPTS-15526/shared/autoreduce && \
+    echo '{"output_files":[], "input_files": []}' > /SNS/CORELLI/IPTS-15526/shared/autoreduce/CORELLI_29666.json
+CMD ["python", "oncat_server.py"]
