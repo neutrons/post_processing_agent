@@ -14,3 +14,8 @@ services:
       - 61613:61613
     volumes:
       - ./config/artemis:/var/lib/artemis-instance/etc-override
+
+  oncat:
+    build:
+      context: ../..
+      dockerfile: ./tests/integration/Dockerfile.oncat

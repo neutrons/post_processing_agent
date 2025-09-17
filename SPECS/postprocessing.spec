@@ -3,7 +3,7 @@
 %define release 1
 
 Name: %{srcname}
-Version: 4.0.0
+Version: 4.1.0
 Release: %{release}%{?dist}
 Summary: %{summary}
 
@@ -22,6 +22,7 @@ Requires: python%{python3_pkgversion}
 Requires: python%{python3_pkgversion}-psutil
 Requires: python%{python3_pkgversion}-requests
 Requires: python%{python3_pkgversion}-stomppy
+Requires: python%{python3_pkgversion}-pyoncat
 Requires: python-unversioned-command
 Requires: systemd
 

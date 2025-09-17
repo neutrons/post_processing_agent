@@ -3,6 +3,9 @@ FROM registry.access.redhat.com/ubi9/ubi
 RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
 RUN dnf install -y python3-requests python3-stomppy python3-pip python3-coverage python3-psutil python-unversioned-command
 
+COPY tests/integration/python3-pyoncat-2.1-1.noarch.rpm /tmp/
+RUN dnf install -y /tmp/python3-pyoncat-2.1-1.noarch.rpm
+
 COPY postprocessing /opt/postprocessing/postprocessing
 COPY scripts /opt/postprocessing/scripts
 COPY pyproject.toml /opt/postprocessing/
@@ -18,9 +21,6 @@ ENV PYTHONPATH /opt/postprocessing
 
 RUN echo -e "[run]\nsource=postprocessing\nparallel=True\nrelative_files=True" > /opt/postprocessing/.coveragerc
 RUN mkdir -p /opt/postprocessing/log && \
-    mkdir -p /opt/postprocessing/scripts && \
-    touch /opt/postprocessing/scripts/oncat_ingest.py && \
-    touch /opt/postprocessing/scripts/oncat_reduced_ingest.py && \
     \
     mkdir -p /SNS/EQSANS/IPTS-10674/0/30892/NeXus && \
     mkdir -p /SNS/EQSANS/IPTS-10674/shared/autoreduce && \
@@ -31,6 +31,10 @@ RUN mkdir -p /opt/postprocessing/log && \
     \
     mkdir -p /SNS/CORELLI/IPTS-15526/nexus && \
     touch /SNS/CORELLI/IPTS-15526/nexus/CORELLI_29666.nxs.h5 && \
+    mkdir -p /SNS/CORELLI/IPTS-15526/shared/autoreduce && \
+    echo '{"output_files":[], "input_files": []}' > /SNS/CORELLI/IPTS-15526/shared/autoreduce/CORELLI_29666.json && \
+    mkdir -p /SNS/CORELLI/IPTS-15526/images/det_main && \
+    touch /SNS/CORELLI/IPTS-15526/images/det_main/CORELLI_29666_det_main_000001.tiff && \
     mkdir -p /SNS/CORELLI/shared/autoreduce && \
     echo "raise RuntimeError('This is an ERROR!')" > /SNS/CORELLI/shared/autoreduce/reduce_CORELLI.py && \
     \

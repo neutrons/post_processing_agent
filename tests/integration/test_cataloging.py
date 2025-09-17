@@ -1,16 +1,18 @@
+import time
 import json
 import pytest
 import stomp
+from tests.conftest import docker_exec_and_cat
 
 
 def test_oncat_catalog():
     """This should run ONCatProcessor"""
     message = {
-        "run_number": "30892",
-        "instrument": "EQSANS",
-        "ipts": "IPTS-10674",
+        "run_number": "29666",
+        "instrument": "CORELLI",
+        "ipts": "IPTS-15526",
         "facility": "SNS",
-        "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
+        "data_file": "/SNS/CORELLI/IPTS-15526/nexus/CORELLI_29666.nxs.h5",
     }
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
@@ -19,7 +21,7 @@ def test_oncat_catalog():
     conn.set_listener("", listener)
 
     try:
-        conn.connect('icat', 'icat')
+        conn.connect("icat", "icat")
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -42,15 +44,25 @@ def test_oncat_catalog():
     assert msg["facility"] == message["facility"]
     assert msg["data_file"] == message["data_file"]
 
+    time.sleep(1)  # give oncat_server time to write its log
+    log = docker_exec_and_cat("/oncat_server.log", "oncat").splitlines()
+    # last two lines should be the requested file then the 'related' file
+    assert log[-2].endswith(
+        "INFO Received datafile ingest request for /SNS/CORELLI/IPTS-15526/nexus/CORELLI_29666.nxs.h5"
+    )
+    assert log[-1].endswith(
+        "INFO Received datafile ingest request for /SNS/CORELLI/IPTS-15526/images/det_main/CORELLI_29666_det_main_000001.tiff"
+    )
 
-def test_oncat_reduction_catalog():
-    """This should run reduction ONCatProcessor"""
+
+def test_oncat_catalog_error():
+    """This should run ONCatProcessor but get an error"""
     message = {
-        "run_number": "30892",
-        "instrument": "EQSANS",
-        "ipts": "IPTS-10674",
+        "run_number": "99999999",
+        "instrument": "CORELLI",
+        "ipts": "IPTS-15526",
         "facility": "SNS",
-        "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
+        "data_file": "/bin/true",
     }
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
@@ -59,7 +71,53 @@ def test_oncat_reduction_catalog():
     conn.set_listener("", listener)
 
     try:
-        conn.connect('icat', 'icat')
+        conn.connect("icat", "icat")
+    except stomp.exception.ConnectFailedException:
+        pytest.skip("Requires activemq running")
+
+    # expect a message on CATALOG.ONCAT.ERROR
+    conn.subscribe("/queue/CATALOG.ONCAT.ERROR", id="123", ack="auto")
+
+    # send data ready
+    conn.send("/queue/CATALOG.ONCAT.DATA_READY", json.dumps(message).encode())
+
+    listener.wait_for_message()
+
+    conn.disconnect()
+
+    header, body = listener.get_latest_message()
+
+    msg = json.loads(body)
+    assert msg["run_number"] == message["run_number"]
+    assert msg["instrument"] == message["instrument"]
+    assert msg["ipts"] == message["ipts"]
+    assert msg["facility"] == message["facility"]
+    assert msg["data_file"] == message["data_file"]
+    assert msg["error"] == "ONCAT: Bad request"
+
+    time.sleep(1)  # give oncat_server time to write its log
+    log = docker_exec_and_cat("/oncat_server.log", "oncat").splitlines()
+    # last line should indicate the file was ingested
+    assert log[-1].endswith("ERROR Invalid path format: /bin/true")
+
+
+def test_oncat_reduction_catalog():
+    """This should run reduction ONCatProcessor"""
+    message = {
+        "run_number": "29666",
+        "instrument": "CORELLI",
+        "ipts": "IPTS-15526",
+        "facility": "SNS",
+        "data_file": "/SNS/CORELLI/IPTS-15526/nexus/CORELLI_29666.nxs.h5",
+    }
+
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener()
+    conn.set_listener("", listener)
+
+    try:
+        conn.connect("icat", "icat")
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -82,6 +140,13 @@ def test_oncat_reduction_catalog():
     assert msg["facility"] == message["facility"]
     assert msg["data_file"] == message["data_file"]
 
+    time.sleep(1)  # give oncat_server time to write its log
+    log = docker_exec_and_cat("/oncat_server.log", "oncat").splitlines()
+    # last line should indicate the file was ingested
+    assert log[-1].endswith(
+        "INFO Received reduction ingest request for /SNS/CORELLI/IPTS-15526/shared/autoreduce/CORELLI_29666.json"
+    )
+
 
 def test_calvera():
     """Test calvera, expect an error as we don't have a real endpoint"""
@@ -99,7 +164,7 @@ def test_calvera():
     conn.set_listener("", listener)
 
     try:
-        conn.connect('icat', 'icat')
+        conn.connect("icat", "icat")
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -122,9 +187,7 @@ def test_calvera():
     assert msg["facility"] == message["facility"]
     assert msg["data_file"] == message["data_file"]
 
-    assert msg["error"].startswith(
-        "SENDING TO Calvera: HTTPConnectionPool(host='not-valid.localhost', port=12345)"
-    )
+    assert msg["error"].startswith("SENDING TO Calvera: HTTPConnectionPool(host='not-valid.localhost', port=12345)")
     assert "Failed to establish a new connect" in msg["error"]
 
 
@@ -144,7 +207,7 @@ def test_calvera_reduced():
     conn.set_listener("", listener)
 
     try:
-        conn.connect('icat', 'icat')
+        conn.connect("icat", "icat")
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -186,7 +249,7 @@ def test_intersect():
     conn.set_listener("", listener)
 
     try:
-        conn.connect('icat', 'icat')
+        conn.connect("icat", "icat")
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -209,9 +272,7 @@ def test_intersect():
     assert msg["facility"] == message["facility"]
     assert msg["data_file"] == message["data_file"]
 
-    assert msg["error"].startswith(
-        "SENDING TO Intersect: HTTPConnectionPool(host='not-valid.localhost', port=12345)"
-    )
+    assert msg["error"].startswith("SENDING TO Intersect: HTTPConnectionPool(host='not-valid.localhost', port=12345)")
     assert "Failed to establish a new connect" in msg["error"]
 
 
@@ -231,7 +292,7 @@ def test_intersect_reduced():
     conn.set_listener("", listener)
 
     try:
-        conn.connect('icat', 'icat')
+        conn.connect("icat", "icat")
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 

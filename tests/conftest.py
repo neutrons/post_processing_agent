@@ -28,9 +28,7 @@ def data_server():
             r"""Absolute path to a data file"""
             file_path = os.path.join(self._directory, basename)
             if not os.path.isfile(file_path):
-                raise IOError(
-                    "File {basename} not found in data directory {self._directory}"
-                )
+                raise IOError("File {basename} not found in data directory {self._directory}")
             return file_path
 
     return _DataServe()
@@ -58,13 +56,13 @@ def test_logger():
     os.remove(log_file)
 
 
-def docker_identify_container():
+def docker_identify_container(name="post_processing_agent"):
     """This returns the container-id associated with the name that starts with "integration-post_processing_agent".
     The function was added to be more resilient to slight variations in what docker names the images.
     """
     # this will throw an exception if the command returns non-zero
     container_id = subprocess.check_output(
-        args=r'docker ps -qaf "name=^integration-post_processing_agent"',
+        args=r'docker ps -qaf "name=^integration-{}"'.format(name),
         stderr=subprocess.STDOUT,
         shell=True,
     )
@@ -77,10 +75,10 @@ def docker_identify_container():
         return "integration_post_processing_agent_1"  # default name on github
 
 
-def docker_exec_and_cat(filename):
+def docker_exec_and_cat(filename, name="post_processing_agent"):
     """`cat` a file in a docker container"""
     # get the name of the docker container that does the work
-    container_id = docker_identify_container()
+    container_id = docker_identify_container(name)
     print("communicating with docker container id", container_id)
     # this will throw an exception if the command returns non-zero
     filecontents = subprocess.check_output(
