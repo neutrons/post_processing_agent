@@ -19,6 +19,8 @@ RUN mkdir -p /root/rpmbuild/SOURCES
 RUN useradd snsdata
 # add group "users" only if it doesn't exist
 RUN getent group users || groupadd users
+# add group "hfiradmin" for HFIR file access
+RUN getent group hfiradmin || groupadd hfiradmin
 
 RUN cd /app && ./rpmbuild.sh || exit 1
 
