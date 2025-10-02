@@ -25,6 +25,9 @@ Requires: python%{python3_pkgversion}-stomppy
 Requires: python%{python3_pkgversion}-pyoncat
 Requires: python-unversioned-command
 Requires: systemd
+Requires: user(snsdata)
+Requires: group(users)
+Requires: group(hfiradmin)
 
 prefix: /opt/postprocessing
 
@@ -59,3 +62,12 @@ echo %{prefix} > %{buildroot}%{site_packages}/postprocessing.pth
 %{site_packages}/postprocessing.pth
 %attr(1755, snsdata, users) /var/log/SNS_applications
 %{_unitdir}/autoreduce-queue-processor.service
+
+%post
+%systemd_post autoreduce-queue-processor.service
+
+%preun
+%systemd_preun autoreduce-queue-processor.service
+
+%postun
+%systemd_postun_with_restart autoreduce-queue-processor.service
