@@ -31,19 +31,19 @@ class TestRPMScriptlets(unittest.TestCase):
                      "systemd-rpm-macros should be in BuildRequires")
 
     def test_user_group_requirements(self):
-        """Test that user and group requirements are present"""
+        """Test that user and group creation is present in %post section"""
         with open(self.spec_file, 'r') as f:
             content = f.read()
         
-        # Check user requirements
-        self.assertIn("Requires: user(snsdata)", content,
-                     "Should require user(snsdata)")
+        # Check user creation
+        self.assertIn("useradd -r -g users -G hfiradmin", content,
+                     "Should create user(snsdata) in %post section")
         
-        # Check group requirements
-        self.assertIn("Requires: group(users)", content,
-                     "Should require group(users)")
-        self.assertIn("Requires: group(hfiradmin)", content,
-                     "Should require group(hfiradmin)")
+        # Check group creation
+        self.assertIn("groupadd -r users", content,
+                     "Should create group(users) in %post section")
+        self.assertIn("groupadd -r hfiradmin", content,
+                     "Should create group(hfiradmin) in %post section")
 
     def test_systemd_scriptlets_present(self):
         """Test that systemd scriptlets are present in SPEC file"""

@@ -24,12 +24,12 @@ class TestHFIRFileAccess(unittest.TestCase):
         self.service_file = self.project_root / "systemd" / "autoreduce-queue-processor.service"
 
     def test_hfiradmin_group_requirement(self):
-        """Test that hfiradmin group is required in SPEC file"""
+        """Test that hfiradmin group is created in SPEC file %post section"""
         with open(self.spec_file, 'r') as f:
             content = f.read()
         
-        self.assertIn("Requires: group(hfiradmin)", content,
-                     "SPEC file should require group(hfiradmin) for HFIR file access")
+        self.assertIn("groupadd -r hfiradmin", content,
+                     "SPEC file should create group(hfiradmin) for HFIR file access")
 
     def test_sssd_dependency_in_service(self):
         """Test that the service depends on SSSD for ACL-based permissions"""
@@ -51,19 +51,19 @@ class TestHFIRFileAccess(unittest.TestCase):
                      "Service should run as snsdata user")
 
     def test_user_requirements_present(self):
-        """Test that all required user/group dependencies are present"""
+        """Test that all required user/group creation is present in %post section"""
         with open(self.spec_file, 'r') as f:
             content = f.read()
         
-        # Check all required dependencies
-        required_deps = [
-            "Requires: user(snsdata)",
-            "Requires: group(users)", 
-            "Requires: group(hfiradmin)"
+        # Check all required user/group creation commands
+        required_commands = [
+            "useradd -r -g users -G hfiradmin",
+            "groupadd -r users", 
+            "groupadd -r hfiradmin"
         ]
         
-        for dep in required_deps:
-            self.assertIn(dep, content, f"Missing requirement: {dep}")
+        for cmd in required_commands:
+            self.assertIn(cmd, content, f"Missing user/group creation command: {cmd}")
 
     def test_group_existence_check(self):
         """Test that we can check for group existence (would be done at runtime)"""
