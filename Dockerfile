@@ -15,13 +15,6 @@ COPY systemd /app/systemd
 
 RUN mkdir -p /root/rpmbuild/SOURCES
 
-# The RPM build assumes that user "snsdata" and group "users" exist
-RUN useradd snsdata
-# add group "users" only if it doesn't exist
-RUN getent group users || groupadd users
-# add group "hfiradmin" for HFIR file access
-RUN getent group hfiradmin || groupadd hfiradmin
-
 RUN cd /app && ./rpmbuild.sh || exit 1
 
 # manually install python3-pyoncat as dnf install fails due to a missing dependency

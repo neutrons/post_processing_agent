@@ -25,9 +25,6 @@ Requires: python%{python3_pkgversion}-stomppy
 Requires: python%{python3_pkgversion}-pyoncat
 Requires: python-unversioned-command
 Requires: systemd
-Requires: user(snsdata)
-Requires: group(users)
-Requires: group(hfiradmin)
 
 prefix: /opt/postprocessing
 
@@ -49,8 +46,6 @@ Post-processing agent to automatically catalog and reduce neutron data
 %{__mkdir} -p %{buildroot}%{site_packages}
 echo %{prefix} > %{buildroot}%{site_packages}/postprocessing.pth
 %{__mkdir} -p -m 1755 %{buildroot}/var/log/SNS_applications/
-%{__chown} snsdata:users %{buildroot}/var/log/SNS_applications/
-%{__chmod} 1755 %{buildroot}/var/log/SNS_applications/
 %{__mkdir} -p %{buildroot}%{_unitdir}/
 %{__install} -m 644 %{_sourcedir}/autoreduce-queue-processor.service %{buildroot}%{_unitdir}/
 
@@ -60,10 +55,19 @@ echo %{prefix} > %{buildroot}%{site_packages}/postprocessing.pth
 %{prefix}/*
 %attr(0755, -, -) %{prefix}/scripts
 %{site_packages}/postprocessing.pth
-%attr(1755, snsdata, users) /var/log/SNS_applications
+%dir %attr(1755, -, -) /var/log/SNS_applications
 %{_unitdir}/autoreduce-queue-processor.service
 
 %post
+# Create required groups if they don't exist
+getent group users >/dev/null || groupadd -r users
+getent group hfiradmin >/dev/null || groupadd -r hfiradmin
+# Create required user if it doesn't exist
+getent passwd snsdata >/dev/null || useradd -r -g users -G hfiradmin -d /var/lib/snsdata -s /sbin/nologin -c "SNS Data Processing User" snsdata
+# Set ownership of log directory
+chown snsdata:users /var/log/SNS_applications
+chmod 1755 /var/log/SNS_applications
+# Enable systemd service
 %systemd_post autoreduce-queue-processor.service
 
 %preun
