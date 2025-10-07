@@ -25,6 +25,9 @@ Requires: python%{python3_pkgversion}-stomppy
 Requires: python%{python3_pkgversion}-pyoncat
 Requires: python-unversioned-command
 Requires: systemd
+Requires: user(snsdata)
+Requires: group(users)
+Requires: group(hfiradmin)
 
 prefix: /opt/postprocessing
 
@@ -55,19 +58,10 @@ echo %{prefix} > %{buildroot}%{site_packages}/postprocessing.pth
 %{prefix}/*
 %attr(0755, -, -) %{prefix}/scripts
 %{site_packages}/postprocessing.pth
-%dir %attr(1755, -, -) /var/log/SNS_applications
+%attr(1755, snsdata, users) /var/log/SNS_applications
 %{_unitdir}/autoreduce-queue-processor.service
 
 %post
-# Create required groups if they don't exist
-getent group users >/dev/null || groupadd -r users
-getent group hfiradmin >/dev/null || groupadd -r hfiradmin
-# Create required user if it doesn't exist
-getent passwd snsdata >/dev/null || useradd -r -g users -G hfiradmin -d /var/lib/snsdata -s /sbin/nologin -c "SNS Data Processing User" snsdata
-# Set ownership of log directory
-chown snsdata:users /var/log/SNS_applications
-chmod 1755 /var/log/SNS_applications
-# Enable systemd service
 %systemd_post autoreduce-queue-processor.service
 
 %preun
