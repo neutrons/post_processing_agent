@@ -25,6 +25,9 @@ Requires: python%{python3_pkgversion}-stomppy
 Requires: python%{python3_pkgversion}-pyoncat
 Requires: python-unversioned-command
 Requires: systemd
+Requires: user(snsdata)
+Requires: group(users)
+Requires: group(hfiradmin)
 
 prefix: /opt/postprocessing
 
@@ -46,8 +49,6 @@ Post-processing agent to automatically catalog and reduce neutron data
 %{__mkdir} -p %{buildroot}%{site_packages}
 echo %{prefix} > %{buildroot}%{site_packages}/postprocessing.pth
 %{__mkdir} -p -m 1755 %{buildroot}/var/log/SNS_applications/
-%{__chown} snsdata:users %{buildroot}/var/log/SNS_applications/
-%{__chmod} 1755 %{buildroot}/var/log/SNS_applications/
 %{__mkdir} -p %{buildroot}%{_unitdir}/
 %{__install} -m 644 %{_sourcedir}/autoreduce-queue-processor.service %{buildroot}%{_unitdir}/
 
@@ -59,3 +60,12 @@ echo %{prefix} > %{buildroot}%{site_packages}/postprocessing.pth
 %{site_packages}/postprocessing.pth
 %attr(1755, snsdata, users) /var/log/SNS_applications
 %{_unitdir}/autoreduce-queue-processor.service
+
+%post
+%systemd_post autoreduce-queue-processor.service
+
+%preun
+%systemd_preun autoreduce-queue-processor.service
+
+%postun
+%systemd_postun_with_restart autoreduce-queue-processor.service
