@@ -3407,8 +3407,8 @@ packages:
   timestamp: 1747339794916
 - pypi: ./
   name: postprocessing
-  version: 4.1.0
-  sha256: a0cec8056ced951b60976dc0bde496e3c94afd1416d4a07e77ce9cc2476057f2
+  version: 4.2.0
+  sha256: 655c1f2f2dae7415c9c5688ea11c5786da562cb606d4783f28ce873fc0bd8513
   requires_dist:
   - requests
   - stomp-py
