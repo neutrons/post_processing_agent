@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 rm -rf dist postprocessing.egg-info
 python3 -m build --sdist
 cp dist/postprocessing-*.tar.gz ~/rpmbuild/SOURCES/
