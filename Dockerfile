@@ -28,9 +28,7 @@ RUN cd /app && ./rpmbuild.sh || exit 1
 COPY tests/integration/python3-pyoncat-2.1-1.noarch.rpm /root/rpmbuild/SOURCES/
 RUN dnf install -y /root/rpmbuild/SOURCES/python3-pyoncat-2.1-1.noarch.rpm || exit 1
 
-# Install postprocessing RPM - use rpm directly to bypass dependency checks in testing environment
-# In production, the required users/groups will be provided by the system
-RUN rpm -ivh --nodeps /root/rpmbuild/RPMS/noarch/postprocessing*.noarch.rpm || exit 1
+RUN dnf install -y /root/rpmbuild/RPMS/noarch/postprocessing*.noarch.rpm || exit 1
 
 # This configuration allows it to run with docker compose from https://github.com/neutrons/data_workflow
 COPY configuration/post_process_consumer.conf.development /etc/autoreduce/post_processing.conf

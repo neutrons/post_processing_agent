@@ -3,7 +3,7 @@
 %define release 1
 
 Name: %{srcname}
-Version: 4.2.0
+Version: 4.3.0
 Release: %{release}%{?dist}
 Summary: %{summary}
 
@@ -25,9 +25,6 @@ Requires: python%{python3_pkgversion}-stomppy
 Requires: python%{python3_pkgversion}-pyoncat
 Requires: python-unversioned-command
 Requires: systemd
-Requires: user(snsdata)
-Requires: group(users)
-Requires: group(hfiradmin)
 
 prefix: /opt/postprocessing
 
@@ -60,6 +57,10 @@ echo %{prefix} > %{buildroot}%{site_packages}/postprocessing.pth
 %{site_packages}/postprocessing.pth
 %attr(1755, snsdata, users) /var/log/SNS_applications
 %{_unitdir}/autoreduce-queue-processor.service
+
+%pre
+# Check if required users exist; fail install if snsdata missing
+%{__id} snsdata > /dev/null 2>&1 || { echo "Error: snsdata user not found. Please create it before installing this package."; exit 1; }
 
 %post
 %systemd_post autoreduce-queue-processor.service
