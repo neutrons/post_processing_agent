@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Setup pixi
-      uses: prefix-dev/setup-pixi@v0.9.1
+      uses: prefix-dev/setup-pixi@v0.9.3
       with:
         environments: test
 
@@ -37,10 +37,10 @@ jobs:
     needs: tests
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Setup pixi
-      uses: prefix-dev/setup-pixi@v0.9.1
+      uses: prefix-dev/setup-pixi@v0.9.3
       with:
         environments: test
 
@@ -84,10 +84,10 @@ jobs:
     needs: integration-tests
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Setup pixi
-      uses: prefix-dev/setup-pixi@v0.9.1
+      uses: prefix-dev/setup-pixi@v0.9.3
       with:
         environments: build
 
@@ -95,7 +95,7 @@ jobs:
       run: pixi run -e build build
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: dist
         path: dist/
@@ -106,7 +106,7 @@ jobs:
 
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Build RPM inside Docker
       run: |
@@ -121,7 +121,7 @@ jobs:
 
     # now run a couple integration test with RPM installed package
     - name: Setup pixi
-      uses: prefix-dev/setup-pixi@v0.9.1
+      uses: prefix-dev/setup-pixi@v0.9.3
       with:
         environments: test
 
@@ -156,16 +156,16 @@ jobs:
     needs: build
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Download build artifacts
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v7
       with:
         name: dist
         path: dist/
 
     - name: Setup pixi
-      uses: prefix-dev/setup-pixi@v0.9.1
+      uses: prefix-dev/setup-pixi@v0.9.3
 
     - name: Test package install and import
       run: |
