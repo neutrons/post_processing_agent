@@ -18,9 +18,5 @@ class TestProcessor(BaseProcessor):
         """
         Just send back acknowledgment messages
         """
-        self.send(
-            "/queue/" + self.configuration.reduction_started, json.dumps(self.data)
-        )
-        self.send(
-            "/queue/" + self.configuration.reduction_complete, json.dumps(self.data)
-        )
+        self.send("/queue/" + self.configuration.reduction_started, json.dumps(self.data))
+        self.send("/queue/" + self.configuration.reduction_complete, json.dumps(self.data))

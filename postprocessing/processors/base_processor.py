@@ -66,12 +66,8 @@ class BaseProcessor:
             )
 
         # Remove old log files
-        out_log = os.path.join(
-            self.log_dir, f"{os.path.basename(self.data_file)}.{job_name}.log"
-        )
-        out_err = os.path.join(
-            self.log_dir, f"{os.path.basename(self.data_file)}.{job_name}.err"
-        )
+        out_log = os.path.join(self.log_dir, f"{os.path.basename(self.data_file)}.{job_name}.log")
+        out_err = os.path.join(self.log_dir, f"{os.path.basename(self.data_file)}.{job_name}.err")
         if os.path.isfile(out_err):
             os.remove(out_err)
         if os.path.isfile(out_log):
@@ -99,15 +95,11 @@ class BaseProcessor:
             try:
                 open(self.data_file)
             except PermissionError as e:
-                raise ValueError(
-                    f"Data file permission denied: {self.data_file}"
-                ) from e
+                raise ValueError(f"Data file permission denied: {self.data_file}") from e
             except FileNotFoundError as e:
                 raise ValueError(f"Data file not found: {self.data_file}") from e
             except OSError as e:
-                raise ValueError(
-                    f"Data file open error for file {self.data_file}"
-                ) from e
+                raise ValueError(f"Data file open error for file {self.data_file}") from e
         else:
             raise ValueError(f"data_file is missing: {self.data_file}")
 

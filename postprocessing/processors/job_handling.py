@@ -51,23 +51,18 @@ def local_submission(configuration, script, input_file, output_dir, out_log, out
             try:
                 terminate = False
                 while proc.poll() is None:  # process is still running
-                    total_mem_usage_mb = (
-                        get_total_memory_usage(proc_psutil)
-                        * CONVERSION_FACTOR_BYTES_TO_MB
-                    )
+                    total_mem_usage_mb = get_total_memory_usage(proc_psutil) * CONVERSION_FACTOR_BYTES_TO_MB
                     elapsed_time = time.time() - start_time
-                    logging.debug(
-                        f"Subprocess memory usage: {total_mem_usage_mb} MiB. Max limit: {mem_limit_mb} MiB."
-                    )
-                    logging.debug(
-                        f"Elapsed time: {elapsed_time} s. Max time limit: {time_limit_sec} s."
-                    )
+                    logging.debug(f"Subprocess memory usage: {total_mem_usage_mb} MiB. Max limit: {mem_limit_mb} MiB.")
+                    logging.debug(f"Elapsed time: {elapsed_time} s. Max time limit: {time_limit_sec} s.")
 
                     if total_mem_usage_mb > mem_limit_mb:
                         err_message = f"Total memory usage exceeded limit ({total_mem_usage_mb / 1024:2f} GiB > {mem_limit_mb / 1024:2f} GiB). Terminating job."
                         terminate = True
                     elif elapsed_time > time_limit_sec:
-                        err_message = f"Time limit exceeded ({elapsed_time:2f} s > {time_limit_sec:2f} s). Terminating job."
+                        err_message = (
+                            f"Time limit exceeded ({elapsed_time:2f} s > {time_limit_sec:2f} s). Terminating job."
+                        )
                         terminate = True
 
                     if terminate:

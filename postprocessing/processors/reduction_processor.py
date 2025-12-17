@@ -33,9 +33,7 @@ class ReductionProcessor(BaseProcessor):
         try:
             self.send(ReductionProcessor.STARTED_QUEUE, json.dumps(self.data))
             # get instrument shared directory
-            instrument_shared_dir = os.path.join(
-                "/", self.facility, self.instrument, "shared", "autoreduce"
-            )
+            instrument_shared_dir = os.path.join("/", self.facility, self.instrument, "shared", "autoreduce")
             if len(self.configuration.dev_instrument_shared) > 0:
                 instrument_shared_dir = self.configuration.dev_instrument_shared
 
@@ -59,32 +57,19 @@ class ReductionProcessor(BaseProcessor):
                 os.makedirs(log_dir)
 
             # Look for run summary script
-            summary_script = os.path.join(
-                instrument_shared_dir, f"sumRun_{self.instrument}.py"
-            )
+            summary_script = os.path.join(instrument_shared_dir, f"sumRun_{self.instrument}.py")
             if os.path.exists(summary_script) is True:
                 summary_output = os.path.join(
                     proposal_shared_dir,
                     f"{self.instrument}_{self.proposal}_runsummary.csv",
                 )
-                cmd = (
-                    "python "
-                    + summary_script
-                    + " "
-                    + self.instrument
-                    + " "
-                    + self.data_file
-                    + " "
-                    + summary_output
-                )
+                cmd = "python " + summary_script + " " + self.instrument + " " + self.data_file + " " + summary_output
                 logging.debug(f"Run summary subprocess started: {cmd}")
                 subprocess.call(cmd, shell=True)
                 logging.debug(f"Run summary subprocess completed, see {summary_output}")
 
             # Look for auto-reduction script
-            reduce_script_path = os.path.join(
-                instrument_shared_dir, f"reduce_{self.instrument}.py"
-            )
+            reduce_script_path = os.path.join(instrument_shared_dir, f"reduce_{self.instrument}.py")
             if os.path.exists(reduce_script_path) is False:
                 self.send(ReductionProcessor.DISABLED_QUEUE, json.dumps(self.data))
                 return
@@ -102,9 +87,7 @@ class ReductionProcessor(BaseProcessor):
             )
 
             # Determine error condition
-            success, status_data = job_handling.determine_success_local(
-                self.configuration, out_err
-            )
+            success, status_data = job_handling.determine_success_local(self.configuration, out_err)
 
             self.data.update(status_data)
             if success:

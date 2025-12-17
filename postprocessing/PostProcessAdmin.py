@@ -58,21 +58,13 @@ if __name__ == "__main__":
     import argparse
     from postprocessing.Configuration import read_configuration
 
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s %(levelname)s/%(process)d %(message)s"
-    )
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s/%(process)d %(message)s")
 
     parser = argparse.ArgumentParser(description="Post-processing agent")
-    parser.add_argument(
-        "-q", metavar="queue", help="ActiveMQ queue name", dest="queue", required=True
-    )
-    parser.add_argument(
-        "-c", metavar="config", help="Configuration file", dest="config"
-    )
+    parser.add_argument("-q", metavar="queue", help="ActiveMQ queue name", dest="queue", required=True)
+    parser.add_argument("-c", metavar="config", help="Configuration file", dest="config")
     parser.add_argument("-d", metavar="data", help="JSON data", dest="data")
-    parser.add_argument(
-        "-f", metavar="data_file", help="Nexus data file", dest="data_file"
-    )
+    parser.add_argument("-f", metavar="data_file", help="Nexus data file", dest="data_file")
     namespace = parser.parse_args()
 
     try:
@@ -113,19 +105,12 @@ if __name__ == "__main__":
                 for p in configuration.processors:
                     toks = p.split(".")
                     if len(toks) == 2:
-                        processor_module = importlib.import_module(
-                            f"postprocessing.processors.{toks[0]}"
-                        )
+                        processor_module = importlib.import_module(f"postprocessing.processors.{toks[0]}")
                         try:
                             processor_class = getattr(processor_module, toks[1])
-                            if (
-                                namespace.queue
-                                == processor_class.get_input_queue_name()
-                            ):
+                            if namespace.queue == processor_class.get_input_queue_name():
                                 # Instantiate and call the processor
-                                proc = processor_class(
-                                    data, configuration, send_function=pp.send
-                                )
+                                proc = processor_class(data, configuration, send_function=pp.send)
                                 proc()
                         except:  # noqa: E722
                             logging.error(

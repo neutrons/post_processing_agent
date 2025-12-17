@@ -28,9 +28,7 @@ try:
 except:  # noqa: E722
     import scipy
 
-    logger.notice(
-        "Scaling factor calculation upgrade not available: scipy=%s" % scipy.__version__
-    )
+    logger.notice("Scaling factor calculation upgrade not available: scipy=%s" % scipy.__version__)
     DIRECT_BEAM_CALC_AVAILABLE = False
 
 event_file_path = sys.argv[1]
