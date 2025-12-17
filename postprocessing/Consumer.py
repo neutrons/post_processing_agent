@@ -60,9 +60,7 @@ class Listener(stomp.ConnectionListener):
             # If we received a ping request, just ack
             if self.config.heartbeat_ping in destination:
                 self.ack_ping(data_dict)
-                self.conn.ack(
-                    frame.headers["message-id"], frame.headers["subscription"]
-                )
+                self.conn.ack(frame.headers["message-id"], frame.headers["subscription"])
                 return
             logging.info("Received %s: %s", destination, data)
             instrument = None
@@ -70,13 +68,8 @@ class Listener(stomp.ConnectionListener):
                 instrument = data_dict["instrument"].upper()
                 if instrument in self.instrument_jobs:
                     self.update_processes()
-                    if (
-                        len(self.instrument_jobs[instrument])
-                        >= self.config.jobs_per_instrument
-                    ):
-                        self.conn.nack(
-                            frame.headers["message-id"], frame.headers["subscription"]
-                        )
+                    if len(self.instrument_jobs[instrument]) >= self.config.jobs_per_instrument:
+                        self.conn.nack(frame.headers["message-id"], frame.headers["subscription"])
                         logging.error(
                             "Too many jobs for %s on %s: rejecting",
                             instrument,
@@ -90,15 +83,11 @@ class Listener(stomp.ConnectionListener):
             logging.error(sys.exc_info()[1])
             # Raising an exception here may result in an ActiveMQ result being sent.
             # We therefore pick a message that will mean someone to the users.
-            raise RuntimeError(
-                "Error processing incoming message: contact post-processing expert"
-            )
+            raise RuntimeError("Error processing incoming message: contact post-processing expert")
 
         try:
             # Put together the command to execute, including any optional arguments
-            post_proc_script = os.path.join(
-                self.config.python_dir, self.config.task_script
-            )
+            post_proc_script = os.path.join(self.config.python_dir, self.config.task_script)
             command_args = [self.config.start_script, post_proc_script]
 
             # Format the queue name argument
@@ -129,9 +118,7 @@ class Listener(stomp.ConnectionListener):
             # Check whether the maximum number of processes has been reached
             max_procs_reached = len(self.procList) > self.config.max_procs
             if max_procs_reached:
-                logging.info(
-                    "Maxmimum number of sub-processes reached: %s", len(self.procList)
-                )
+                logging.info("Maxmimum number of sub-processes reached: %s", len(self.procList))
 
             # If we have reached the max number of processes, block until we have
             # at least on free slot
@@ -140,17 +127,13 @@ class Listener(stomp.ConnectionListener):
                 self.update_processes()
 
             if max_procs_reached:
-                logging.info(
-                    "Resuming. Number of sub-processes: %s", len(self.procList)
-                )
+                logging.info("Resuming. Number of sub-processes: %s", len(self.procList))
             self.update_processes()
         except:  # noqa: E722
             logging.error(sys.exc_info()[1])
             # Raising an exception here may result in an ActiveMQ result being sent.
             # We therefore pick a message that will mean someone to the users.
-            raise RuntimeError(
-                "Error processing message: contact post-processing expert"
-            )
+            raise RuntimeError("Error processing message: contact post-processing expert")
 
     def update_processes(self):
         """
@@ -255,9 +238,7 @@ class Consumer:
             # between consumers
             # See https://stackoverflow.com/questions/76653908
             # https://activemq.apache.org/components/classic/documentation/what-is-the-prefetch-limit-for
-            self._connection.subscribe(
-                destination=q, id=q, ack="client", headers={"activemq.prefetchSize": 0}
-            )
+            self._connection.subscribe(destination=q, id=q, ack="client", headers={"activemq.prefetchSize": 0})
 
     def _disconnect(self):
         """

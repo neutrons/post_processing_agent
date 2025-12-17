@@ -24,9 +24,7 @@ class CreateReductionScriptProcessor(BaseProcessor):
         """
         try:
             writer = reduction_script_writer.ScriptWriter(self.instrument)
-            writer.process_request(
-                self.data, configuration=self.configuration, send_function=self.send
-            )
+            writer.process_request(self.data, configuration=self.configuration, send_function=self.send)
         except:  # noqa: E722
             logging.error(f"create_reduction_script: {sys.exc_info()[1]}")
 

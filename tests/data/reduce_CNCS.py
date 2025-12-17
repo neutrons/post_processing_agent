@@ -48,9 +48,7 @@ TIB_max = ""
 doTIB = True
 T0 = ""
 Motor_names = "omega"
-Temperature_names = (
-    "SampleTemp,sampletemp,SensorB,SensorA,temp5,temp8,sensor0normal,SensorC,Temp4"
-)
+Temperature_names = "SampleTemp,sampletemp,SensorB,SensorA,temp5,temp8,sensor0normal,SensorC,Temp4"
 create_elastic_nxspe = False  # +-0.1Ei, 5 steps
 create_MDnxs = False
 a = "8.355"
@@ -86,9 +84,7 @@ def check_newer_script(instrument, folder):
     or the content has changed, it will copy reduce_instrument.py to reduce_instrument_date_and_time.py
     in folder.
     """
-    master_filename = (
-        "/SNS/" + instrument + "/shared/autoreduce/reduce_" + instrument + ".py"
-    )
+    master_filename = "/SNS/" + instrument + "/shared/autoreduce/reduce_" + instrument + ".py"
     # master_filename='/SNS/users/3y9/Desktop/reduce_CNCS.py'
     search_pattern = os.path.join(folder, "reduce_" + instrument + "*.py")
     result = glob.glob(search_pattern)
@@ -101,11 +97,7 @@ def check_newer_script(instrument, folder):
     if newer_file_exists:
         new_filename = os.path.join(
             folder,
-            "reduce_"
-            + instrument
-            + "_"
-            + datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
-            + ".py",
+            "reduce_" + instrument + "_" + datetime.datetime.now().strftime("%Y.%m.%d_%H.%M.%S") + ".py",
         )
         shutil.copy2(master_filename, new_filename)
     return newer_file_exists
@@ -168,9 +160,7 @@ def preprocessData(filename):
 
 
 def gaussian(x, mu, sig, scale, background):
-    return background + scale * np.exp(
-        -np.power(x - mu, 2.0) / (2 * np.power(sig, 2.0))
-    )
+    return background + scale * np.exp(-np.power(x - mu, 2.0) / (2 * np.power(sig, 2.0)))
 
 
 def fittingt0(Eguess, ws):
@@ -213,16 +203,8 @@ def fittingt0(Eguess, ws):
         if val > t_elastic_no_offset:
             break
 
-    I_sliced = I[
-        i
-        - int(250 / int(microseconds_to_bin)) : i
-        + int(250 / int(microseconds_to_bin))
-    ]
-    TOF_sliced = TOF[
-        i
-        - int(250 / int(microseconds_to_bin)) : i
-        + int(250 / int(microseconds_to_bin))
-    ]
+    I_sliced = I[i - int(250 / int(microseconds_to_bin)) : i + int(250 / int(microseconds_to_bin))]
+    TOF_sliced = TOF[i - int(250 / int(microseconds_to_bin)) : i + int(250 / int(microseconds_to_bin))]
     if 0:
         try:
             initial_guess = (TOF_sliced[np.argmax(I_sliced)], 35.0, np.max(I_sliced), 0)
@@ -249,36 +231,24 @@ def tzero_interp(ei=12, mode=1):
     run_cycle = "2019A"
 
     if mode == 1:  # HF
-        HF_m3_tzero = np.load(
-            "/SNS/CNCS/shared/BL5-scripts/{0}-m3-tzero-{1}.npy".format("HF", run_cycle)
-        )
-        HF_ei_tzero = np.load(
-            "/SNS/CNCS/shared/BL5-scripts/{0}-ei-tzero-{1}.npy".format("HF", run_cycle)
-        )
+        HF_m3_tzero = np.load("/SNS/CNCS/shared/BL5-scripts/{0}-m3-tzero-{1}.npy".format("HF", run_cycle))
+        HF_ei_tzero = np.load("/SNS/CNCS/shared/BL5-scripts/{0}-ei-tzero-{1}.npy".format("HF", run_cycle))
         HF_interp = interp.interp1d(HF_ei_tzero[::-1], HF_m3_tzero[::-1])
         try:
             return float(HF_interp(ei))
         except:  # noqa: E722
             return float(T0)
     elif mode == 3:  # AI
-        AI_m3_tzero = np.load(
-            "/SNS/CNCS/shared/BL5-scripts/{0}-m3-tzero-{1}.npy".format("AI", run_cycle)
-        )
-        AI_ei_tzero = np.load(
-            "/SNS/CNCS/shared/BL5-scripts/{0}-ei-tzero-{1}.npy".format("AI", run_cycle)
-        )
+        AI_m3_tzero = np.load("/SNS/CNCS/shared/BL5-scripts/{0}-m3-tzero-{1}.npy".format("AI", run_cycle))
+        AI_ei_tzero = np.load("/SNS/CNCS/shared/BL5-scripts/{0}-ei-tzero-{1}.npy".format("AI", run_cycle))
         AI_interp = interp.interp1d(AI_ei_tzero[::-1], AI_m3_tzero[::-1])
         try:
             return float(AI_interp(ei))
         except:  # noqa: E722
             return float(T0)
     elif mode == 0:  # HR
-        HR_m3_tzero = np.load(
-            "/SNS/CNCS/shared/BL5-scripts/{0}-m3-tzero-{1}.npy".format("HR", run_cycle)
-        )
-        HR_ei_tzero = np.load(
-            "/SNS/CNCS/shared/BL5-scripts/{0}-ei-tzero-{1}.npy".format("HR", run_cycle)
-        )
+        HR_m3_tzero = np.load("/SNS/CNCS/shared/BL5-scripts/{0}-m3-tzero-{1}.npy".format("HR", run_cycle))
+        HR_ei_tzero = np.load("/SNS/CNCS/shared/BL5-scripts/{0}-ei-tzero-{1}.npy".format("HR", run_cycle))
         HR_interp = interp.interp1d(HR_ei_tzero[::-1], HR_m3_tzero[::-1])
         try:
             return float(HR_interp(ei))
@@ -302,9 +272,7 @@ def preprocesst0(Eguess, ws):
             _Ei, _FMP, _FMI, t0 = GetEi(ws)
             if mode != 1:
                 t0 -= 5.91
-    AddSampleLog(
-        Workspace=ws, LogName="CalculatedT0", LogText=str(t0), LogType="Number"
-    )
+    AddSampleLog(Workspace=ws, LogName="CalculatedT0", LogText=str(t0), LogType="Number")
     return t0
 
 
@@ -339,15 +307,11 @@ def preprocessEnergyTransfer(EGuess):
 
 def preprocessGrouping(ws, outdir):
     if grouping in ["2x1", "4x1", "8x1", "8x2"]:
-        dictgrouping = {
-            "GroupingFile": "/SNS/CNCS/shared/autoreduce/CNCS_" + grouping + ".xml"
-        }
+        dictgrouping = {"GroupingFile": "/SNS/CNCS/shared/autoreduce/CNCS_" + grouping + ".xml"}
     elif grouping == "powder":
         GroupingFilename = outdir + "powdergroupfile.xml"
         ParFilename = outdir + "powdergroupfile.par"
-        GenerateGroupingPowder(
-            InputWorkspace=ws, AngleStep=0.5, GroupingFilename=GroupingFilename
-        )
+        GenerateGroupingPowder(InputWorkspace=ws, AngleStep=0.5, GroupingFilename=GroupingFilename)
         dictgrouping = {"GroupingFile": GroupingFilename}
         change_permissions(GroupingFilename, 0o664)
         change_permissions(ParFilename, 0o664)
@@ -404,9 +368,7 @@ if __name__ == "__main__":
             sub_directory = cfg.get("Reduction config", "subdirectory")
     sub_directory = sub_directory.strip()
 
-    DGSdict = preprocessVanadium(
-        raw_vanadium, output_directory + processed_vanadium, MaskBTPParameters
-    )
+    DGSdict = preprocessVanadium(raw_vanadium, output_directory + processed_vanadium, MaskBTPParameters)
     datadict = preprocessData(nexus_file)
     groupdict = preprocessGrouping("__IWS", output_directory)
     DGSdict.update(datadict)

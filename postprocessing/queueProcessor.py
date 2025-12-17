@@ -14,9 +14,7 @@ configuration = read_configuration()
 
 from postprocessing.Consumer import Consumer
 
-logging.info(
-    "Starting post-processing listener %s", importlib.metadata.version("postprocessing")
-)
+logging.info("Starting post-processing listener %s", importlib.metadata.version("postprocessing"))
 configuration.log_configuration()
 
 consumer = Consumer(configuration)

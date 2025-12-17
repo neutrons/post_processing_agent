@@ -13,9 +13,7 @@ import shutil
 import tempfile
 
 
-@pytest.fixture(
-    scope="module"
-)  # 'yield_fixture' deprecated in favor of 'yield' when using python 3.x
+@pytest.fixture(scope="module")  # 'yield_fixture' deprecated in favor of 'yield' when using python 3.x
 def writer_local(data_server):
     r"""A ScriptWriter with a temporary autoreduction directory"""
     # create temporary directory and copy there the autoreduction template
@@ -26,9 +24,7 @@ def writer_local(data_server):
         os.path.join(writer.autoreduction_dir, writer.template_name),
     )
     yield writer
-    shutil.rmtree(
-        writer.autoreduction_dir
-    )  # called after all tests in this module finish
+    shutil.rmtree(writer.autoreduction_dir)  # called after all tests in this module finish
 
 
 class TestScriptWriter:
@@ -72,10 +68,7 @@ class TestScriptWriter:
         assert writer.template_name == "reduce_CNCS.py.template"
         assert writer.default_script_name == "reduce_CNCS_default.py"
         assert writer.autoreduction_dir == "/SNS/CNCS/shared/autoreduce"
-        assert (
-            writer._template_path
-            == "/SNS/CNCS/shared/autoreduce/reduce_CNCS.py.template"
-        )
+        assert writer._template_path == "/SNS/CNCS/shared/autoreduce/reduce_CNCS.py.template"
 
     def test_get_arguments(self, writer_local):
         keywords = writer_local.get_arguments()
@@ -119,12 +112,8 @@ class TestScriptWriter:
 
     def test_write_script(self, data_server, writer_local):
         arguments = copy(self.arguments)
-        writer_local.write_script(
-            **arguments
-        )  # create autoreduce_CNCS.py in the autoreduction directory
-        script_new = os.path.join(
-            writer_local.autoreduction_dir, writer_local.script_name
-        )
+        writer_local.write_script(**arguments)  # create autoreduce_CNCS.py in the autoreduction directory
+        script_new = os.path.join(writer_local.autoreduction_dir, writer_local.script_name)
         filecmp.cmp(
             script_new,
             data_server.path_to(writer_local.script_name),  # expected script
@@ -166,9 +155,7 @@ class TestScriptWriter:
         # create a default script
         shutil.copyfile(
             data_server.path_to(writer_local.template_name),
-            os.path.join(
-                writer_local.autoreduction_dir, writer_local.default_script_name
-            ),
+            os.path.join(writer_local.autoreduction_dir, writer_local.default_script_name),
         )
         writer_local.process_request(request_data, configuration, send_function)
         assert "Installed default CNCS script" in open(amq_data_file, "r").read()

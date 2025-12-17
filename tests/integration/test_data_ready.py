@@ -20,7 +20,7 @@ def test_missing_data():
     conn.set_listener("", listener)
 
     try:
-        conn.connect('icat', 'icat')
+        conn.connect("icat", "icat")
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -55,7 +55,7 @@ def test_disabled_reduction():
     conn.set_listener("", listener)
 
     try:
-        conn.connect('icat', 'icat')
+        conn.connect("icat", "icat")
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -94,7 +94,7 @@ def test_reduction():
     conn.set_listener("", listener)
 
     try:
-        conn.connect('icat', 'icat')
+        conn.connect("icat", "icat")
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -143,7 +143,7 @@ def test_reduction_error():
     conn.set_listener("", listener)
 
     try:
-        conn.connect('icat', 'icat')
+        conn.connect("icat", "icat")
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 
@@ -183,7 +183,7 @@ def test_reduction_high_memory():
     conn.set_listener("", listener)
 
     try:
-        conn.connect('icat', 'icat')
+        conn.connect("icat", "icat")
     except stomp.exception.ConnectFailedException:
         pytest.skip("Requires activemq running")
 

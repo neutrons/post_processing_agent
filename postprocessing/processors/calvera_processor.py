@@ -31,9 +31,7 @@ class CalveraProcessor(BaseProcessor):
         res = {}
         try:
             data_to_send = self._prepare_send_data()
-            response = requests.post(
-                self.configuration.calvera_ingest_url, json=data_to_send, timeout=3
-            )
+            response = requests.post(self.configuration.calvera_ingest_url, json=data_to_send, timeout=3)
             if response.status_code == 200:
                 success = True
             else:
@@ -76,8 +74,7 @@ class CalveraReducedProcessor(CalveraProcessor):
             contents = json.load(f)
             if "input_files" not in contents or "output_files" not in contents:
                 logging.info(
-                    "%s does not appear to be a JSON reduction file so will not "
-                    "send to Calvera",
+                    "%s does not appear to be a JSON reduction file so will not " "send to Calvera",
                     filepath,
                 )
                 return None

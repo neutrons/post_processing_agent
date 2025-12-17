@@ -63,7 +63,7 @@ python-build = "*"
 setuptools = "*"
 
 [tool.pixi.environments]
-default = { features = ["test"], solve-group = "default" }
+default = { features = ["test", "dev", "build"], solve-group = "default" }
 test = { features = ["test"], solve-group = "default" }
 dev = { features = ["test", "dev"], solve-group = "default" }
 build = { features = ["build"], solve-group = "default" }

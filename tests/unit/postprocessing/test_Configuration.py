@@ -42,15 +42,11 @@ def test_read_configuration(data_server, caplog):
     with pytest.raises(RuntimeError) as exception_info:
         log_file = tempfile.mkstemp()[1]  # second argument is filename
         read_configuration(defaults=[], log_file=log_file)
-    assert "Default configuration file(s) do not exist, or unreadable" in str(
-        exception_info.value
-    )
+    assert "Default configuration file(s) do not exist, or unreadable" in str(exception_info.value)
     backup = sys.stderr
     try:
         log_file = tempfile.mkstemp()[1]  # second argument is filename
-        conf = read_configuration(
-            config_file=data_server.path_to("post_processing.conf"), log_file=log_file
-        )
+        conf = read_configuration(config_file=data_server.path_to("post_processing.conf"), log_file=log_file)
         # read_configuration also initializes the logging
         logging.info("record info to file")
         sys.stderr.write("writing to sys.stderr records this in file")
@@ -71,9 +67,7 @@ def config(data_server):
     return Configuration(data_server.path_to("post_processing.conf"))
 
 
-@pytest.mark.parametrize(
-    "log_level_str", ["DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"]
-)
+@pytest.mark.parametrize("log_level_str", ["DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"])
 def test_log_level(log_level_str, config, tmp_path):
     """Test setting log level in the configuration file"""
     config.log_level = log_level_str

@@ -128,14 +128,10 @@ class ScriptWriter:
         script = template.substitute(**template_args)
         # Write the script
         if os.path.isdir(self.autoreduction_dir):
-            with open(
-                os.path.join(self.autoreduction_dir, self.script_name), "w"
-            ) as script_file:
+            with open(os.path.join(self.autoreduction_dir, self.script_name), "w") as script_file:
                 script_file.write(script)
         else:
-            raise RuntimeError(
-                f"Script directory does not exist: {self.autoreduction_dir}"
-            )
+            raise RuntimeError(f"Script directory does not exist: {self.autoreduction_dir}")
 
     def log_entry(self, **template_args):
         r"""Log the template parameters in the reduction directory.
@@ -144,9 +140,7 @@ class ScriptWriter:
         """
         try:
             template_keys = sorted(template_args.keys())
-            template_values = [
-                str(template_args[k]).replace("\n", "; ") for k in template_keys
-            ]
+            template_values = [str(template_args[k]).replace("\n", "; ") for k in template_keys]
             template_keys.insert(0, "Time")
             template_values.insert(0, str(time.ctime()))
             log_entry = ""
@@ -192,14 +186,9 @@ class ScriptWriter:
                         template_data[key] = value
 
                 # Check for a request to use the default script
-                if (
-                    "use_default" in request_data
-                    and request_data["use_default"] is True
-                ):
+                if "use_default" in request_data and request_data["use_default"] is True:
                     # Copy the default script to the production script
-                    default_script_path = os.path.join(
-                        self.autoreduction_dir, self.default_script_name
-                    )
+                    default_script_path = os.path.join(self.autoreduction_dir, self.default_script_name)
                     if not os.path.isfile(default_script_path):
                         raise RuntimeError(
                             f"ScriptWriter: Could not find script {self.default_script_name}",
@@ -208,27 +197,19 @@ class ScriptWriter:
                         default_script_path,
                         os.path.join(self.autoreduction_dir, self.script_name),
                     )
-                    amq_data["status"] = (
-                        "Installed default %s script" % request_data["instrument"]
-                    )
+                    amq_data["status"] = "Installed default %s script" % request_data["instrument"]
                 else:
                     # Verify that the template file exists
                     if not os.path.isfile(self._template_path):
-                        raise RuntimeError(
-                            f"ScriptWriter: Could not find template {self.template_name}"
-                        )
+                        raise RuntimeError(f"ScriptWriter: Could not find template {self.template_name}")
 
                     self.check_arguments(**template_data)
                     self.write_script(**template_data)
-                    amq_data["status"] = (
-                        "Created %s reduction script" % request_data["instrument"]
-                    )
+                    amq_data["status"] = "Created %s reduction script" % request_data["instrument"]
                 self.log_entry(**template_data)
             else:
                 logging.error("Script writer: missing template data")
-                amq_data["status"] = (
-                    "Missing %s reduction template" % request_data["instrument"]
-                )
+                amq_data["status"] = "Missing %s reduction template" % request_data["instrument"]
         except RuntimeError:
             logging.error("Script writer: %s" % sys.exc_info()[1])
             amq_data["status"] = "Error creating %s reduction script: %s" % (
