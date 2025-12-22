@@ -350,7 +350,7 @@ class ARstatus:
             f"{self.loadDurationTotal:.1f}",
             f"{self.loadEventNexusDuration:.1f}",
             f"{reduxTime:.1f}",
-            f"{self.eventfile.duration-reduxTime:.1f}",
+            f"{self.eventfile.duration - reduxTime:.1f}",
         )
 
 

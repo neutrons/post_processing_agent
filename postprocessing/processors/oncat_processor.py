@@ -1,8 +1,9 @@
 """
-    Processor for ONCat cataloging
+Processor for ONCat cataloging
 
-    @copyright: 2017 Oak Ridge National Laboratory
+@copyright: 2017 Oak Ridge National Laboratory
 """
+
 import os
 import logging
 import json

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-    Post-processing agent start script
+Post-processing agent start script
 
-    @copyright: 2014 Oak Ridge National Laboratory
+@copyright: 2014 Oak Ridge National Laboratory
 """
+
 import importlib.metadata
 import logging
 
