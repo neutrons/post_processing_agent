@@ -5,6 +5,7 @@ The original code for this class was take from https://github.com/mantidproject/
 
 @copyright: 2014 Oak Ridge National Laboratory
 """
+
 import json
 import logging
 import time
