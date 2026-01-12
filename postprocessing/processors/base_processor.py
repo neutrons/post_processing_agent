@@ -1,9 +1,9 @@
 """
-    The base processor defines a base class to be used to process jobs.
-    An input AMQ queue is defined. The post-processing client will
-    automatically register with that queue upon starting.
+The base processor defines a base class to be used to process jobs.
+An input AMQ queue is defined. The post-processing client will
+automatically register with that queue upon starting.
 
-    @copyright: 2014-2015 Oak Ridge National Laboratory
+@copyright: 2014-2015 Oak Ridge National Laboratory
 """
 
 import os
