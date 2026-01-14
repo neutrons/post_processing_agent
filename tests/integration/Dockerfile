@@ -43,6 +43,14 @@ RUN mkdir -p /opt/postprocessing/log && \
     echo "a=1" > /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ_default.py && \
     echo "a=\${value}" > /SNS/TOPAZ/shared/autoreduce/reduce_TOPAZ.py.template && \
     \
+    mkdir -p /SNS/VENUS/IPTS-99999/nexus && \
+    mkdir -p /SNS/VENUS/IPTS-99999/images && \
+    mkdir -p /SNS/VENUS/IPTS-99999/shared/autoreduce && \
+    touch /SNS/VENUS/IPTS-99999/nexus/VENUS_12345.nxs.h5 && \
+    touch /SNS/VENUS/IPTS-99999/images/image_001.fits && \
+    touch /SNS/VENUS/IPTS-99999/images/image_002.fits && \
+    touch /SNS/VENUS/IPTS-99999/images/image_003.tiff && \
+    \
     chown -R root:root /opt/postprocessing /SNS
 
 WORKDIR /opt/postprocessing
