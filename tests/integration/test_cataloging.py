@@ -127,13 +127,23 @@ def test_oncat_catalog_venus_images():
     # send data ready
     conn.send("/queue/CATALOG.ONCAT.DATA_READY", json.dumps(message).encode())
 
-    listener.wait_for_message()
+    # Wait for the correct message, skipping any stale messages from previous tests
+    max_attempts = 10
+    for attempt in range(max_attempts):
+        listener.wait_for_message(timeout=5)
+        header, body = listener.get_latest_message()
+        msg = json.loads(body)
+
+        # Check if this is our VENUS message
+        if msg.get("instrument") == "VENUS" and msg.get("run_number") == "12345":
+            break
+
+        # If not our message, keep waiting for the next one
+        if attempt == max_attempts - 1:
+            pytest.fail(f"Did not receive VENUS message after {max_attempts} attempts. Last message: {msg}")
 
     conn.disconnect()
 
-    header, body = listener.get_latest_message()
-
-    msg = json.loads(body)
     assert msg["run_number"] == message["run_number"]
     assert msg["instrument"] == message["instrument"]
     assert msg["ipts"] == message["ipts"]
