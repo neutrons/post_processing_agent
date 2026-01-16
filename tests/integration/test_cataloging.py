@@ -130,7 +130,8 @@ def test_oncat_catalog_venus_images():
     # Wait for the correct message, skipping any stale messages from previous tests
     max_attempts = 10
     for attempt in range(max_attempts):
-        listener.wait_for_message(timeout=5)
+        time.sleep(0.5)  # Wait briefly for message
+        listener.wait_for_message()
         header, body = listener.get_latest_message()
         msg = json.loads(body)
 
