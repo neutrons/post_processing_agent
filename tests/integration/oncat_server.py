@@ -18,6 +18,40 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(response).encode("utf-8"))
             return
 
+        # Handle batch cataloging endpoint
+        if self.path == "/api/datafiles/batch":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                file_paths = json.loads(body.decode("utf-8"))
+                if not isinstance(file_paths, list):
+                    self.send_response(400)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    response = {"error": "Expected array of file paths"}
+                    self.wfile.write(json.dumps(response).encode("utf-8"))
+                    return
+
+                logging.info("Received batch datafile ingest request for %d files", len(file_paths))
+                for file_path in file_paths:
+                    logging.info("  - %s", file_path)
+
+                # Send success response
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                response = {"ingested": len(file_paths)}
+                self.wfile.write(json.dumps(response).encode("utf-8"))
+                return
+            except Exception as e:
+                self.send_response(400)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                logging.error("Batch ingestion error: %s", str(e))
+                response = {"error": str(e)}
+                self.wfile.write(json.dumps(response).encode("utf-8"))
+                return
+
         if self.path.startswith("/api/datafiles/"):
             location = self.path.replace("/api/datafiles", "").replace("/ingest", "")
             logging.info("Received datafile ingest request for %s", location)
@@ -67,6 +101,11 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             "experiment": experiment,
             "indexed": {"run_number": run_number},
         }
+
+        # Add metadata for VENUS instrument to support image cataloging
+        if instrument == "VENUS":
+            response["metadata"] = {"entry": {"daslogs": {"bl10:exp:im:imagefilepath": {"value": "images"}}}}
+
         self.wfile.write(json.dumps(response).encode("utf-8"))
 
 
