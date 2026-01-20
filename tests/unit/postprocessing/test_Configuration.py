@@ -36,6 +36,39 @@ class TestConfiguration:
         log_contents = open(test_logger.log_file).read()
         assert "LOCAL execution" in log_contents
 
+    def test_image_filepath_metadata_paths_default(self, data_server):
+        """Test that image_filepath_metadata_paths has correct default value"""
+        conf = Configuration(data_server.path_to("post_processing.conf"))
+        # Should use default VENUS metadata path
+        assert conf.image_filepath_metadata_paths == ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
+
+    def test_image_filepath_metadata_paths_custom(self, tmp_path):
+        """Test that image_filepath_metadata_paths can be configured"""
+        custom_paths = [
+            "metadata.entry.daslogs.custom:path:1.value",
+            "metadata.entry.daslogs.custom:path:2.value",
+        ]
+        config_data = {
+            "failover_uri": "failover:(tcp://localhost:61613)",
+            "brokers": [["localhost", 61613]],
+            "amq_user": "test",
+            "amq_pwd": "test",
+            "sw_dir": "/tmp",
+            "log_file": "/tmp/test.log",
+            "postprocess_error": "ERROR",
+            "reduction_started": "STARTED",
+            "reduction_complete": "COMPLETE",
+            "reduction_error": "ERROR",
+            "reduction_disabled": "DISABLED",
+            "heart_beat": "/topic/HEARTBEAT",
+            "image_filepath_metadata_paths": custom_paths,
+        }
+        tmp_conf_file = tmp_path / "test_config.conf"
+        tmp_conf_file.write_text(json.dumps(config_data))
+
+        conf = Configuration(tmp_conf_file.as_posix())
+        assert conf.image_filepath_metadata_paths == custom_paths
+
 
 def test_read_configuration(data_server, caplog):
     caplog.set_level(logging.INFO)

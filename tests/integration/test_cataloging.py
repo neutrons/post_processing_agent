@@ -31,13 +31,19 @@ def test_oncat_catalog():
     # send data ready
     conn.send("/queue/CATALOG.ONCAT.DATA_READY", json.dumps(message).encode())
 
-    listener.wait_for_message()
+    # Wait for messages until we get the one for this run
+    max_attempts = 10
+    for _ in range(max_attempts):
+        listener.wait_for_message()
+        header, body = listener.get_latest_message()
+        msg = json.loads(body)
+        if msg["run_number"] == message["run_number"]:
+            break
+    else:
+        pytest.fail(f"Did not receive COMPLETE message for CORELLI run {message['run_number']}")
 
     conn.disconnect()
 
-    header, body = listener.get_latest_message()
-
-    msg = json.loads(body)
     assert msg["run_number"] == message["run_number"]
     assert msg["instrument"] == message["instrument"]
     assert msg["ipts"] == message["ipts"]
@@ -113,7 +119,7 @@ def test_oncat_catalog_venus_images():
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
 
-    listener = stomp.listener.TestListener()
+    listener = stomp.listener.TestListener(10)  # 10 second timeout
     conn.set_listener("", listener)
 
     try:
@@ -122,26 +128,21 @@ def test_oncat_catalog_venus_images():
         pytest.skip("Requires activemq running")
 
     # expect a message on CATALOG.ONCAT.COMPLETE
-    conn.subscribe("/queue/CATALOG.ONCAT.COMPLETE", id="123", ack="auto")
+    conn.subscribe("/queue/CATALOG.ONCAT.COMPLETE", id="venus123", ack="auto")
 
     # send data ready
     conn.send("/queue/CATALOG.ONCAT.DATA_READY", json.dumps(message).encode())
 
-    # Wait for the correct message, skipping any stale messages from previous tests
+    # Wait for messages until we get the one for this run
     max_attempts = 10
-    for attempt in range(max_attempts):
-        time.sleep(0.5)  # Wait briefly for message
+    for _ in range(max_attempts):
         listener.wait_for_message()
         header, body = listener.get_latest_message()
         msg = json.loads(body)
-
-        # Check if this is our VENUS message
-        if msg.get("instrument") == "VENUS" and msg.get("run_number") == "12345":
+        if msg["run_number"] == message["run_number"]:
             break
-
-        # If not our message, keep waiting for the next one
-        if attempt == max_attempts - 1:
-            pytest.fail(f"Did not receive VENUS message after {max_attempts} attempts. Last message: {msg}")
+    else:
+        pytest.fail(f"Did not receive COMPLETE message for VENUS run {message['run_number']}")
 
     conn.disconnect()
 

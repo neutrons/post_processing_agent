@@ -80,7 +80,8 @@ def test_image_files_no_metadata():
     mock_datafile.experiment = "IPTS-99999"
     mock_datafile.get.return_value = None  # No metadata found
 
-    result = image_files(mock_datafile)
+    metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
+    result = image_files(mock_datafile, metadata_paths)
     assert result == []
 
 
@@ -95,7 +96,8 @@ def test_image_files_metadata_not_a_directory():
     with patch("os.path.isdir") as mock_isdir:
         mock_isdir.return_value = False
 
-        result = image_files(mock_datafile)
+        metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
+        result = image_files(mock_datafile, metadata_paths)
         assert result == []
 
 
@@ -122,7 +124,8 @@ def test_image_files_single_directory():
 
         mock_glob.side_effect = glob_side_effect
 
-        result = image_files(mock_datafile)
+        metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
+        result = image_files(mock_datafile, metadata_paths)
 
         assert len(result) == 3
         assert "/SNS/VENUS/IPTS-99999/images/image_001.fits" in result
@@ -150,7 +153,8 @@ def test_image_files_multiple_directories():
 
         mock_glob.side_effect = glob_side_effect
 
-        result = image_files(mock_datafile)
+        metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
+        result = image_files(mock_datafile, metadata_paths)
 
         assert len(result) == 2
         assert "/SNS/VENUS/IPTS-99999/images/batch1/image_001.fits" in result
@@ -170,6 +174,7 @@ def test_oncat_processor_ingest_with_images():
     mock_conf = Mock()
     mock_conf.oncat_url = "http://oncat:8000"
     mock_conf.oncat_api_token = "test-token"
+    mock_conf.image_filepath_metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
 
     mock_send_function = Mock()
 
@@ -228,6 +233,7 @@ def test_oncat_processor_ingest_with_many_images():
     mock_conf = Mock()
     mock_conf.oncat_url = "http://oncat:8000"
     mock_conf.oncat_api_token = "test-token"
+    mock_conf.image_filepath_metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
 
     mock_send_function = Mock()
 

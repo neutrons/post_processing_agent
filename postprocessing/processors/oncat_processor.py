@@ -11,11 +11,6 @@ from .base_processor import BaseProcessor
 import pyoncat
 
 
-# Metadata paths where image file paths may be stored
-IMAGE_FILEPATH_METADATA_PATHS = [
-    "metadata.entry.daslogs.bl10:exp:im:imagefilepath.value",
-]
-
 # Batch size for image ingestion (must be less than max of 100)
 IMAGE_BATCH_SIZE = 50
 
@@ -70,7 +65,7 @@ class ONCatProcessor(BaseProcessor):
             oncat.Datafile.ingest(related_file)
 
         # Catalog image files using batch API for efficiency
-        images = image_files(datafile)
+        images = image_files(datafile, self.configuration.image_filepath_metadata_paths)
         for batch in batches(images, IMAGE_BATCH_SIZE):
             logging.info("Batch ingesting %d image files", len(batch))
             oncat.Datafile.batch(batch)
@@ -120,15 +115,16 @@ def related_files(datafile):
     ]
 
 
-def image_files(datafile):
+def image_files(datafile, metadata_paths):
     """Find image files from metadata paths.
 
-    Iterates through the known metadata paths, retrieves values from
+    Iterates through the configured metadata paths, retrieves values from
     the datafile metadata, and globs for image files in the discovered
     subdirectories.
 
     Args:
         datafile: ONCat datafile object with metadata
+        metadata_paths: List of metadata paths to check for image directory locations
 
     Returns:
         List of absolute paths to image files (FITS and TIFF)
@@ -138,7 +134,7 @@ def image_files(datafile):
     experiment = datafile.experiment
     image_file_paths = []
 
-    for metadata_path in IMAGE_FILEPATH_METADATA_PATHS:
+    for metadata_path in metadata_paths:
         value = datafile.get(metadata_path)
         if value is None:
             continue
