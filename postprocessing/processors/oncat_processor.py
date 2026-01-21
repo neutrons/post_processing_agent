@@ -11,6 +11,10 @@ from .base_processor import BaseProcessor
 import pyoncat
 
 
+# Batch size for image ingestion (must be less than max of 100)
+IMAGE_BATCH_SIZE = 50
+
+
 class ONCatProcessor(BaseProcessor):
     """
     Define post-processing task
@@ -60,6 +64,26 @@ class ONCatProcessor(BaseProcessor):
             logging.info("Calling ONCat for %s", related_file)
             oncat.Datafile.ingest(related_file)
 
+        # Catalog image files using batch API for efficiency
+        images = image_files(datafile, self.configuration.image_filepath_metadata_paths)
+        for batch in batches(images, IMAGE_BATCH_SIZE):
+            logging.info("Batch ingesting %d image files", len(batch))
+            oncat.Datafile.batch(batch)
+
+
+def batches(items, size):
+    """Yield successive batches of items.
+
+    Args:
+        items: List of items to batch
+        size: Size of each batch
+
+    Yields:
+        List slices of the specified size
+    """
+    for i in range(0, len(items), size):
+        yield items[i : i + size]
+
 
 def related_files(datafile):
     """Given a datafile, return a list of related files to also catalog.
@@ -89,3 +113,42 @@ def related_files(datafile):
         )
         if path != location
     ]
+
+
+def image_files(datafile, metadata_paths):
+    """Find image files from metadata paths.
+
+    Iterates through the configured metadata paths, retrieves values from
+    the datafile metadata, and globs for image files in the discovered
+    subdirectories.
+
+    Args:
+        datafile: ONCat datafile object with metadata
+        metadata_paths: List of metadata paths to check for image directory locations
+
+    Returns:
+        List of absolute paths to image files (FITS and TIFF)
+    """
+    facility = datafile.facility
+    instrument = datafile.instrument
+    experiment = datafile.experiment
+    image_file_paths = []
+
+    for metadata_path in metadata_paths:
+        value = datafile.get(metadata_path)
+        if value is None:
+            continue
+
+        subdirs = value if isinstance(value, list) else [value]
+
+        for subdir in subdirs:
+            full_path = os.path.join("/", facility, instrument, experiment, subdir)
+
+            if not os.path.isdir(full_path):
+                continue
+
+            fits_files = glob.glob(os.path.join(full_path, "*.fits"))
+            tiff_files = glob.glob(os.path.join(full_path, "*.tiff"))
+            image_file_paths.extend(fits_files + tiff_files)
+
+    return image_file_paths

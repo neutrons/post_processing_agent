@@ -91,6 +91,11 @@ class Configuration:
         self.oncat_url = config.get("oncat_url", "")
         self.oncat_api_token = config.get("oncat_api_token", "")
 
+        # Image filepath metadata paths for cataloging image files
+        # Default is for VENUS instrument, but can be configured per instrument
+        default_image_metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
+        self.image_filepath_metadata_paths = config.get("image_filepath_metadata_paths", default_image_metadata_paths)
+
         sys.path.insert(0, self.sw_dir)
         # Configure processor plugins
         default_processors = [

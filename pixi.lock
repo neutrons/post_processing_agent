@@ -6,8 +6,6 @@ environments:
     - url: https://conda.anaconda.org/oncat/
     indexes:
     - https://pypi.org/simple
-    options:
-      pypi-prerelease-mode: if-necessary-or-explicit
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -303,8 +301,6 @@ environments:
     - url: https://conda.anaconda.org/oncat/
     indexes:
     - https://pypi.org/simple
-    options:
-      pypi-prerelease-mode: if-necessary-or-explicit
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -684,8 +680,6 @@ environments:
     - url: https://conda.anaconda.org/oncat/
     indexes:
     - https://pypi.org/simple
-    options:
-      pypi-prerelease-mode: if-necessary-or-explicit
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -1065,8 +1059,6 @@ environments:
     - url: https://conda.anaconda.org/oncat/
     indexes:
     - https://pypi.org/simple
-    options:
-      pypi-prerelease-mode: if-necessary-or-explicit
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -3483,8 +3475,8 @@ packages:
   timestamp: 1747339794916
 - pypi: ./
   name: postprocessing
-  version: 4.3.0
-  sha256: f41b77096b7deb425e5d7d411fad9b0411b40f00879181daae412c1a22e95391
+  version: 4.4.0
+  sha256: 2fcc06b6becb7bcf57b54c59988fd7ada94406c5e01c09f73c0436387c65725b
   requires_dist:
   - requests
   - stomp-py

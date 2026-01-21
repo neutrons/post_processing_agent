@@ -5,5 +5,13 @@ RUN mkdir -p /SNS/CORELLI/IPTS-15526/nexus && \
     mkdir -p /SNS/CORELLI/IPTS-15526/images/det_main && \
     touch /SNS/CORELLI/IPTS-15526/images/det_main/CORELLI_29666_det_main_000001.tiff && \
     mkdir -p /SNS/CORELLI/IPTS-15526/shared/autoreduce && \
-    echo '{"output_files":[], "input_files": []}' > /SNS/CORELLI/IPTS-15526/shared/autoreduce/CORELLI_29666.json
+    echo '{"output_files":[], "input_files": []}' > /SNS/CORELLI/IPTS-15526/shared/autoreduce/CORELLI_29666.json && \
+    \
+    mkdir -p /SNS/VENUS/IPTS-99999/nexus && \
+    mkdir -p /SNS/VENUS/IPTS-99999/images && \
+    mkdir -p /SNS/VENUS/IPTS-99999/shared/autoreduce && \
+    touch /SNS/VENUS/IPTS-99999/nexus/VENUS_12345.nxs.h5 && \
+    touch /SNS/VENUS/IPTS-99999/images/image_001.fits && \
+    touch /SNS/VENUS/IPTS-99999/images/image_002.fits && \
+    touch /SNS/VENUS/IPTS-99999/images/image_003.tiff
 CMD ["python", "oncat_server.py"]

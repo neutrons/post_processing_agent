@@ -87,6 +87,18 @@ usage limit.
 The post processing agent handles cataloging raw and reduced data files in ONCat https://oncat.ornl.gov/ by
 calling scripts hosted on the analysis cluster.
 
+##### Image File Cataloging
+
+For instruments that produce image files (e.g., FITS or TIFF format), the agent can automatically discover
+and catalog these files along with the main data file. The metadata path where image file locations are
+stored can be configured:
+
+    "image_filepath_metadata_paths": ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
+
+If not specified, this defaults to the VENUS instrument metadata path. For other instruments, configure
+this parameter to match the appropriate metadata path(s) in your NeXus files. Multiple paths can be specified
+as an array.
+
 
 Installation
 ------------

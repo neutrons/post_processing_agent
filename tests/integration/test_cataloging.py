@@ -31,13 +31,19 @@ def test_oncat_catalog():
     # send data ready
     conn.send("/queue/CATALOG.ONCAT.DATA_READY", json.dumps(message).encode())
 
-    listener.wait_for_message()
+    # Wait for messages until we get the one for this run
+    max_attempts = 10
+    for _ in range(max_attempts):
+        listener.wait_for_message()
+        header, body = listener.get_latest_message()
+        msg = json.loads(body)
+        if msg["run_number"] == message["run_number"]:
+            break
+    else:
+        pytest.fail(f"Did not receive COMPLETE message for CORELLI run {message['run_number']}")
 
     conn.disconnect()
 
-    header, body = listener.get_latest_message()
-
-    msg = json.loads(body)
     assert msg["run_number"] == message["run_number"]
     assert msg["instrument"] == message["instrument"]
     assert msg["ipts"] == message["ipts"]
@@ -99,6 +105,69 @@ def test_oncat_catalog_error():
     log = docker_exec_and_cat("/oncat_server.log", "oncat").splitlines()
     # last line should indicate the file was ingested
     assert log[-1].endswith("ERROR Invalid path format: /bin/true")
+
+
+def test_oncat_catalog_venus_images():
+    """This should run ONCatProcessor and catalog VENUS image files using batch API"""
+    message = {
+        "run_number": "12345",
+        "instrument": "VENUS",
+        "ipts": "IPTS-99999",
+        "facility": "SNS",
+        "data_file": "/SNS/VENUS/IPTS-99999/nexus/VENUS_12345.nxs.h5",
+    }
+
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener(10)  # 10 second timeout
+    conn.set_listener("", listener)
+
+    try:
+        conn.connect("icat", "icat")
+    except stomp.exception.ConnectFailedException:
+        pytest.skip("Requires activemq running")
+
+    # expect a message on CATALOG.ONCAT.COMPLETE
+    conn.subscribe("/queue/CATALOG.ONCAT.COMPLETE", id="venus123", ack="auto")
+
+    # send data ready
+    conn.send("/queue/CATALOG.ONCAT.DATA_READY", json.dumps(message).encode())
+
+    # Wait for messages until we get the one for this run
+    max_attempts = 10
+    for _ in range(max_attempts):
+        listener.wait_for_message()
+        header, body = listener.get_latest_message()
+        msg = json.loads(body)
+        if msg["run_number"] == message["run_number"]:
+            break
+    else:
+        pytest.fail(f"Did not receive COMPLETE message for VENUS run {message['run_number']}")
+
+    conn.disconnect()
+
+    assert msg["run_number"] == message["run_number"]
+    assert msg["instrument"] == message["instrument"]
+    assert msg["ipts"] == message["ipts"]
+    assert msg["facility"] == message["facility"]
+    assert msg["data_file"] == message["data_file"]
+
+    time.sleep(1)  # give oncat_server time to write its log
+    log = docker_exec_and_cat("/oncat_server.log", "oncat").splitlines()
+
+    # Check that the NeXus file was ingested
+    assert any(
+        "INFO Received datafile ingest request for /SNS/VENUS/IPTS-99999/nexus/VENUS_12345.nxs.h5" in line
+        for line in log
+    )
+
+    # Check that batch ingestion was called with the image files
+    assert any("INFO Received batch datafile ingest request for 3 files" in line for line in log)
+
+    # Verify all three image files were logged
+    assert any("INFO   - /SNS/VENUS/IPTS-99999/images/image_001.fits" in line for line in log)
+    assert any("INFO   - /SNS/VENUS/IPTS-99999/images/image_002.fits" in line for line in log)
+    assert any("INFO   - /SNS/VENUS/IPTS-99999/images/image_003.tiff" in line for line in log)
 
 
 def test_oncat_reduction_catalog():
