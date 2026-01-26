@@ -1,8 +1,9 @@
 """
-    Handling of job execution.
+Handling of job execution.
 
-    @copyright: 2014 Oak Ridge National Laboratory
+@copyright: 2014 Oak Ridge National Laboratory
 """
+
 import logging
 import subprocess
 import os

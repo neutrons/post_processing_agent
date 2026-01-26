@@ -1,8 +1,9 @@
 """
-    Test Processor
+Test Processor
 
-    @copyright: 2014 Oak Ridge National Laboratory
+@copyright: 2014 Oak Ridge National Laboratory
 """
+
 from .base_processor import BaseProcessor
 import json
 

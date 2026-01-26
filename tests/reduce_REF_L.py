@@ -1,11 +1,12 @@
 """
-    Auto-reduction script for the Liquids Reflectometer
-    For reference:
-        Type 0: Normal sample data
-        Type 1: Direct beams for scaling factors
-        Type 2: Zero-attenuator direct beams
-        Type 3: Data that we don't need to treat
+Auto-reduction script for the Liquids Reflectometer
+For reference:
+    Type 0: Normal sample data
+    Type 1: Direct beams for scaling factors
+    Type 2: Zero-attenuator direct beams
+    Type 3: Data that we don't need to treat
 """
+
 import sys
 import os
 import warnings

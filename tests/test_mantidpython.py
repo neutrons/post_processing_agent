@@ -163,9 +163,7 @@ def verify_subprocess_command(reduce_script, nexus_file, output_dir, expected_ou
     # generate command
     sub_process_command = generate_subprocess_command(reduce_script, [nexus_file, output_dir], False)
 
-    assert sub_process_command == expected_output, "Expected: {}.  But: {}" "".format(
-        expected_output, sub_process_command
-    )
+    assert sub_process_command == expected_output, "Expected: {}.  But: {}".format(expected_output, sub_process_command)
 
 
 if __name__ == "__main__":
