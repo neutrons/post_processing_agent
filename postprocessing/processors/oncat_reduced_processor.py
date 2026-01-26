@@ -1,8 +1,9 @@
 """
-    Processor for ONCat cataloging
+Processor for ONCat cataloging
 
-    @copyright: 2017 Oak Ridge National Laboratory
+@copyright: 2017 Oak Ridge National Laboratory
 """
+
 import os
 import logging
 import json
@@ -57,7 +58,7 @@ class ONCatProcessor(BaseProcessor):
             contents = json.load(f)
             if "input_files" not in contents or "output_files" not in contents:
                 logging.info(
-                    "%s does not appear to be a JSON reduction file so will not " "call ONCat",
+                    "%s does not appear to be a JSON reduction file so will not call ONCat",
                     location,
                 )
                 return
