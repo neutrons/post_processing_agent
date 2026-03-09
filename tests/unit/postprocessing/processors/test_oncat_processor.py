@@ -178,11 +178,12 @@ def test_oncat_processor_ingest_with_images():
 
     mock_send_function = Mock()
 
-    with patch("postprocessing.processors.base_processor.open", create=True), patch(
-        "postprocessing.processors.oncat_processor.pyoncat.ONCat"
-    ) as mock_oncat_class, patch("postprocessing.processors.oncat_processor.related_files") as mock_related, patch(
-        "postprocessing.processors.oncat_processor.image_files"
-    ) as mock_images:
+    with (
+        patch("postprocessing.processors.base_processor.open", create=True),
+        patch("postprocessing.processors.oncat_processor.pyoncat.ONCat") as mock_oncat_class,
+        patch("postprocessing.processors.oncat_processor.related_files") as mock_related,
+        patch("postprocessing.processors.oncat_processor.image_files") as mock_images,
+    ):
         # Setup mocks
         mock_oncat = Mock()
         mock_oncat_class.return_value = mock_oncat
@@ -240,11 +241,12 @@ def test_oncat_processor_ingest_with_many_images():
     # Create 125 image files (should be split into 3 batches: 50, 50, 25)
     many_images = [f"/SNS/VENUS/IPTS-99999/images/image_{i:04d}.fits" for i in range(125)]
 
-    with patch("postprocessing.processors.base_processor.open", create=True), patch(
-        "postprocessing.processors.oncat_processor.pyoncat.ONCat"
-    ) as mock_oncat_class, patch("postprocessing.processors.oncat_processor.related_files") as mock_related, patch(
-        "postprocessing.processors.oncat_processor.image_files"
-    ) as mock_images:
+    with (
+        patch("postprocessing.processors.base_processor.open", create=True),
+        patch("postprocessing.processors.oncat_processor.pyoncat.ONCat") as mock_oncat_class,
+        patch("postprocessing.processors.oncat_processor.related_files") as mock_related,
+        patch("postprocessing.processors.oncat_processor.image_files") as mock_images,
+    ):
         # Setup mocks
         mock_oncat = Mock()
         mock_oncat_class.return_value = mock_oncat
