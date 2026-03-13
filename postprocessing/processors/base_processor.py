@@ -93,7 +93,10 @@ class BaseProcessor:
         if "data_file" in data:
             self.data_file = str(data["data_file"])
             try:
-                open(self.data_file)
+                # Verify the file exists and is readable. Use open() instead of os.access()
+                # so ACLs and other filesystem permission checks are respected.
+                with open(self.data_file):
+                    pass
             except PermissionError as e:
                 raise ValueError(f"Data file permission denied: {self.data_file}") from e
             except FileNotFoundError as e:
