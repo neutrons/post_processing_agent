@@ -1,11 +1,12 @@
 # pylint: disable=line-too-long, too-many-statements, too-few-public-methods, too-many-instance-attributes, invalid-name
 """
-    Post-processing, ActiveMQ, and logging configuration
+Post-processing, ActiveMQ, and logging configuration
 
-    The original code for this class was take from https://github.com/mantidproject/autoreduce
+The original code for this class was take from https://github.com/mantidproject/autoreduce
 
-    @copyright: 2014 Oak Ridge National Laboratory
+@copyright: 2014 Oak Ridge National Laboratory
 """
+
 import sys
 import os
 import json

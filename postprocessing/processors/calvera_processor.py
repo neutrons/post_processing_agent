@@ -1,7 +1,7 @@
 """
- `   Processor for Calvera cataloging
+`   Processor for Calvera cataloging
 
-    @copyright: 2023 Oak Ridge National Laboratory
+   @copyright: 2023 Oak Ridge National Laboratory
 """
 
 import copy
@@ -74,7 +74,7 @@ class CalveraReducedProcessor(CalveraProcessor):
             contents = json.load(f)
             if "input_files" not in contents or "output_files" not in contents:
                 logging.info(
-                    "%s does not appear to be a JSON reduction file so will not " "send to Calvera",
+                    "%s does not appear to be a JSON reduction file so will not send to Calvera",
                     filepath,
                 )
                 return None
