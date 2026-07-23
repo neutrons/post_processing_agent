@@ -1,0 +1,15 @@
+# Image cataloging toggle for VENUS
+#
+# The post-processing agent catalogs image files (a VENUS-specific substep of
+# ONCat cataloging) ONLY when this file is present at:
+#
+#     /SNS/VENUS/shared/autoreduce/catalog_VENUS.py
+#
+# This mirrors the reduce_<INSTRUMENT>.py convention used to toggle autoreduction.
+# The agent checks for the file's PRESENCE only; its contents are not executed.
+#
+# To ENABLE image cataloging:  place this file at the path above.
+# To DISABLE image cataloging: move or rename the file (e.g. catalog_VENUS.py.disabled).
+#     Raw and reduced data cataloging are unaffected either way.
+#
+# No code change or service restart is required; the check happens per job.

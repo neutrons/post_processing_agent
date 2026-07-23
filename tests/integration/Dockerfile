@@ -50,6 +50,15 @@ RUN mkdir -p /opt/postprocessing/log && \
     touch /SNS/VENUS/IPTS-99999/images/image_001.fits && \
     touch /SNS/VENUS/IPTS-99999/images/image_002.fits && \
     touch /SNS/VENUS/IPTS-99999/images/image_003.tiff && \
+    mkdir -p /SNS/VENUS/shared/autoreduce && \
+    echo "# image cataloging enabled for VENUS" > /SNS/VENUS/shared/autoreduce/catalog_VENUS.py && \
+    \
+    mkdir -p /SNS/IMAGING/IPTS-99999/nexus && \
+    mkdir -p /SNS/IMAGING/IPTS-99999/images && \
+    mkdir -p /SNS/IMAGING/shared/autoreduce && \
+    touch /SNS/IMAGING/IPTS-99999/nexus/IMAGING_12346.nxs.h5 && \
+    touch /SNS/IMAGING/IPTS-99999/images/image_001.fits && \
+    touch /SNS/IMAGING/IPTS-99999/images/image_002.fits && \
     \
     chown -R root:root /opt/postprocessing /SNS
 

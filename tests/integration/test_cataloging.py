@@ -170,6 +170,65 @@ def test_oncat_catalog_venus_images():
     assert any("INFO   - /SNS/VENUS/IPTS-99999/images/image_003.tiff" in line for line in log)
 
 
+def test_oncat_catalog_images_disabled():
+    """Image cataloging is skipped when the instrument's catalog_<INSTRUMENT>.py is
+    absent, even though image files and image metadata exist. The main file is still
+    cataloged (COMPLETE), but no image batch request is made for this run.
+
+    IMAGING is a test-only imaging instrument with no catalog_IMAGING.py script.
+    """
+    message = {
+        "run_number": "12346",
+        "instrument": "IMAGING",
+        "ipts": "IPTS-99999",
+        "facility": "SNS",
+        "data_file": "/SNS/IMAGING/IPTS-99999/nexus/IMAGING_12346.nxs.h5",
+    }
+
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener(10)  # 10 second timeout
+    conn.set_listener("", listener)
+
+    try:
+        conn.connect("icat", "icat")
+    except stomp.exception.ConnectFailedException:
+        pytest.skip("Requires activemq running")
+
+    # expect a message on CATALOG.ONCAT.COMPLETE
+    conn.subscribe("/queue/CATALOG.ONCAT.COMPLETE", id="imaging123", ack="auto")
+
+    # send data ready
+    conn.send("/queue/CATALOG.ONCAT.DATA_READY", json.dumps(message).encode())
+
+    # Wait for messages until we get the one for this run
+    max_attempts = 10
+    for _ in range(max_attempts):
+        listener.wait_for_message()
+        header, body = listener.get_latest_message()
+        msg = json.loads(body)
+        if msg["run_number"] == message["run_number"]:
+            break
+    else:
+        pytest.fail(f"Did not receive COMPLETE message for IMAGING run {message['run_number']}")
+
+    conn.disconnect()
+
+    assert msg["run_number"] == message["run_number"]
+
+    time.sleep(1)  # give oncat_server time to write its log
+    log = docker_exec_and_cat("/oncat_server.log", "oncat").splitlines()
+
+    # The main NeXus file is still cataloged
+    assert any(
+        "INFO Received datafile ingest request for /SNS/IMAGING/IPTS-99999/nexus/IMAGING_12346.nxs.h5" in line
+        for line in log
+    )
+
+    # But no IMAGING image file is ever batch-ingested (image cataloging was disabled)
+    assert not any("/SNS/IMAGING/IPTS-99999/images/" in line for line in log)
+
+
 def test_oncat_reduction_catalog():
     """This should run reduction ONCatProcessor"""
     message = {

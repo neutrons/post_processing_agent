@@ -13,5 +13,11 @@ RUN mkdir -p /SNS/CORELLI/IPTS-15526/nexus && \
     touch /SNS/VENUS/IPTS-99999/nexus/VENUS_12345.nxs.h5 && \
     touch /SNS/VENUS/IPTS-99999/images/image_001.fits && \
     touch /SNS/VENUS/IPTS-99999/images/image_002.fits && \
-    touch /SNS/VENUS/IPTS-99999/images/image_003.tiff
+    touch /SNS/VENUS/IPTS-99999/images/image_003.tiff && \
+    \
+    mkdir -p /SNS/IMAGING/IPTS-99999/nexus && \
+    mkdir -p /SNS/IMAGING/IPTS-99999/images && \
+    touch /SNS/IMAGING/IPTS-99999/nexus/IMAGING_12346.nxs.h5 && \
+    touch /SNS/IMAGING/IPTS-99999/images/image_001.fits && \
+    touch /SNS/IMAGING/IPTS-99999/images/image_002.fits
 CMD ["python", "oncat_server.py"]

@@ -134,6 +134,14 @@ Example message with custom parameter values:
 
 Queue name: `CATALOG.ONCAT.DATA_READY`.
 
+Cataloging ingests the raw data file and any related files. For instruments that produce image files
+(currently VENUS), an additional image-cataloging substep batch-ingests the associated FITS/TIFF files.
+This substep is gated per instrument: `ONCatProcessor.catalog_images()` runs only when the script
+`/<facility>/<instrument>/shared/autoreduce/catalog_<INSTRUMENT>.py` exists, mirroring the
+`reduce_<INSTRUMENT>.py` toggle used for autoreduction. The `dev_instrument_shared` configuration
+parameter overrides the shared directory for local development and testing. See the README for the
+operator-facing enable/disable instructions.
+
 #### Related configuration parameters
 
 | Configuration parameter | Description | Default value |

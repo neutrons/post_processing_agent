@@ -175,6 +175,7 @@ def test_oncat_processor_ingest_with_images():
     mock_conf.oncat_url = "http://oncat:8000"
     mock_conf.oncat_api_token = "test-token"
     mock_conf.image_filepath_metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
+    mock_conf.dev_instrument_shared = ""
 
     mock_send_function = Mock()
 
@@ -183,6 +184,8 @@ def test_oncat_processor_ingest_with_images():
         patch("postprocessing.processors.oncat_processor.pyoncat.ONCat") as mock_oncat_class,
         patch("postprocessing.processors.oncat_processor.related_files") as mock_related,
         patch("postprocessing.processors.oncat_processor.image_files") as mock_images,
+        # Image cataloging is enabled for VENUS: the catalog_VENUS.py script is present
+        patch("postprocessing.processors.oncat_processor.os.path.isfile", return_value=True),
     ):
         # Setup mocks
         mock_oncat = Mock()
@@ -235,6 +238,7 @@ def test_oncat_processor_ingest_with_many_images():
     mock_conf.oncat_url = "http://oncat:8000"
     mock_conf.oncat_api_token = "test-token"
     mock_conf.image_filepath_metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
+    mock_conf.dev_instrument_shared = ""
 
     mock_send_function = Mock()
 
@@ -246,6 +250,8 @@ def test_oncat_processor_ingest_with_many_images():
         patch("postprocessing.processors.oncat_processor.pyoncat.ONCat") as mock_oncat_class,
         patch("postprocessing.processors.oncat_processor.related_files") as mock_related,
         patch("postprocessing.processors.oncat_processor.image_files") as mock_images,
+        # Image cataloging is enabled for VENUS: the catalog_VENUS.py script is present
+        patch("postprocessing.processors.oncat_processor.os.path.isfile", return_value=True),
     ):
         # Setup mocks
         mock_oncat = Mock()
@@ -269,3 +275,94 @@ def test_oncat_processor_ingest_with_many_images():
         assert len(calls[0][0][0]) == 50
         assert len(calls[1][0][0]) == 50
         assert len(calls[2][0][0]) == 25
+
+
+def test_oncat_processor_image_cataloging_disabled():
+    """When catalog_<INSTRUMENT>.py is absent, image cataloging is skipped but the
+    main file and related files are still cataloged."""
+    test_message = {
+        "run_number": "12345",
+        "instrument": "VENUS",
+        "ipts": "IPTS-99999",
+        "facility": "SNS",
+        "data_file": "/SNS/VENUS/IPTS-99999/nexus/VENUS_12345.nxs.h5",
+    }
+
+    mock_conf = Mock()
+    mock_conf.oncat_url = "http://oncat:8000"
+    mock_conf.oncat_api_token = "test-token"
+    mock_conf.image_filepath_metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
+    mock_conf.dev_instrument_shared = ""
+
+    mock_send_function = Mock()
+
+    with (
+        patch("postprocessing.processors.base_processor.open", create=True),
+        patch("postprocessing.processors.oncat_processor.pyoncat.ONCat") as mock_oncat_class,
+        patch("postprocessing.processors.oncat_processor.related_files") as mock_related,
+        patch("postprocessing.processors.oncat_processor.image_files") as mock_images,
+        # Image cataloging is disabled: the catalog_VENUS.py script is absent
+        patch("postprocessing.processors.oncat_processor.os.path.isfile", return_value=False),
+    ):
+        mock_oncat = Mock()
+        mock_oncat_class.return_value = mock_oncat
+        mock_oncat.Datafile.ingest.return_value = Mock()
+        mock_related.return_value = ["/SNS/VENUS/IPTS-99999/images/det_1/VENUS_12345_det_1.tiff"]
+
+        processor = ONCatProcessor(test_message, mock_conf, mock_send_function)
+        processor.ingest(test_message["data_file"])
+
+        # Main file (1) + related file (1) are still ingested
+        assert mock_oncat.Datafile.ingest.call_count == 2
+        # But the image batch API is never called, and we don't even scan for images
+        mock_oncat.Datafile.batch.assert_not_called()
+        mock_images.assert_not_called()
+
+
+def test_catalog_images_uses_instrument_shared_path():
+    """The gate looks for catalog_<INSTRUMENT>.py under the instrument shared dir."""
+    test_message = {
+        "run_number": "12345",
+        "instrument": "VENUS",
+        "ipts": "IPTS-99999",
+        "facility": "SNS",
+        "data_file": "/SNS/VENUS/IPTS-99999/nexus/VENUS_12345.nxs.h5",
+    }
+
+    mock_conf = Mock()
+    mock_conf.image_filepath_metadata_paths = []
+    mock_conf.dev_instrument_shared = ""
+
+    with (
+        patch("postprocessing.processors.base_processor.open", create=True),
+        patch("postprocessing.processors.oncat_processor.os.path.isfile", return_value=False) as mock_isfile,
+    ):
+        processor = ONCatProcessor(test_message, mock_conf, Mock())
+        processor.catalog_images(Mock(), Mock())
+
+        mock_isfile.assert_called_once_with("/SNS/VENUS/shared/autoreduce/catalog_VENUS.py")
+
+
+def test_catalog_images_honors_dev_instrument_shared():
+    """A configured dev_instrument_shared overrides the standard shared path,
+    so the toggle can be exercised locally and in integration tests."""
+    test_message = {
+        "run_number": "12345",
+        "instrument": "VENUS",
+        "ipts": "IPTS-99999",
+        "facility": "SNS",
+        "data_file": "/SNS/VENUS/IPTS-99999/nexus/VENUS_12345.nxs.h5",
+    }
+
+    mock_conf = Mock()
+    mock_conf.image_filepath_metadata_paths = []
+    mock_conf.dev_instrument_shared = "/tmp/dev_shared"
+
+    with (
+        patch("postprocessing.processors.base_processor.open", create=True),
+        patch("postprocessing.processors.oncat_processor.os.path.isfile", return_value=False) as mock_isfile,
+    ):
+        processor = ONCatProcessor(test_message, mock_conf, Mock())
+        processor.catalog_images(Mock(), Mock())
+
+        mock_isfile.assert_called_once_with("/tmp/dev_shared/catalog_VENUS.py")

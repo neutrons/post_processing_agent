@@ -65,7 +65,36 @@ class ONCatProcessor(BaseProcessor):
             logging.info("Calling ONCat for %s", related_file)
             oncat.Datafile.ingest(related_file)
 
-        # Catalog image files using batch API for efficiency
+        # Catalog image files (a VENUS-specific substep), if enabled for this instrument
+        self.catalog_images(oncat, datafile)
+
+    def catalog_images(self, oncat, datafile):
+        """Catalog image files using the batch API, if enabled for this instrument.
+
+        Image cataloging is a special substep currently used only by VENUS. It can be
+        dynamically enabled or disabled per instrument by adding or removing the script
+        ``catalog_<INSTRUMENT>.py`` in the instrument's shared autoreduce directory. This
+        mirrors the ``reduce_<INSTRUMENT>.py`` convention used to toggle autoreduction, so
+        an instrument scientist can turn image cataloging off (e.g. to relieve a backlog)
+        by moving that file, with no code change or service restart.
+
+        @param oncat: an authenticated pyoncat.ONCat client
+        @param datafile: the ONCat datafile object returned by ingesting the main file
+        """
+        instrument_shared_dir = os.path.join("/", self.facility, self.instrument, "shared", "autoreduce")
+        if len(self.configuration.dev_instrument_shared) > 0:
+            instrument_shared_dir = self.configuration.dev_instrument_shared
+
+        catalog_script = os.path.join(instrument_shared_dir, f"catalog_{self.instrument}.py")
+        if not os.path.isfile(catalog_script):
+            logging.info(
+                "Image cataloging disabled for %s (no %s)",
+                self.instrument,
+                catalog_script,
+            )
+            return
+
+        logging.info("Image cataloging enabled for %s (found %s)", self.instrument, catalog_script)
         images = image_files(datafile, self.configuration.image_filepath_metadata_paths)
         for batch in batches(images, IMAGE_BATCH_SIZE):
             logging.info("Batch ingesting %d image files", len(batch))

@@ -99,6 +99,25 @@ If not specified, this defaults to the VENUS instrument metadata path. For other
 this parameter to match the appropriate metadata path(s) in your NeXus files. Multiple paths can be specified
 as an array.
 
+###### Enabling and disabling image cataloging
+
+Image cataloging can be dynamically enabled or disabled per instrument, without a code change,
+configuration edit, or service restart. This mirrors the `reduce_<INSTRUMENT>.py` convention used to
+toggle autoreduction: the agent catalogs image files for a run **only if** the script
+
+    /<facility>/<instrument>/shared/autoreduce/catalog_<INSTRUMENT>.py
+
+exists (for VENUS: `/SNS/VENUS/shared/autoreduce/catalog_VENUS.py`). The agent checks for the file's
+presence only; its contents are not executed. See `configuration/catalog_VENUS.py.example` for a
+ready-to-deploy placeholder.
+
+  - **To enable** image cataloging: place the script at the path above.
+  - **To disable** it (e.g. to relieve a cataloging backlog): move or rename the script, for example
+    `mv catalog_VENUS.py catalog_VENUS.py.disabled`.
+
+Disabling image cataloging affects only that image substep. Cataloging of the raw data file and its
+related files continues normally.
+
 
 Installation
 ------------
