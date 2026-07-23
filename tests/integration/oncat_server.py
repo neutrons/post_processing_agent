@@ -102,8 +102,10 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             "indexed": {"run_number": run_number},
         }
 
-        # Add metadata for VENUS instrument to support image cataloging
-        if instrument == "VENUS":
+        # Add metadata for imaging instruments to support image cataloging.
+        # IMAGING is a test-only instrument used to exercise the disabled path
+        # (it has image metadata and image files, but no catalog_IMAGING.py script).
+        if instrument in ("VENUS", "IMAGING"):
             response["metadata"] = {"entry": {"daslogs": {"bl10:exp:im:imagefilepath": {"value": "images"}}}}
 
         self.wfile.write(json.dumps(response).encode("utf-8"))
