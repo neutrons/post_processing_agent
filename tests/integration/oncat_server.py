@@ -106,7 +106,14 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
         # IMAGING is a test-only instrument used to exercise the disabled path
         # (it has image metadata and image files, but no catalog_IMAGING.py script).
         if instrument in ("VENUS", "IMAGING"):
-            response["metadata"] = {"entry": {"daslogs": {"bl10:exp:im:imagefilepath": {"value": "images"}}}}
+            # The image file path points at the directory holding a series of
+            # images, except for run 12347, which points at a single image file.
+            # Both forms occur in production, depending on the detector.
+            if run_number == 12347:
+                image_file_path = "images/20260721_Run_12347_series_0001.tiff"
+            else:
+                image_file_path = "images"
+            response["metadata"] = {"entry": {"daslogs": {"bl10:exp:im:imagefilepath": {"value": image_file_path}}}}
 
         self.wfile.write(json.dumps(response).encode("utf-8"))
 

@@ -136,6 +136,15 @@ Queue name: `CATALOG.ONCAT.DATA_READY`.
 
 Cataloging ingests the raw data file and any related files. For instruments that produce image files
 (currently VENUS), an additional image-cataloging substep batch-ingests the associated FITS/TIFF files.
+
+The locations to catalog come from the `image_filepath_metadata_paths` metadata of the ingested
+datafile. A location is either a single image file or a directory of images (`_image_files_at()`
+handles both), and a single metadata path can report several locations: MCP TPX1 runs report both this
+run's directory and the previous run's. Every candidate is filtered through `matches_run_number()`,
+which matches the `YYYYMMDD_Run_<run_number>_` file name prefix the DAQ writes for all VENUS detectors.
+The run number must be followed by a non-digit, so that run 2482 does not claim the images of runs
+24820-24829. Duplicate locations are ingested only once.
+
 This substep is gated per instrument: `ONCatProcessor.catalog_images()` runs only when the script
 `/<facility>/<instrument>/shared/autoreduce/catalog_<INSTRUMENT>.py` exists, mirroring the
 `reduce_<INSTRUMENT>.py` toggle used for autoreduction. The `dev_instrument_shared` configuration

@@ -47,9 +47,17 @@ RUN mkdir -p /opt/postprocessing/log && \
     mkdir -p /SNS/VENUS/IPTS-99999/images && \
     mkdir -p /SNS/VENUS/IPTS-99999/shared/autoreduce && \
     touch /SNS/VENUS/IPTS-99999/nexus/VENUS_12345.nxs.h5 && \
-    touch /SNS/VENUS/IPTS-99999/images/image_001.fits && \
-    touch /SNS/VENUS/IPTS-99999/images/image_002.fits && \
-    touch /SNS/VENUS/IPTS-99999/images/image_003.tiff && \
+    touch /SNS/VENUS/IPTS-99999/nexus/VENUS_12347.nxs.h5 && \
+    # Image files are named YYYYMMDD_Run_<run_number>_... by the VENUS DAQ.
+    # Runs 12345 and 12347 share this directory, as a series of runs does.
+    touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0001.fits && \
+    touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0002.fits && \
+    touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0003.tiff && \
+    touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12347_series_0001.tiff && \
+    # Images of another run, and a run number that merely extends 12345:
+    # neither belongs to run 12345
+    touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12344_series_0001.tiff && \
+    touch /SNS/VENUS/IPTS-99999/images/20260721_Run_123450_series_0001.tiff && \
     mkdir -p /SNS/VENUS/shared/autoreduce && \
     echo "# image cataloging enabled for VENUS" > /SNS/VENUS/shared/autoreduce/catalog_VENUS.py && \
     \
@@ -57,8 +65,8 @@ RUN mkdir -p /opt/postprocessing/log && \
     mkdir -p /SNS/IMAGING/IPTS-99999/images && \
     mkdir -p /SNS/IMAGING/shared/autoreduce && \
     touch /SNS/IMAGING/IPTS-99999/nexus/IMAGING_12346.nxs.h5 && \
-    touch /SNS/IMAGING/IPTS-99999/images/image_001.fits && \
-    touch /SNS/IMAGING/IPTS-99999/images/image_002.fits && \
+    touch /SNS/IMAGING/IPTS-99999/images/20260721_Run_12346_series_0001.fits && \
+    touch /SNS/IMAGING/IPTS-99999/images/20260721_Run_12346_series_0002.fits && \
     \
     chown -R root:root /opt/postprocessing /SNS
 
