@@ -99,6 +99,22 @@ If not specified, this defaults to the VENUS instrument metadata path. For other
 this parameter to match the appropriate metadata path(s) in your NeXus files. Multiple paths can be specified
 as an array.
 
+The value found at a metadata path may be either a single image file or a directory holding a whole
+series of images, depending on the detector. In both cases the agent catalogs only the image files
+belonging to the run being cataloged, identified by the run number token the VENUS DAQ writes into
+every image file name:
+
+    Run_<run_number>
+
+Most detectors write it after a date, as `YYYYMMDD_Run_<run_number>_...`, but TPX3 prepends a second
+date (`20250428_20260310_Run_15395_...`), so the token is matched wherever it appears in the name
+rather than only at the start.
+
+Filtering by run number matters because consecutive runs of a series share one image directory: without
+it, each run re-catalogs every image written by the runs before it, which grows with the length of the
+series and can back up the shared autoreducers. Image files whose names do not carry the current run
+number are skipped, and the number skipped is written to the agent log.
+
 ###### Enabling and disabling image cataloging
 
 Image cataloging can be dynamically enabled or disabled per instrument, without a code change,

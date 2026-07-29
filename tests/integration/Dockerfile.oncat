@@ -11,13 +11,18 @@ RUN mkdir -p /SNS/CORELLI/IPTS-15526/nexus && \
     mkdir -p /SNS/VENUS/IPTS-99999/images && \
     mkdir -p /SNS/VENUS/IPTS-99999/shared/autoreduce && \
     touch /SNS/VENUS/IPTS-99999/nexus/VENUS_12345.nxs.h5 && \
-    touch /SNS/VENUS/IPTS-99999/images/image_001.fits && \
-    touch /SNS/VENUS/IPTS-99999/images/image_002.fits && \
-    touch /SNS/VENUS/IPTS-99999/images/image_003.tiff && \
+    touch /SNS/VENUS/IPTS-99999/nexus/VENUS_12347.nxs.h5 && \
+    touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0001.fits && \
+    touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0002.fits && \
+    touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0003.tiff && \
+    touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12347_series_0001.tiff && \
+    touch /SNS/VENUS/IPTS-99999/images/20250428_20260721_Run_12345_tpx3_0004.tiff && \
+    touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12344_series_0001.tiff && \
+    touch /SNS/VENUS/IPTS-99999/images/20260721_Run_123450_series_0001.tiff && \
     \
     mkdir -p /SNS/IMAGING/IPTS-99999/nexus && \
     mkdir -p /SNS/IMAGING/IPTS-99999/images && \
     touch /SNS/IMAGING/IPTS-99999/nexus/IMAGING_12346.nxs.h5 && \
-    touch /SNS/IMAGING/IPTS-99999/images/image_001.fits && \
-    touch /SNS/IMAGING/IPTS-99999/images/image_002.fits
+    touch /SNS/IMAGING/IPTS-99999/images/20260721_Run_12346_series_0001.fits && \
+    touch /SNS/IMAGING/IPTS-99999/images/20260721_Run_12346_series_0002.fits
 CMD ["python", "oncat_server.py"]

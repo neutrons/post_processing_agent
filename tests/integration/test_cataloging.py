@@ -108,7 +108,11 @@ def test_oncat_catalog_error():
 
 
 def test_oncat_catalog_venus_images():
-    """This should run ONCatProcessor and catalog VENUS image files using batch API"""
+    """This should run ONCatProcessor and catalog VENUS image files using batch API.
+
+    The image file path points at a directory shared by a series of runs, so only
+    the image files named for run 12345 may be cataloged.
+    """
     message = {
         "run_number": "12345",
         "instrument": "VENUS",
@@ -161,13 +165,79 @@ def test_oncat_catalog_venus_images():
         for line in log
     )
 
-    # Check that batch ingestion was called with the image files
-    assert any("INFO Received batch datafile ingest request for 3 files" in line for line in log)
+    # Check that batch ingestion was called with this run's image files
+    assert any("INFO Received batch datafile ingest request for 4 files" in line for line in log)
 
-    # Verify all three image files were logged
-    assert any("INFO   - /SNS/VENUS/IPTS-99999/images/image_001.fits" in line for line in log)
-    assert any("INFO   - /SNS/VENUS/IPTS-99999/images/image_002.fits" in line for line in log)
-    assert any("INFO   - /SNS/VENUS/IPTS-99999/images/image_003.tiff" in line for line in log)
+    # Verify all of this run's image files were logged, including the TPX3 form
+    # that carries a second date prefix ahead of the run token
+    assert any("INFO   - /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0001.fits" in line for line in log)
+    assert any("INFO   - /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0002.fits" in line for line in log)
+    assert any("INFO   - /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0003.tiff" in line for line in log)
+    assert any(
+        "INFO   - /SNS/VENUS/IPTS-99999/images/20250428_20260721_Run_12345_tpx3_0004.tiff" in line for line in log
+    )
+
+    # The other runs sharing the directory are not cataloged under this run,
+    # including the run number that merely extends this one
+    assert not any("20260721_Run_12344_series_0001.tiff" in line for line in log)
+    assert not any("20260721_Run_123450_series_0001.tiff" in line for line in log)
+
+
+def test_oncat_catalog_venus_single_image_path():
+    """The image file path can point at a single image file rather than a
+    directory. That file is cataloged, and no other file in its directory is.
+    """
+    message = {
+        "run_number": "12347",
+        "instrument": "VENUS",
+        "ipts": "IPTS-99999",
+        "facility": "SNS",
+        "data_file": "/SNS/VENUS/IPTS-99999/nexus/VENUS_12347.nxs.h5",
+    }
+
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener(10)  # 10 second timeout
+    conn.set_listener("", listener)
+
+    try:
+        conn.connect("icat", "icat")
+    except stomp.exception.ConnectFailedException:
+        pytest.skip("Requires activemq running")
+
+    # expect a message on CATALOG.ONCAT.COMPLETE
+    conn.subscribe("/queue/CATALOG.ONCAT.COMPLETE", id="venus12347", ack="auto")
+
+    # send data ready
+    conn.send("/queue/CATALOG.ONCAT.DATA_READY", json.dumps(message).encode())
+
+    # Wait for messages until we get the one for this run
+    max_attempts = 10
+    for _ in range(max_attempts):
+        listener.wait_for_message()
+        header, body = listener.get_latest_message()
+        msg = json.loads(body)
+        if msg["run_number"] == message["run_number"]:
+            break
+    else:
+        pytest.fail(f"Did not receive COMPLETE message for VENUS run {message['run_number']}")
+
+    conn.disconnect()
+
+    assert msg["run_number"] == message["run_number"]
+
+    time.sleep(1)  # give oncat_server time to write its log
+    log = docker_exec_and_cat("/oncat_server.log", "oncat").splitlines()
+
+    # Check that the NeXus file was ingested
+    assert any(
+        "INFO Received datafile ingest request for /SNS/VENUS/IPTS-99999/nexus/VENUS_12347.nxs.h5" in line
+        for line in log
+    )
+
+    # Only the single image file named by the metadata is cataloged
+    assert any("INFO Received batch datafile ingest request for 1 files" in line for line in log)
+    assert any("INFO   - /SNS/VENUS/IPTS-99999/images/20260721_Run_12347_series_0001.tiff" in line for line in log)
 
 
 def test_oncat_catalog_images_disabled():

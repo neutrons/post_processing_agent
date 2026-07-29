@@ -8,12 +8,16 @@ import os
 import logging
 import json
 import glob
+import re
 from .base_processor import BaseProcessor
 import pyoncat
 
 
 # Batch size for image ingestion (must be less than max of 100)
 IMAGE_BATCH_SIZE = 50
+
+# Glob patterns for the image files to catalog
+IMAGE_FILE_PATTERNS = ("*.fits", "*.tiff")
 
 
 class ONCatProcessor(BaseProcessor):
@@ -95,7 +99,8 @@ class ONCatProcessor(BaseProcessor):
             return
 
         logging.info("Image cataloging enabled for %s (found %s)", self.instrument, catalog_script)
-        images = image_files(datafile, self.configuration.image_filepath_metadata_paths)
+        images = image_files(datafile, self.configuration.image_filepath_metadata_paths, self.run_number)
+        logging.info("Cataloging %d image file(s) for run %s", len(images), self.run_number)
         for batch in batches(images, IMAGE_BATCH_SIZE):
             logging.info("Batch ingesting %d image files", len(batch))
             oncat.Datafile.batch(batch)
@@ -145,19 +150,57 @@ def related_files(datafile):
     ]
 
 
-def image_files(datafile, metadata_paths):
-    """Find image files from metadata paths.
+def matches_run_number(image_file_path, run_number):
+    """Whether an image file belongs to the given run.
 
-    Iterates through the configured metadata paths, retrieves values from
-    the datafile metadata, and globs for image files in the discovered
-    subdirectories.
+    The VENUS DAQ identifies the run in the image file name with a ``Run_<run_number>``
+    token, which is how we tell the images of the run being cataloged apart from the
+    images of the other runs sharing the same directory. Where that token sits in the
+    name varies by detector, so match it anywhere rather than anchoring to the start.
+    The three forms seen in production are::
+
+        20260713_Run_24828_long_acq_test_0_282.tiff          QHY, Andor, TPX1
+        20250428_20251120_Run_14810_HDPErpi_Gd_0__0000.tiff  TPX3, two date prefixes
+        Run_8787_20250516_May16_2025_OB_0005_00826.fits      TPX1 raw/ob, run first
+
+    The token must start the name or follow an underscore, and the run number must be
+    followed by a non-digit, otherwise run 2482 would also claim the images of runs
+    24820-24829. Any non-digit ends the token: the names observed all continue with an
+    underscore, but requiring one would mean silently cataloging nothing for a detector
+    that used another separator, which is a worse failure than cataloging a file that
+    carries this run's number.
+
+    Args:
+        image_file_path: Path to a candidate image file
+        run_number: Run number being cataloged
+
+    Returns:
+        True if the file name identifies it as an image of that run
+    """
+    run_number = str(run_number).strip()
+    # The DAQ writes the run number without zero padding
+    if run_number.isdigit():
+        run_number = str(int(run_number))
+
+    file_name = os.path.basename(image_file_path)
+    return re.search(r"(?:^|_)Run_" + re.escape(run_number) + r"(?![0-9])", file_name) is not None
+
+
+def image_files(datafile, metadata_paths, run_number):
+    """Find the image files belonging to a run.
+
+    Iterates through the configured metadata paths and, for each location found
+    in the datafile metadata, collects the image files that belong to the run
+    being cataloged. See ``_image_files_at`` for how a single location is
+    resolved and ``matches_run_number`` for how the files are filtered.
 
     Args:
         datafile: ONCat datafile object with metadata
-        metadata_paths: List of metadata paths to check for image directory locations
+        metadata_paths: List of metadata paths to check for image file locations
+        run_number: Run number being cataloged
 
     Returns:
-        List of absolute paths to image files (FITS and TIFF)
+        List of absolute paths to this run's image files (FITS and TIFF)
     """
     facility = datafile.facility
     instrument = datafile.instrument
@@ -169,16 +212,58 @@ def image_files(datafile, metadata_paths):
         if value is None:
             continue
 
-        subdirs = value if isinstance(value, list) else [value]
+        # A single metadata path can report more than one location, for instance
+        # MCP TPX1 runs report both this run's directory and the previous run's
+        locations = value if isinstance(value, list) else [value]
 
-        for subdir in subdirs:
-            full_path = os.path.join("/", facility, instrument, experiment, subdir)
+        for location in locations:
+            full_path = os.path.join("/", facility, instrument, experiment, location)
+            image_file_paths.extend(_image_files_at(full_path, run_number))
 
-            if not os.path.isdir(full_path):
-                continue
+    # Locations can be reported more than once, so ingest each file only once
+    return list(dict.fromkeys(image_file_paths))
 
-            fits_files = glob.glob(os.path.join(full_path, "*.fits"))
-            tiff_files = glob.glob(os.path.join(full_path, "*.tiff"))
-            image_file_paths.extend(fits_files + tiff_files)
 
-    return image_file_paths
+def _image_files_at(location, run_number):
+    """Return the image files at a single location that belong to a run.
+
+    The image file path recorded by the DAQ is meant to point at an image file,
+    but for several detectors it points at the directory holding a whole series
+    of images instead, and consecutive runs of a series share that directory.
+    Both forms are filtered by run number, so that a run only ever catalogs its
+    own images: cataloging the whole directory was making a run re-catalog every
+    image written by the runs before it, which is slow enough to back up the
+    autoreducers.
+
+    Args:
+        location: Absolute path reported by the image file path metadata
+        run_number: Run number being cataloged
+
+    Returns:
+        List of absolute paths to this run's image files at that location
+    """
+    if os.path.isdir(location):
+        candidates = []
+        for pattern in IMAGE_FILE_PATTERNS:
+            candidates.extend(glob.glob(os.path.join(location, pattern)))
+        # Glob order is arbitrary; keep the batches in a predictable order
+        candidates.sort()
+    elif os.path.isfile(location):
+        candidates = [location]
+    else:
+        logging.warning("Image file location %s is neither a file nor a directory", location)
+        return []
+
+    matching_files = [path for path in candidates if matches_run_number(path, run_number)]
+
+    skipped = len(candidates) - len(matching_files)
+    if skipped > 0:
+        logging.info(
+            "Skipping %d image file(s) in %s belonging to other runs",
+            skipped,
+            location,
+        )
+    if not matching_files:
+        logging.warning("Found no image files for run %s in %s", run_number, location)
+
+    return matching_files

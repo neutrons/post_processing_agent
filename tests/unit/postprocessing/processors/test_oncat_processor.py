@@ -1,11 +1,39 @@
 from unittest.mock import Mock, patch
 
+import pytest
+
 from postprocessing.processors.oncat_processor import (
     ONCatProcessor,
     batches,
     related_files,
     image_files,
+    matches_run_number,
 )
+
+METADATA_PATHS = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
+
+
+def make_datafile(tmp_path, metadata_value):
+    """A datafile whose /facility/instrument/experiment root is under tmp_path.
+
+    This lets the image file tests run against real files on disk, so the
+    globbing and the run number filtering are exercised for real.
+    """
+    datafile = Mock()
+    datafile.facility = str(tmp_path).lstrip("/")
+    datafile.instrument = "VENUS"
+    datafile.experiment = "IPTS-99999"
+    datafile.get.return_value = metadata_value
+    return datafile
+
+
+def make_image_dir(tmp_path, subdir, file_names):
+    """Create image files under the datafile root and return the directory"""
+    image_dir = tmp_path / "VENUS" / "IPTS-99999" / subdir
+    image_dir.mkdir(parents=True, exist_ok=True)
+    for file_name in file_names:
+        (image_dir / file_name).touch()
+    return image_dir
 
 
 def test_batches_empty_list():
@@ -72,6 +100,59 @@ def test_related_files_with_run_number():
         assert mock_datafile.location not in result
 
 
+@pytest.mark.parametrize(
+    "file_name, expected",
+    [
+        # The three naming schemes seen in production, all of which carry a
+        # Run_<run_number> token but not in the same position
+        ("20260713_Run_24828_long_acq_test_10_000s_0_700AngsMin_0_282.tiff", True),  # QHY, Andor, TPX1
+        ("20250428_20260713_Run_24828_HDPErpi_Gd_0__0000_6311657.tiff", True),  # TPX3, two date prefixes
+        ("Run_24828_20250516_May16_2025_OB_5C_0005_3137132_00826.fits", True),  # TPX1 raw/ob, run first
+        # Images of the other runs sharing the directory
+        ("20260713_Run_24827_long_acq_test_10_000s_0_700AngsMin_0_281.tiff", False),
+        ("20260713_Run_24829_long_acq_test_10_000s_0_700AngsMin_1_283.tiff", False),
+        # A run number that merely starts with, or extends, the one we want
+        ("20260713_Run_2482_long_acq_test.tiff", False),
+        ("20260713_Run_248280_long_acq_test.tiff", False),
+        # The observed file names all continue with an underscore, but any
+        # non-digit is deliberately accepted: a separator we have not seen should
+        # over-catalog rather than silently catalog nothing for the run
+        ("20260713_Run_24828.tiff", True),
+        ("20260713_Run_24828-long-acq-test.tiff", True),
+        # Names carrying no run number, or the number without the Run_ token
+        ("image_001.tiff", False),
+        ("20260713_24828_no_run_marker.tiff", False),
+        ("Image004_00027.fits", False),
+        # The token must start the name or follow an underscore
+        ("Rerun_24828_not_a_run_token.tiff", False),
+    ],
+)
+def test_matches_run_number(file_name, expected):
+    """Only files named for this run match, wherever the Run_<run> token sits in
+    the name, and the run number may not be a prefix of a longer run number"""
+    assert matches_run_number("/SNS/VENUS/IPTS-25778/images/qhy411/" + file_name, "24828") is expected
+
+
+def test_matches_run_number_excludes_previous_run_directory_contents():
+    """A stale image file path can point at the previous run's directory, whose
+    files name that run and must not be cataloged under this one"""
+    previous_run_images = [
+        "/SNS/VENUS/IPTS-35790/images/tpx3/raw/Run_7352_DSet0/20250317_Run_7352_ai_loop_0000_2039884.tiff",
+        "/SNS/VENUS/IPTS-37446/images/tpx1/ob/20260305_Run_15289_Chop_Tune_ob_0/"
+        "20260305_Run_15289_Chop_Tune_ob_0_046_01693.fits",
+    ]
+    assert not any(matches_run_number(path, "7353") for path in previous_run_images)
+    assert not any(matches_run_number(path, "15291") for path in previous_run_images)
+
+
+def test_matches_run_number_accepts_non_string_and_padded_run_numbers():
+    """The run number comes from the message, so do not depend on its formatting"""
+    file_name = "/SNS/VENUS/IPTS-25778/images/qhy411/20260713_Run_24828_long_acq_test.tiff"
+    assert matches_run_number(file_name, 24828) is True
+    assert matches_run_number(file_name, "024828") is True
+    assert matches_run_number(file_name, " 24828 ") is True
+
+
 def test_image_files_no_metadata():
     """Test image_files when metadata path doesn't exist"""
     mock_datafile = Mock()
@@ -80,85 +161,120 @@ def test_image_files_no_metadata():
     mock_datafile.experiment = "IPTS-99999"
     mock_datafile.get.return_value = None  # No metadata found
 
-    metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
-    result = image_files(mock_datafile, metadata_paths)
+    result = image_files(mock_datafile, METADATA_PATHS, "12345")
     assert result == []
 
 
-def test_image_files_metadata_not_a_directory():
-    """Test image_files when metadata points to non-existent directory"""
-    mock_datafile = Mock()
-    mock_datafile.facility = "SNS"
-    mock_datafile.instrument = "VENUS"
-    mock_datafile.experiment = "IPTS-99999"
-    mock_datafile.get.return_value = "images"
+def test_image_files_metadata_neither_file_nor_directory(tmp_path):
+    """Test image_files when metadata points to a location that does not exist"""
+    mock_datafile = make_datafile(tmp_path, "images/does_not_exist")
 
-    with patch("os.path.isdir") as mock_isdir:
-        mock_isdir.return_value = False
-
-        metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
-        result = image_files(mock_datafile, metadata_paths)
-        assert result == []
+    result = image_files(mock_datafile, METADATA_PATHS, "12345")
+    assert result == []
 
 
-def test_image_files_single_directory():
-    """Test image_files with single directory containing FITS and TIFF files"""
-    mock_datafile = Mock()
-    mock_datafile.facility = "SNS"
-    mock_datafile.instrument = "VENUS"
-    mock_datafile.experiment = "IPTS-99999"
-    mock_datafile.get.return_value = "images"
+def test_image_files_single_directory(tmp_path):
+    """Only this run's FITS and TIFF files in the directory are cataloged"""
+    image_dir = make_image_dir(
+        tmp_path,
+        "images",
+        [
+            "20260713_Run_12345_series_0001.fits",
+            "20260713_Run_12345_series_0002.fits",
+            "20260713_Run_12345_series_0003.tiff",
+        ],
+    )
+    mock_datafile = make_datafile(tmp_path, "images")
 
-    with patch("os.path.isdir") as mock_isdir, patch("glob.glob") as mock_glob:
-        mock_isdir.return_value = True
+    result = image_files(mock_datafile, METADATA_PATHS, "12345")
 
-        def glob_side_effect(pattern):
-            if pattern.endswith("*.fits"):
-                return [
-                    "/SNS/VENUS/IPTS-99999/images/image_001.fits",
-                    "/SNS/VENUS/IPTS-99999/images/image_002.fits",
-                ]
-            elif pattern.endswith("*.tiff"):
-                return ["/SNS/VENUS/IPTS-99999/images/image_003.tiff"]
-            return []
-
-        mock_glob.side_effect = glob_side_effect
-
-        metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
-        result = image_files(mock_datafile, metadata_paths)
-
-        assert len(result) == 3
-        assert "/SNS/VENUS/IPTS-99999/images/image_001.fits" in result
-        assert "/SNS/VENUS/IPTS-99999/images/image_002.fits" in result
-        assert "/SNS/VENUS/IPTS-99999/images/image_003.tiff" in result
+    assert result == [
+        str(image_dir / "20260713_Run_12345_series_0001.fits"),
+        str(image_dir / "20260713_Run_12345_series_0002.fits"),
+        str(image_dir / "20260713_Run_12345_series_0003.tiff"),
+    ]
 
 
-def test_image_files_multiple_directories():
-    """Test image_files with multiple directories (list of subdirectories)"""
-    mock_datafile = Mock()
-    mock_datafile.facility = "SNS"
-    mock_datafile.instrument = "VENUS"
-    mock_datafile.experiment = "IPTS-99999"
-    mock_datafile.get.return_value = ["images/batch1", "images/batch2"]
+def test_image_files_filters_out_other_runs(tmp_path):
+    """A series directory is shared by consecutive runs: catalog only our own
+    images, otherwise every run re-catalogs the images of the runs before it"""
+    image_dir = make_image_dir(
+        tmp_path,
+        "images/qhy411/raw/radiography/20260713_long_acq_test",
+        [
+            "20260713_Run_12344_long_acq_test_0_281.tiff",
+            "20260713_Run_12345_long_acq_test_1_282.tiff",
+            "20260713_Run_12346_long_acq_test_2_283.tiff",
+            "20260713_Run_123450_long_acq_test_3_284.tiff",
+            "20260713_Run_1234_long_acq_test_4_285.tiff",
+        ],
+    )
+    mock_datafile = make_datafile(tmp_path, "images/qhy411/raw/radiography/20260713_long_acq_test")
 
-    with patch("os.path.isdir") as mock_isdir, patch("glob.glob") as mock_glob:
-        mock_isdir.return_value = True
+    result = image_files(mock_datafile, METADATA_PATHS, "12345")
 
-        def glob_side_effect(pattern):
-            if "batch1" in pattern and pattern.endswith("*.fits"):
-                return ["/SNS/VENUS/IPTS-99999/images/batch1/image_001.fits"]
-            elif "batch2" in pattern and pattern.endswith("*.tiff"):
-                return ["/SNS/VENUS/IPTS-99999/images/batch2/image_002.tiff"]
-            return []
+    assert result == [str(image_dir / "20260713_Run_12345_long_acq_test_1_282.tiff")]
 
-        mock_glob.side_effect = glob_side_effect
 
-        metadata_paths = ["metadata.entry.daslogs.bl10:exp:im:imagefilepath.value"]
-        result = image_files(mock_datafile, metadata_paths)
+def test_image_files_single_file_location(tmp_path):
+    """The metadata can point straight at an image file, which is filtered by
+    run number just like the contents of a directory"""
+    image_dir = make_image_dir(tmp_path, "images", ["20260713_Run_12345_series_0001.tiff"])
+    mock_datafile = make_datafile(tmp_path, "images/20260713_Run_12345_series_0001.tiff")
 
-        assert len(result) == 2
-        assert "/SNS/VENUS/IPTS-99999/images/batch1/image_001.fits" in result
-        assert "/SNS/VENUS/IPTS-99999/images/batch2/image_002.tiff" in result
+    result = image_files(mock_datafile, METADATA_PATHS, "12345")
+
+    assert result == [str(image_dir / "20260713_Run_12345_series_0001.tiff")]
+
+
+def test_image_files_single_file_location_of_another_run(tmp_path):
+    """A file naming a different run is not cataloged under this run"""
+    make_image_dir(tmp_path, "images", ["20260713_Run_12344_series_0001.tiff"])
+    mock_datafile = make_datafile(tmp_path, "images/20260713_Run_12344_series_0001.tiff")
+
+    result = image_files(mock_datafile, METADATA_PATHS, "12345")
+
+    assert result == []
+
+
+def test_image_files_multiple_directories(tmp_path):
+    """Test image_files with multiple locations (list of subdirectories).
+
+    MCP TPX1 runs report two locations, the second being the directory of the
+    previous run, whose images must not be cataloged again under this run.
+    """
+    previous_run_dir = make_image_dir(
+        tmp_path,
+        "images/tpx1/raw/20260611_LF99D/20260611_Run_12344_LF99D_24",
+        ["20260611_Run_12344_LF99D_24_360_00000.fits"],
+    )
+    this_run_dir = make_image_dir(
+        tmp_path,
+        "images/tpx1/raw/20260611_LF99D/20260611_Run_12345_LF99D_25",
+        ["20260611_Run_12345_LF99D_25_360_00000.fits"],
+    )
+    mock_datafile = make_datafile(
+        tmp_path,
+        [
+            "images/tpx1/raw/20260611_LF99D/20260611_Run_12344_LF99D_24",
+            "images/tpx1/raw/20260611_LF99D/20260611_Run_12345_LF99D_25",
+        ],
+    )
+
+    result = image_files(mock_datafile, METADATA_PATHS, "12345")
+
+    assert result == [str(this_run_dir / "20260611_Run_12345_LF99D_25_360_00000.fits")]
+    assert not any(str(previous_run_dir) in path for path in result)
+
+
+def test_image_files_ingests_each_file_once(tmp_path):
+    """The same location can be reported more than once"""
+    image_dir = make_image_dir(tmp_path, "images", ["20260713_Run_12345_series_0001.fits"])
+    mock_datafile = make_datafile(tmp_path, ["images", "images"])
+
+    result = image_files(mock_datafile, METADATA_PATHS + ["another.metadata.path"], "12345")
+
+    assert result == [str(image_dir / "20260713_Run_12345_series_0001.fits")]
 
 
 def test_oncat_processor_ingest_with_images():
@@ -213,6 +329,13 @@ def test_oncat_processor_ingest_with_images():
 
         # Verify the main file was ingested
         mock_oncat.Datafile.ingest.assert_called_once()
+
+        # Verify the images were looked up for the run being cataloged
+        mock_images.assert_called_once_with(
+            mock_datafile,
+            mock_conf.image_filepath_metadata_paths,
+            "12345",
+        )
 
         # Verify batch was called with the image files
         mock_oncat.Datafile.batch.assert_called_once_with(
