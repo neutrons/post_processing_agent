@@ -54,6 +54,8 @@ RUN mkdir -p /opt/postprocessing/log && \
     touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0002.fits && \
     touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0003.tiff && \
     touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12347_series_0001.tiff && \
+    # TPX3 prepends a second date, so the run token is not at the start of the name
+    touch /SNS/VENUS/IPTS-99999/images/20250428_20260721_Run_12345_tpx3_0004.tiff && \
     # Images of another run, and a run number that merely extends 12345:
     # neither belongs to run 12345
     touch /SNS/VENUS/IPTS-99999/images/20260721_Run_12344_series_0001.tiff && \

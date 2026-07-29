@@ -153,14 +153,22 @@ def related_files(datafile):
 def matches_run_number(image_file_path, run_number):
     """Whether an image file belongs to the given run.
 
-    The VENUS DAQ writes every image file with a name that begins with
-    ``YYYYMMDD_Run_<run_number>_``, no matter which detector produced it (this
-    has been confirmed for QHY, Andor, TPX1 and MCP TPX1 data). Matching on that
-    prefix is therefore how we tell the images of the run being cataloged apart
-    from the images of the other runs sharing the same directory.
+    The VENUS DAQ identifies the run in the image file name with a ``Run_<run_number>``
+    token, which is how we tell the images of the run being cataloged apart from the
+    images of the other runs sharing the same directory. Where that token sits in the
+    name varies by detector, so match it anywhere rather than anchoring to the start.
+    The three forms seen in production are::
 
-    The run number must be followed by a non-digit, otherwise run 2482 would
-    also claim the images of runs 24820-24829.
+        20260713_Run_24828_long_acq_test_0_282.tiff          QHY, Andor, TPX1
+        20250428_20251120_Run_14810_HDPErpi_Gd_0__0000.tiff  TPX3, two date prefixes
+        Run_8787_20250516_May16_2025_OB_0005_00826.fits      TPX1 raw/ob, run first
+
+    The token must start the name or follow an underscore, and the run number must be
+    followed by a non-digit, otherwise run 2482 would also claim the images of runs
+    24820-24829. Any non-digit ends the token: the names observed all continue with an
+    underscore, but requiring one would mean silently cataloging nothing for a detector
+    that used another separator, which is a worse failure than cataloging a file that
+    carries this run's number.
 
     Args:
         image_file_path: Path to a candidate image file
@@ -175,7 +183,7 @@ def matches_run_number(image_file_path, run_number):
         run_number = str(int(run_number))
 
     file_name = os.path.basename(image_file_path)
-    return re.match(r"\d{8}_Run_" + re.escape(run_number) + r"(?![0-9])", file_name) is not None
+    return re.search(r"(?:^|_)Run_" + re.escape(run_number) + r"(?![0-9])", file_name) is not None
 
 
 def image_files(datafile, metadata_paths, run_number):

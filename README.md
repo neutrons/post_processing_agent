@@ -101,10 +101,14 @@ as an array.
 
 The value found at a metadata path may be either a single image file or a directory holding a whole
 series of images, depending on the detector. In both cases the agent catalogs only the image files
-belonging to the run being cataloged, identified by the file name prefix the VENUS DAQ writes for
-every detector:
+belonging to the run being cataloged, identified by the run number token the VENUS DAQ writes into
+every image file name:
 
-    YYYYMMDD_Run_<run_number>_...
+    Run_<run_number>
+
+Most detectors write it after a date, as `YYYYMMDD_Run_<run_number>_...`, but TPX3 prepends a second
+date (`20250428_20260310_Run_15395_...`), so the token is matched wherever it appears in the name
+rather than only at the start.
 
 Filtering by run number matters because consecutive runs of a series share one image directory: without
 it, each run re-catalogs every image written by the runs before it, which grows with the length of the

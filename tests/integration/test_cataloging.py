@@ -166,12 +166,16 @@ def test_oncat_catalog_venus_images():
     )
 
     # Check that batch ingestion was called with this run's image files
-    assert any("INFO Received batch datafile ingest request for 3 files" in line for line in log)
+    assert any("INFO Received batch datafile ingest request for 4 files" in line for line in log)
 
-    # Verify all three of this run's image files were logged
+    # Verify all of this run's image files were logged, including the TPX3 form
+    # that carries a second date prefix ahead of the run token
     assert any("INFO   - /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0001.fits" in line for line in log)
     assert any("INFO   - /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0002.fits" in line for line in log)
     assert any("INFO   - /SNS/VENUS/IPTS-99999/images/20260721_Run_12345_series_0003.tiff" in line for line in log)
+    assert any(
+        "INFO   - /SNS/VENUS/IPTS-99999/images/20250428_20260721_Run_12345_tpx3_0004.tiff" in line for line in log
+    )
 
     # The other runs sharing the directory are not cataloged under this run,
     # including the run number that merely extends this one

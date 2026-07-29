@@ -103,25 +103,46 @@ def test_related_files_with_run_number():
 @pytest.mark.parametrize(
     "file_name, expected",
     [
-        # The naming convention the VENUS DAQ follows for every detector
-        ("20260713_Run_24828_long_acq_test_10_000s_0_700AngsMin_0_282.tiff", True),
-        ("20260406_Run_24828_NoSample_res_alarm_ob_0_399_00000.fits", True),
+        # The three naming schemes seen in production, all of which carry a
+        # Run_<run_number> token but not in the same position
+        ("20260713_Run_24828_long_acq_test_10_000s_0_700AngsMin_0_282.tiff", True),  # QHY, Andor, TPX1
+        ("20250428_20260713_Run_24828_HDPErpi_Gd_0__0000_6311657.tiff", True),  # TPX3, two date prefixes
+        ("Run_24828_20250516_May16_2025_OB_5C_0005_3137132_00826.fits", True),  # TPX1 raw/ob, run first
         # Images of the other runs sharing the directory
         ("20260713_Run_24827_long_acq_test_10_000s_0_700AngsMin_0_281.tiff", False),
         ("20260713_Run_24829_long_acq_test_10_000s_0_700AngsMin_1_283.tiff", False),
         # A run number that merely starts with, or extends, the one we want
         ("20260713_Run_2482_long_acq_test.tiff", False),
         ("20260713_Run_248280_long_acq_test.tiff", False),
-        # Names that do not follow the convention at all
-        ("Run_24828_no_date_prefix.tiff", False),
+        # The observed file names all continue with an underscore, but any
+        # non-digit is deliberately accepted: a separator we have not seen should
+        # over-catalog rather than silently catalog nothing for the run
+        ("20260713_Run_24828.tiff", True),
+        ("20260713_Run_24828-long-acq-test.tiff", True),
+        # Names carrying no run number, or the number without the Run_ token
         ("image_001.tiff", False),
         ("20260713_24828_no_run_marker.tiff", False),
+        ("Image004_00027.fits", False),
+        # The token must start the name or follow an underscore
+        ("Rerun_24828_not_a_run_token.tiff", False),
     ],
 )
 def test_matches_run_number(file_name, expected):
-    """Only files named for this run match, and the run number may not be a
-    prefix of a longer run number"""
+    """Only files named for this run match, wherever the Run_<run> token sits in
+    the name, and the run number may not be a prefix of a longer run number"""
     assert matches_run_number("/SNS/VENUS/IPTS-25778/images/qhy411/" + file_name, "24828") is expected
+
+
+def test_matches_run_number_excludes_previous_run_directory_contents():
+    """A stale image file path can point at the previous run's directory, whose
+    files name that run and must not be cataloged under this one"""
+    previous_run_images = [
+        "/SNS/VENUS/IPTS-35790/images/tpx3/raw/Run_7352_DSet0/20250317_Run_7352_ai_loop_0000_2039884.tiff",
+        "/SNS/VENUS/IPTS-37446/images/tpx1/ob/20260305_Run_15289_Chop_Tune_ob_0/"
+        "20260305_Run_15289_Chop_Tune_ob_0_046_01693.fits",
+    ]
+    assert not any(matches_run_number(path, "7353") for path in previous_run_images)
+    assert not any(matches_run_number(path, "15291") for path in previous_run_images)
 
 
 def test_matches_run_number_accepts_non_string_and_padded_run_numbers():
