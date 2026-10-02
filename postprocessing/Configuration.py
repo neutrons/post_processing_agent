@@ -128,6 +128,15 @@ class Configuration:
                         "Configuration: Processors can only be specified in the format module.Processor_class"
                     )
 
+        # Per-instrument queues, discovered through the broker's management API (Jolokia)
+        self.per_instrument_queues = config.get("per_instrument_queues", False)
+        self.queue_discovery_interval = config.get("queue_discovery_interval", 60.0)
+        self.jolokia_urls = config.get(
+            "jolokia_urls", [f"http://{host}:8161/console/jolokia" for host, _ in self.brokers]
+        )
+        self.jolokia_user = config.get("jolokia_user", self.amq_user)
+        self.jolokia_pwd = config.get("jolokia_pwd", self.amq_pwd)
+
         # Job memory monitoring
         self.system_mem_limit_perc = config.get("system_mem_limit_perc", 70.0)
         self.mem_check_interval_sec = config.get("mem_check_interval_sec", 0.2)
@@ -145,6 +154,14 @@ class Configuration:
         logger.info("  - LOCAL execution")
         logger.info("  - Max number of processes: %s", self.max_procs)
         logger.info("  - Input queues: %s", self.queues)
+        if self.per_instrument_queues:
+            logger.info(
+                "  - Per-instrument queues: ENABLED, discovered every %s s from %s",
+                self.queue_discovery_interval,
+                self.jolokia_urls,
+            )
+        else:
+            logger.info("  - Per-instrument queues: disabled")
         logger.info("  - Installation dir: %s", self.sw_dir)
         logger.info("  - Start script: %s", self.start_script)
         logger.info("  - Task script: %s", self.task_script)
