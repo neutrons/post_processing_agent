@@ -130,7 +130,7 @@ class Configuration:
 
         # Per-instrument queues, discovered through the broker's management API (Jolokia)
         self.per_instrument_queues = config.get("per_instrument_queues", False)
-        self.queue_discovery_interval = config.get("queue_discovery_interval", 60.0)
+        self.queue_discovery_interval_sec = config.get("queue_discovery_interval_sec", 60.0)
         self.jolokia_urls = config.get(
             "jolokia_urls", [f"http://{host}:8161/console/jolokia" for host, _ in self.brokers]
         )
@@ -157,7 +157,7 @@ class Configuration:
         if self.per_instrument_queues:
             logger.info(
                 "  - Per-instrument queues: ENABLED, discovered every %s s from %s",
-                self.queue_discovery_interval,
+                self.queue_discovery_interval_sec,
                 self.jolokia_urls,
             )
         else:

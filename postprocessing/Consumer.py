@@ -22,14 +22,16 @@ HEARTBEAT_DELAY = 30
 
 
 class Listener(stomp.ConnectionListener):
-    def __init__(self, config, connection, per_instrument_queues=None):
+    def __init__(self, config, connection, per_instrument_to_shared_queue_map=None):
         super().__init__()
         self.config = config
         self.conn = connection
         self.procList = []
         self.instrument_jobs = {}
-        # Per-instrument queue -> input queue of its processor, shared with the Consumer
-        self.per_instrument_queues = per_instrument_queues if per_instrument_queues is not None else {}
+        # Shared with the Consumer, which adds to it as queues are discovered
+        self.per_instrument_to_shared_queue_map = (
+            per_instrument_to_shared_queue_map if per_instrument_to_shared_queue_map is not None else {}
+        )
 
     def on_message(self, frame):
         """
@@ -99,7 +101,7 @@ class Listener(stomp.ConnectionListener):
             # not the per-instrument queue.
             if self.config.task_script_queue_arg is not None:
                 command_args.append(self.config.task_script_queue_arg)
-            command_args.append(self.per_instrument_queues.get(headers["subscription"], destination))
+            command_args.append(self.per_instrument_to_shared_queue_map.get(headers["subscription"], destination))
 
             # Format the data argument
             if self.config.task_script_data_arg is not None:
@@ -202,10 +204,9 @@ class Consumer:
 
         # Per-instrument queue -> input queue of its processor. Queues are only added, never
         # removed, since they stay on the broker.
-        self.per_instrument_queues = {}
+        self.per_instrument_to_shared_queue_map = {}
         self._queue_lister = None
         self._last_discovery = 0
-        self._logged_queues = None
         if config.per_instrument_queues:
             self._queue_lister = JolokiaQueueLister(config.jolokia_urls, config.jolokia_user, config.jolokia_pwd)
 
@@ -228,7 +229,7 @@ class Consumer:
         """
         conn = stomp.Connection(host_and_ports=self.config.brokers, keepalive=True)
 
-        listener = Listener(self.config, conn, self.per_instrument_queues)
+        listener = Listener(self.config, conn, self.per_instrument_to_shared_queue_map)
 
         conn.set_listener("postprocessing", listener)
         conn.connect(self.config.amq_user, self.config.amq_pwd, wait=True)
@@ -248,7 +249,7 @@ class Consumer:
                 self.config.queues.append(self.config.heartbeat_ping)
 
         # Includes the per-instrument queues found so far, so they're restored after a reconnect
-        for q in self.config.queues + sorted(self.per_instrument_queues):
+        for q in self.config.queues + sorted(self.per_instrument_to_shared_queue_map):
             self._subscribe(q)
 
     def _subscribe(self, queue):
@@ -260,8 +261,9 @@ class Consumer:
         # between consumers
         # See https://stackoverflow.com/questions/76653908
         # https://activemq.apache.org/components/classic/documentation/what-is-the-prefetch-limit-for
-        # Artemis honors this over STOMP, and it's what makes the broker take turns between our
-        # subscriptions so one instrument's backlog doesn't block the others.
+        # STOMP has no polling, so Artemis treats a prefetch of 0 as 1: each subscription gets at
+        # most one unacked message at a time. That makes the broker take turns between our
+        # subscriptions, but a busy consumer can still hold one waiting message per subscription.
         self._connection.subscribe(destination=queue, id=queue, ack="client", headers={"activemq.prefetchSize": 0})
 
     def discover_queues(self):
@@ -274,21 +276,18 @@ class Consumer:
         except Exception:
             logging.error(
                 "Per-instrument queue discovery failed, keeping %s subscriptions: %s",
-                len(self.per_instrument_queues),
+                len(self.per_instrument_to_shared_queue_map),
                 sys.exc_info()[1],
             )
             return
-        new_queues = sorted(set(found) - set(self.per_instrument_queues))
+        new_queues = sorted(set(found) - set(self.per_instrument_to_shared_queue_map))
         for q in new_queues:
-            # Map the queue before subscribing so the first message can be routed
-            self.per_instrument_queues[q] = found[q]
+            # Map the queue before subscribing so the first message can be routed. If subscribing
+            # fails, the connection is gone and connect() resubscribes everything in the map.
+            self.per_instrument_to_shared_queue_map[q] = found[q]
             self._subscribe(q)
         if new_queues:
             logging.info("Subscribed to new per-instrument queues: %s", new_queues)
-        current_queues = sorted(self.per_instrument_queues)
-        if current_queues != self._logged_queues:
-            logging.info("Per-instrument queues: %s", current_queues)
-            self._logged_queues = current_queues
 
     def _disconnect(self):
         """
@@ -315,7 +314,7 @@ class Consumer:
 
                 if (
                     self._queue_lister is not None
-                    and time.time() - self._last_discovery > self.config.queue_discovery_interval
+                    and time.time() - self._last_discovery > self.config.queue_discovery_interval_sec
                 ):
                     self.discover_queues()
 

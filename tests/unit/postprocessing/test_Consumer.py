@@ -74,7 +74,7 @@ class TestPerInstrumentConfiguration:
     def test_defaults(self, make_config):
         conf = make_config()
         assert conf.per_instrument_queues is False
-        assert conf.queue_discovery_interval == 60.0
+        assert conf.queue_discovery_interval_sec == 60.0
         assert conf.jolokia_urls == ["http://broker1:8161/console/jolokia", "http://broker2:8161/console/jolokia"]
         assert (conf.jolokia_user, conf.jolokia_pwd) == ("user", "secret")
 
@@ -107,7 +107,9 @@ class TestConsumer:
         broker_queues.extend(["REDUCTION.CG2.DATA_READY", "REDUCTION.HIMEM.CG2.DATA_READY"])
         consumer.discover_queues()
         assert subscribed(connection) == SHARED_QUEUES + ["/queue/REDUCTION.CG2.DATA_READY"]
-        assert consumer.per_instrument_queues == {"/queue/REDUCTION.CG2.DATA_READY": "/queue/REDUCTION.DATA_READY"}
+        assert consumer.per_instrument_to_shared_queue_map == {
+            "/queue/REDUCTION.CG2.DATA_READY": "/queue/REDUCTION.DATA_READY"
+        }
 
         # only the new instrument's queues get subscribed
         connection.subscribe.reset_mock()
@@ -117,7 +119,7 @@ class TestConsumer:
             "/queue/REDUCTION.EQSANS.DATA_READY",
             "/queue/REDUCTION_CATALOG.EQSANS.DATA_READY",
         ]
-        assert consumer.per_instrument_queues["/queue/REDUCTION_CATALOG.EQSANS.DATA_READY"] == (
+        assert consumer.per_instrument_to_shared_queue_map["/queue/REDUCTION_CATALOG.EQSANS.DATA_READY"] == (
             "/queue/REDUCTION_CATALOG.DATA_READY"
         )
 
@@ -126,23 +128,22 @@ class TestConsumer:
         caplog.clear()
         consumer.discover_queues()
         connection.subscribe.assert_not_called()
-        assert "Per-instrument queues" not in caplog.text
+        assert "per-instrument" not in caplog.text
 
-    def test_discovery_logs_list(self, make_config, connection, broker_queues, caplog):
+    def test_discovery_logs_new_queues(self, make_config, connection, broker_queues, caplog):
         caplog.set_level(logging.INFO)
         consumer = Consumer(make_config(per_instrument_queues=True))
         consumer.connect()
         consumer.discover_queues()
-        assert "Per-instrument queues: []" in caplog.text
+        assert "per-instrument" not in caplog.text
         broker_queues.append("REDUCTION.CG2.DATA_READY")
         consumer.discover_queues()
         assert "Subscribed to new per-instrument queues: ['/queue/REDUCTION.CG2.DATA_READY']" in caplog.text
-        assert "Per-instrument queues: ['/queue/REDUCTION.CG2.DATA_READY']" in caplog.text
 
     def test_discovery_failure_keeps_subscriptions(self, make_config, connection, mocker, caplog):
         consumer = Consumer(make_config(per_instrument_queues=True))
         consumer.connect()
-        consumer.per_instrument_queues["/queue/REDUCTION.CG2.DATA_READY"] = "/queue/REDUCTION.DATA_READY"
+        consumer.per_instrument_to_shared_queue_map["/queue/REDUCTION.CG2.DATA_READY"] = "/queue/REDUCTION.DATA_READY"
         mocker.patch(
             "postprocessing.Consumer.JolokiaQueueLister.queue_names", side_effect=RuntimeError("broker unreachable")
         )
@@ -150,7 +151,9 @@ class TestConsumer:
         consumer.discover_queues()
         connection.unsubscribe.assert_not_called()
         connection.subscribe.assert_not_called()
-        assert consumer.per_instrument_queues == {"/queue/REDUCTION.CG2.DATA_READY": "/queue/REDUCTION.DATA_READY"}
+        assert consumer.per_instrument_to_shared_queue_map == {
+            "/queue/REDUCTION.CG2.DATA_READY": "/queue/REDUCTION.DATA_READY"
+        }
         assert "discovery failed, keeping 1 subscriptions: broker unreachable" in caplog.text
 
     def test_resubscribe_after_reconnect(self, make_config, connection, broker_queues):
@@ -165,7 +168,7 @@ class TestConsumer:
         assert subscribed(connection) == SHARED_QUEUES + ["/queue/REDUCTION.CG2.DATA_READY"]
 
     def test_discovery_interval(self, make_config, connection, mocker):
-        consumer = Consumer(make_config(per_instrument_queues=True, queue_discovery_interval=30))
+        consumer = Consumer(make_config(per_instrument_queues=True, queue_discovery_interval_sec=30))
         discover = mocker.patch.object(consumer, "discover_queues")
         connection.is_connected.return_value = True
         consumer._connection = connection
@@ -197,12 +200,12 @@ class TestListener:
     def test_queue_passed_to_post_process_admin(self, make_config, mocker, destination, expected_queue):
         popen = mocker.patch("postprocessing.Consumer.subprocess.Popen")
         popen.return_value.stdout.readlines.return_value = []
-        per_instrument_queues = {
+        per_instrument_to_shared_queue_map = {
             "/queue/REDUCTION.CG2.DATA_READY": "/queue/REDUCTION.DATA_READY",
             "/queue/REDUCTION_CATALOG.CG2.DATA_READY": "/queue/REDUCTION_CATALOG.DATA_READY",
         }
         conn = mocker.Mock()
-        listener = Listener(make_config(), conn, per_instrument_queues)
+        listener = Listener(make_config(), conn, per_instrument_to_shared_queue_map)
         frame = mocker.Mock(
             headers={"destination": destination, "subscription": destination, "message-id": "1"},
             body=json.dumps({"instrument": "CG2", "run_number": "1"}),
