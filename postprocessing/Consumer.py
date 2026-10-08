@@ -16,16 +16,22 @@ import os
 import signal
 import stomp
 
+from postprocessing.queue_discovery import JolokiaQueueLister, find_per_instrument_queues
+
 HEARTBEAT_DELAY = 30
 
 
 class Listener(stomp.ConnectionListener):
-    def __init__(self, config, connection):
+    def __init__(self, config, connection, per_instrument_to_shared_queue_map=None):
         super().__init__()
         self.config = config
         self.conn = connection
         self.procList = []
         self.instrument_jobs = {}
+        # Shared with the Consumer, which adds to it as queues are discovered
+        self.per_instrument_to_shared_queue_map = (
+            per_instrument_to_shared_queue_map if per_instrument_to_shared_queue_map is not None else {}
+        )
 
     def on_message(self, frame):
         """
@@ -91,10 +97,11 @@ class Listener(stomp.ConnectionListener):
             post_proc_script = os.path.join(self.config.python_dir, self.config.task_script)
             command_args = [self.config.start_script, post_proc_script]
 
-            # Format the queue name argument
+            # Format the queue name argument. PostProcessAdmin expects the processor's input queue,
+            # not the per-instrument queue.
             if self.config.task_script_queue_arg is not None:
                 command_args.append(self.config.task_script_queue_arg)
-            command_args.append(destination)
+            command_args.append(self.per_instrument_to_shared_queue_map.get(headers["subscription"], destination))
 
             # Format the data argument
             if self.config.task_script_data_arg is not None:
@@ -195,6 +202,14 @@ class Consumer:
         self._connection = None
         self._exit = False
 
+        # Per-instrument queue -> input queue of its processor. Queues are only added, never
+        # removed, since they stay on the broker.
+        self.per_instrument_to_shared_queue_map = {}
+        self._queue_lister = None
+        self._last_discovery = 0
+        if config.per_instrument_queues:
+            self._queue_lister = JolokiaQueueLister(config.jolokia_urls, config.jolokia_user, config.jolokia_pwd)
+
         # Signals registered for systemd
         signal.signal(signal.SIGTERM, self.exit_gracefully)
         signal.signal(signal.SIGINT, self.exit_gracefully)
@@ -214,7 +229,7 @@ class Consumer:
         """
         conn = stomp.Connection(host_and_ports=self.config.brokers, keepalive=True)
 
-        listener = Listener(self.config, conn)
+        listener = Listener(self.config, conn, self.per_instrument_to_shared_queue_map)
 
         conn.set_listener("postprocessing", listener)
         conn.connect(self.config.amq_user, self.config.amq_pwd, wait=True)
@@ -233,13 +248,46 @@ class Consumer:
             if self.config.heartbeat_ping not in self.config.queues:
                 self.config.queues.append(self.config.heartbeat_ping)
 
-        for q in self.config.queues:
-            # set prefetchSize to 0 to disable prefetching and force consumer to poll for messages
-            # prefetching may cause issues with load balancing and dropped messages if the performance varies
-            # between consumers
-            # See https://stackoverflow.com/questions/76653908
-            # https://activemq.apache.org/components/classic/documentation/what-is-the-prefetch-limit-for
-            self._connection.subscribe(destination=q, id=q, ack="client", headers={"activemq.prefetchSize": 0})
+        # Includes the per-instrument queues found so far, so they're restored after a reconnect
+        for q in self.config.queues + sorted(self.per_instrument_to_shared_queue_map):
+            self._subscribe(q)
+
+    def _subscribe(self, queue):
+        """
+        Subscribe to a queue
+        """
+        # set prefetchSize to 0 to disable prefetching and force consumer to poll for messages
+        # prefetching may cause issues with load balancing and dropped messages if the performance varies
+        # between consumers
+        # See https://stackoverflow.com/questions/76653908
+        # https://activemq.apache.org/components/classic/documentation/what-is-the-prefetch-limit-for
+        # STOMP has no polling, so Artemis treats a prefetch of 0 as 1: each subscription gets at
+        # most one unacked message at a time. That makes the broker take turns between our
+        # subscriptions, but a busy consumer can still hold one waiting message per subscription.
+        self._connection.subscribe(destination=queue, id=queue, ack="client", headers={"activemq.prefetchSize": 0})
+
+    def discover_queues(self):
+        """
+        Subscribe to any new per-instrument queues on the broker
+        """
+        self._last_discovery = time.time()
+        try:
+            found = find_per_instrument_queues(self._queue_lister.queue_names(), self.config.queues)
+        except Exception:
+            logging.error(
+                "Per-instrument queue discovery failed, keeping %s subscriptions: %s",
+                len(self.per_instrument_to_shared_queue_map),
+                sys.exc_info()[1],
+            )
+            return
+        new_queues = sorted(set(found) - set(self.per_instrument_to_shared_queue_map))
+        for q in new_queues:
+            # Map the queue before subscribing so the first message can be routed. If subscribing
+            # fails, the connection is gone and connect() resubscribes everything in the map.
+            self.per_instrument_to_shared_queue_map[q] = found[q]
+            self._subscribe(q)
+        if new_queues:
+            logging.info("Subscribed to new per-instrument queues: %s", new_queues)
 
     def _disconnect(self):
         """
@@ -263,6 +311,12 @@ class Consumer:
             try:
                 if self._connection is None or self._connection.is_connected() is False:
                     self.connect()
+
+                if (
+                    self._queue_lister is not None
+                    and time.time() - self._last_discovery > self.config.queue_discovery_interval_sec
+                ):
+                    self.discover_queues()
 
                 try:
                     if time.time() - last_heartbeat > HEARTBEAT_DELAY:

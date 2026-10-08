@@ -41,6 +41,36 @@ subscribes to the required queues, as described in [Tasks and queues](#tasks-and
 | `"heart_beat"` | Topic the agent will send heartbeats to                                                                     | `/topic/SNS.COMMON.STATUS.AUTOREDUCE.0` |
 | `"heartbeat_ping"` | Topic the agent will subscribe to for ping requests                                                         | `/topic/SNS.COMMON.STATUS.PING` |
 
+### Per-instrument queues
+
+The workflow manager can route each instrument's runs to its own queue, so a flood of runs from one
+instrument doesn't hold up the others. Three queues are split this way:
+
+| Shared queue | Per-instrument queue |
+| --- | --- |
+| `REDUCTION.DATA_READY` | `REDUCTION.<INSTRUMENT>.DATA_READY` |
+| `REDUCTION.HIMEM.DATA_READY` | `REDUCTION.HIMEM.<INSTRUMENT>.DATA_READY` |
+| `REDUCTION_CATALOG.DATA_READY` | `REDUCTION_CATALOG.<INSTRUMENT>.DATA_READY` |
+
+With `"per_instrument_queues"` on, the agent checks the broker's management API (Jolokia) on an
+interval and subscribes to each per-instrument queue for the processors it runs, so new instruments
+are picked up without a restart. Messages are passed to `PostProcessAdmin` with the shared queue name,
+so they go to the same processor. The shared queues stay subscribed either way.
+
+We use one subscription per queue with prefetching limited to one message per subscription, which
+makes the broker take turns between the queues. A wildcard subscription like `REDUCTION.*.DATA_READY` doesn't work: it merges everything back
+into one queue in arrival order and leaves a copy of every message in the per-instrument queue.
+
+If the broker can't be reached, the agent logs the error and keeps its current subscriptions.
+
+| Configuration parameter | Description | Default value |
+| ----------------------- | --- | ------------- |
+| `"per_instrument_queues"` | Discover and subscribe to per-instrument queues | `false` |
+| `"queue_discovery_interval_sec"` | Seconds between two queue discoveries | `60` |
+| `"jolokia_urls"` | Jolokia URLs of the brokers, tried in order | `http://<broker host>:8161/console/jolokia` for each of `"brokers"` |
+| `"jolokia_user"` | User with a management role on the broker | `"amq_user"` |
+| `"jolokia_pwd"` | Password of `"jolokia_user"` | `"amq_pwd"` |
+
 ## Consuming a message
 
 When a message is published to on one of the queues:
