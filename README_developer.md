@@ -44,12 +44,13 @@ subscribes to the required queues, as described in [Tasks and queues](#tasks-and
 ### Per-instrument queues
 
 The workflow manager can route each instrument's runs to its own queue, so a flood of runs from one
-instrument doesn't hold up the others. Three queues are split this way:
+instrument doesn't hold up the others. Four queues are split this way:
 
 | Shared queue | Per-instrument queue |
 | --- | --- |
 | `REDUCTION.DATA_READY` | `REDUCTION.<INSTRUMENT>.DATA_READY` |
 | `REDUCTION.HIMEM.DATA_READY` | `REDUCTION.HIMEM.<INSTRUMENT>.DATA_READY` |
+| `REDUCTION.EXPRESS.DATA_READY` | `REDUCTION.EXPRESS.<INSTRUMENT>.DATA_READY` |
 | `REDUCTION_CATALOG.DATA_READY` | `REDUCTION_CATALOG.<INSTRUMENT>.DATA_READY` |
 
 With `"per_instrument_queues"` on, the agent checks the broker's management API (Jolokia) on an
@@ -110,6 +111,18 @@ create reduction script, catalog raw data and catalog reduced data.
 
 ### Reduce data
 
+The same reduction can be read from three queues, each with its own processor class, so that
+separate agents can serve them:
+
+| Processor | Queue | Purpose |
+| --- | --- | --- |
+| `reduction_processor.ReductionProcessor` | `REDUCTION.DATA_READY` | Regular reduction |
+| `reduction_processor.ReductionProcessorHighMemory` | `REDUCTION.HIMEM.DATA_READY` | Reduction on a node with more memory |
+| `reduction_processor.ReductionProcessorExpress` | `REDUCTION.EXPRESS.DATA_READY` | Fast lane for instruments that temporarily need priority, served by a dedicated agent |
+
+The workflow manager decides which queue a run goes to. An agent that should serve only one of
+them lists only that processor in `"processors"`.
+
 #### Related configuration parameters
 
 | Configuration parameter | Description | Default value |
@@ -130,7 +143,7 @@ Queue name: `REDUCTION.DATA_READY`.
       "instrument": "EQSANS",
       "ipts": "IPTS-10674",
       "facility": "SNS",
-      "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs"
+      "data_file": "/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30892.nxs.h5"
     }
 
 ### Create reduction script

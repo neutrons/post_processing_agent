@@ -353,7 +353,7 @@ def test_calvera():
         "instrument": "EQSANS",
         "ipts": "IPTS-10674",
         "facility": "SNS",
-        "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
+        "data_file": "/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30892.nxs.h5",
     }
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
@@ -396,7 +396,7 @@ def test_calvera_reduced():
         "instrument": "EQSANS",
         "ipts": "IPTS-10674",
         "facility": "SNS",
-        "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
+        "data_file": "/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30892.nxs.h5",
     }
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
@@ -438,7 +438,7 @@ def test_intersect():
         "instrument": "EQSANS",
         "ipts": "IPTS-10674",
         "facility": "SNS",
-        "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
+        "data_file": "/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30892.nxs.h5",
     }
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
@@ -481,7 +481,7 @@ def test_intersect_reduced():
         "instrument": "EQSANS",
         "ipts": "IPTS-10674",
         "facility": "SNS",
-        "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
+        "data_file": "/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30892.nxs.h5",
     }
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])

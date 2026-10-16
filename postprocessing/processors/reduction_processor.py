@@ -104,3 +104,13 @@ class ReductionProcessor(BaseProcessor):
 
 class ReductionProcessorHighMemory(ReductionProcessor):
     _message_queue = "/queue/REDUCTION.HIMEM.DATA_READY"
+
+
+class ReductionProcessorExpress(ReductionProcessor):
+    """
+    Same reduction as ReductionProcessor, read from a separate queue so that an agent
+    dedicated to this queue gives selected instruments a fast lane, for example during
+    a high-visibility experiment, while the regular queue carries the rest.
+    """
+
+    _message_queue = "/queue/REDUCTION.EXPRESS.DATA_READY"
