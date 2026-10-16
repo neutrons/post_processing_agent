@@ -46,7 +46,7 @@ def test_disabled_reduction():
         "instrument": "INSTRUMENT",
         "ipts": "IPTS-10674",
         "facility": "SNS",
-        "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
+        "data_file": "/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30892.nxs.h5",
     }
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
@@ -85,7 +85,7 @@ def test_reduction():
         "instrument": "EQSANS",
         "ipts": "IPTS-10674",
         "facility": "SNS",
-        "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
+        "data_file": "/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30892.nxs.h5",
     }
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
@@ -119,12 +119,12 @@ def test_reduction():
 
     # we can also check that the reduction did run by checking the reduction_log
     reduction_log = docker_exec_and_cat(
-        "/SNS/EQSANS/IPTS-10674/shared/autoreduce/reduction_log/EQSANS_30892_event.nxs.log"
+        "/SNS/EQSANS/IPTS-10674/shared/autoreduce/reduction_log/EQSANS_30892.nxs.h5.log"
     )
 
     assert (
         reduction_log
-        == "['/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs', '/SNS/EQSANS/IPTS-10674/shared/autoreduce/']\n"
+        == "['/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30892.nxs.h5', '/SNS/EQSANS/IPTS-10674/shared/autoreduce/']\n"
     )
 
 
@@ -174,7 +174,7 @@ def test_reduction_high_memory():
         "instrument": "EQSANS",
         "ipts": "IPTS-10674",
         "facility": "SNS",
-        "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30893_event.nxs",
+        "data_file": "/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30893.nxs.h5",
     }
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
@@ -208,12 +208,12 @@ def test_reduction_high_memory():
 
     # we can also check that the reduction did run by checking the reduction_log
     reduction_log = docker_exec_and_cat(
-        "/SNS/EQSANS/IPTS-10674/shared/autoreduce/reduction_log/EQSANS_30893_event.nxs.log"
+        "/SNS/EQSANS/IPTS-10674/shared/autoreduce/reduction_log/EQSANS_30893.nxs.h5.log"
     )
 
     assert (
         reduction_log
-        == "['/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30893_event.nxs', '/SNS/EQSANS/IPTS-10674/shared/autoreduce/']\n"
+        == "['/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30893.nxs.h5', '/SNS/EQSANS/IPTS-10674/shared/autoreduce/']\n"
     )
 
 
@@ -223,7 +223,7 @@ def test_reduction_express():
         "instrument": "EQSANS",
         "ipts": "IPTS-10674",
         "facility": "SNS",
-        "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30894_event.nxs",
+        "data_file": "/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30894.nxs.h5",
     }
 
     conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
@@ -257,10 +257,10 @@ def test_reduction_express():
 
     # we can also check that the reduction did run by checking the reduction_log
     reduction_log = docker_exec_and_cat(
-        "/SNS/EQSANS/IPTS-10674/shared/autoreduce/reduction_log/EQSANS_30894_event.nxs.log"
+        "/SNS/EQSANS/IPTS-10674/shared/autoreduce/reduction_log/EQSANS_30894.nxs.h5.log"
     )
 
     assert (
         reduction_log
-        == "['/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30894_event.nxs', '/SNS/EQSANS/IPTS-10674/shared/autoreduce/']\n"
+        == "['/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30894.nxs.h5', '/SNS/EQSANS/IPTS-10674/shared/autoreduce/']\n"
     )

@@ -22,10 +22,11 @@ ENV PYTHONPATH /opt/postprocessing
 RUN echo -e "[run]\nsource=postprocessing\nparallel=True\nrelative_files=True" > /opt/postprocessing/.coveragerc
 RUN mkdir -p /opt/postprocessing/log && \
     \
-    mkdir -p /SNS/EQSANS/IPTS-10674/0/30892/NeXus && \
+    mkdir -p /SNS/EQSANS/IPTS-10674/nexus && \
     mkdir -p /SNS/EQSANS/IPTS-10674/shared/autoreduce && \
-    touch /SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs && \
-    touch /SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30893_event.nxs && \
+    touch /SNS/EQSANS/IPTS-10674/nexus/EQSANS_30892.nxs.h5 && \
+    touch /SNS/EQSANS/IPTS-10674/nexus/EQSANS_30893.nxs.h5 && \
+    touch /SNS/EQSANS/IPTS-10674/nexus/EQSANS_30894.nxs.h5 && \
     mkdir -p /SNS/EQSANS/shared/autoreduce && \
     echo "import sys;print(sys.argv[1:])" > /SNS/EQSANS/shared/autoreduce/reduce_EQSANS.py && \
     \

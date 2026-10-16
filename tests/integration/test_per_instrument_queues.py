@@ -19,7 +19,7 @@ EQSANS_RUN = {
     "instrument": "EQSANS",
     "ipts": "IPTS-10674",
     "facility": "SNS",
-    "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30892_event.nxs",
+    "data_file": "/SNS/EQSANS/IPTS-10674/nexus/EQSANS_30892.nxs.h5",
 }
 
 
