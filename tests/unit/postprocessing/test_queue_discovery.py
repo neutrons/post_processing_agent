@@ -12,6 +12,8 @@ BROKER_QUEUES = [
     "REDUCTION.BL_3.DATA_READY",
     "REDUCTION.HIMEM.DATA_READY",
     "REDUCTION.HIMEM.CG2.DATA_READY",
+    "REDUCTION.EXPRESS.DATA_READY",
+    "REDUCTION.EXPRESS.CG3.DATA_READY",
     "REDUCTION.TESTPROCESSOR.DATA_READY",
     "REDUCTION_CATALOG.DATA_READY",
     "REDUCTION_CATALOG.CG2.DATA_READY",
@@ -37,6 +39,10 @@ class TestFindPerInstrumentQueues:
         found = find_per_instrument_queues(BROKER_QUEUES, ["/queue/REDUCTION.HIMEM.DATA_READY"])
         assert found == {"/queue/REDUCTION.HIMEM.CG2.DATA_READY": "/queue/REDUCTION.HIMEM.DATA_READY"}
 
+    def test_express_reduction(self):
+        found = find_per_instrument_queues(BROKER_QUEUES, ["/queue/REDUCTION.EXPRESS.DATA_READY"])
+        assert found == {"/queue/REDUCTION.EXPRESS.CG3.DATA_READY": "/queue/REDUCTION.EXPRESS.DATA_READY"}
+
     def test_reduction_cataloging(self):
         found = find_per_instrument_queues(BROKER_QUEUES, ["/queue/REDUCTION_CATALOG.DATA_READY"])
         assert found == {"/queue/REDUCTION_CATALOG.CG2.DATA_READY": "/queue/REDUCTION_CATALOG.DATA_READY"}
@@ -56,16 +62,19 @@ class TestFindPerInstrumentQueues:
             "/queue/REDUCTION_CATALOG.DATA_READY",
             "/queue/REDUCTION.DATA_READY",
             "/queue/REDUCTION.HIMEM.DATA_READY",
+            "/queue/REDUCTION.EXPRESS.DATA_READY",
         ]
         found = find_per_instrument_queues(BROKER_QUEUES, input_queues)
         assert sorted(found) == [
             "/queue/REDUCTION.BL_3.DATA_READY",
             "/queue/REDUCTION.CG2.DATA_READY",
             "/queue/REDUCTION.EQSANS.DATA_READY",
+            "/queue/REDUCTION.EXPRESS.CG3.DATA_READY",
             "/queue/REDUCTION.HIMEM.CG2.DATA_READY",
             "/queue/REDUCTION_CATALOG.CG2.DATA_READY",
         ]
         assert found["/queue/REDUCTION.HIMEM.CG2.DATA_READY"] == "/queue/REDUCTION.HIMEM.DATA_READY"
+        assert found["/queue/REDUCTION.EXPRESS.CG3.DATA_READY"] == "/queue/REDUCTION.EXPRESS.DATA_READY"
 
 
 def jolokia_reply(mocker, body, status_code=200):

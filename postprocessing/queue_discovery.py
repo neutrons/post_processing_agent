@@ -13,11 +13,12 @@ import requests
 PER_INSTRUMENT_QUEUE_PATTERNS = {
     "/queue/REDUCTION.DATA_READY": re.compile(r"^REDUCTION\.(?P<instrument>[A-Z0-9_]+)\.DATA_READY$"),
     "/queue/REDUCTION.HIMEM.DATA_READY": re.compile(r"^REDUCTION\.HIMEM\.(?P<instrument>[A-Z0-9_]+)\.DATA_READY$"),
+    "/queue/REDUCTION.EXPRESS.DATA_READY": re.compile(r"^REDUCTION\.EXPRESS\.(?P<instrument>[A-Z0-9_]+)\.DATA_READY$"),
     "/queue/REDUCTION_CATALOG.DATA_READY": re.compile(r"^REDUCTION_CATALOG\.(?P<instrument>[A-Z0-9_]+)\.DATA_READY$"),
 }
 
 # Shared queues that also match REDUCTION.<X>.DATA_READY
-NOT_INSTRUMENTS = {"HIMEM", "TESTPROCESSOR"}
+NOT_INSTRUMENTS = {"HIMEM", "EXPRESS", "TESTPROCESSOR"}
 
 
 def find_per_instrument_queues(queue_names, input_queues):

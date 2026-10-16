@@ -215,3 +215,52 @@ def test_reduction_high_memory():
         reduction_log
         == "['/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30893_event.nxs', '/SNS/EQSANS/IPTS-10674/shared/autoreduce/']\n"
     )
+
+
+def test_reduction_express():
+    message = {
+        "run_number": "30894",
+        "instrument": "EQSANS",
+        "ipts": "IPTS-10674",
+        "facility": "SNS",
+        "data_file": "/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30894_event.nxs",
+    }
+
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+
+    listener = stomp.listener.TestListener()
+    conn.set_listener("", listener)
+
+    try:
+        conn.connect("icat", "icat")
+    except stomp.exception.ConnectFailedException:
+        pytest.skip("Requires activemq running")
+
+    # expect a reduction complete
+    conn.subscribe("/queue/REDUCTION.COMPLETE", id="123", ack="auto")
+
+    # send data ready
+    conn.send("/queue/REDUCTION.EXPRESS.DATA_READY", json.dumps(message).encode())
+
+    listener.wait_for_message()
+
+    conn.disconnect()
+
+    header, body = listener.get_latest_message()
+
+    msg = json.loads(body)
+    assert msg["run_number"] == message["run_number"]
+    assert msg["instrument"] == message["instrument"]
+    assert msg["ipts"] == message["ipts"]
+    assert msg["facility"] == message["facility"]
+    assert msg["data_file"] == message["data_file"]
+
+    # we can also check that the reduction did run by checking the reduction_log
+    reduction_log = docker_exec_and_cat(
+        "/SNS/EQSANS/IPTS-10674/shared/autoreduce/reduction_log/EQSANS_30894_event.nxs.log"
+    )
+
+    assert (
+        reduction_log
+        == "['/SNS/EQSANS/IPTS-10674/0/30892/NeXus/EQSANS_30894_event.nxs', '/SNS/EQSANS/IPTS-10674/shared/autoreduce/']\n"
+    )

@@ -92,6 +92,16 @@ def test_reduction_high_memory(broker):
     check_agent_log(queue, instrument, "/queue/REDUCTION.HIMEM.DATA_READY")
 
 
+def test_reduction_express(broker):
+    conn, collector = broker
+    instrument = unique_instrument()
+    queue = f"/queue/REDUCTION.EXPRESS.{instrument}.DATA_READY"
+    conn.subscribe("/queue/REDUCTION.DISABLED", id="disabled", ack="auto")
+    send(conn, queue, dict(EQSANS_RUN, instrument=instrument))
+    collector.wait_for(lambda msgs: any(m["instrument"] == instrument for m in msgs))
+    check_agent_log(queue, instrument, "/queue/REDUCTION.EXPRESS.DATA_READY")
+
+
 def test_reduction_catalog(broker):
     conn, collector = broker
     message = {
