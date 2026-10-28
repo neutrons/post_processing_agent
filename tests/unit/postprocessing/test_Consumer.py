@@ -86,6 +86,24 @@ class TestPerInstrumentConfiguration:
         assert "Per-instrument queues: ENABLED, discovered every 60.0 s" in log_contents
 
 
+class TestConsumerProtocol:
+    def test_default_is_stomp(self, make_config):
+        conf = make_config()
+        assert conf.consumer_protocol == "stomp"
+        assert conf.amqp_brokers == [("broker1", 5672), ("broker2", 5672)]
+
+    def test_amqp(self, make_config, test_logger):
+        conf = make_config(consumer_protocol="AMQP", amqp_brokers=[["broker1", 5673]])
+        assert conf.consumer_protocol == "amqp"
+        assert conf.amqp_brokers == [("broker1", 5673)]
+        conf.log_configuration(logger=test_logger.logger)
+        assert "Consumer protocol: AMQP" in open(test_logger.log_file).read()
+
+    def test_unknown(self, make_config):
+        with pytest.raises(RuntimeError, match="consumer_protocol must be stomp or amqp, not 'openwire'"):
+            make_config(consumer_protocol="openwire")
+
+
 class TestConsumer:
     def test_flag_off(self, make_config, connection, mocker):
         consumer = Consumer(make_config())
