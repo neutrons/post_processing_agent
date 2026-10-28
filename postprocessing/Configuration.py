@@ -36,6 +36,10 @@ class Configuration:
         # ActiveMQ broker information
         self.failover_uri = config["failover_uri"]
         self.brokers = [(host, port) for host, port in config["brokers"]]
+        # Same brokers on the AMQP 1.0 port, for the pull consumer
+        self.amqp_brokers = [
+            (host, port) for host, port in config.get("amqp_brokers", [(host, 5672) for host, _ in self.brokers])
+        ]
         self.sw_dir = config["sw_dir"] if "sw_dir" in config else "/opt/postprocessing"
         self.postprocess_error = config["postprocess_error"]
         # Reduction AMQ queues
@@ -188,6 +192,12 @@ class StreamToLogger:
         sys.stdout.write(buf)
         for line in buf.rstrip().splitlines():
             self.logger.log(self.log_level, line.rstrip())
+
+    def flush(self):
+        """
+        Python flushes stderr on exit, and exits with code 120 if it can't
+        """
+        sys.stdout.flush()
 
 
 def initialize_logging(log_file, level=logging.INFO, preemptive_cleanup=False):

@@ -12,6 +12,7 @@ services:
     ports:
       - 8161:8161
       - 61613:61613
+      - 5672:5672
     volumes:
       - ./config/artemis:/var/lib/artemis-instance/etc-override
 

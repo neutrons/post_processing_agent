@@ -21,6 +21,24 @@ from postprocessing.queue_discovery import JolokiaQueueLister, find_per_instrume
 HEARTBEAT_DELAY = 30
 
 
+def post_processing_command(config, input_queue, data):
+    """
+    Put together the command that runs PostProcessAdmin for one message
+    @param config: Configuration object
+    @param input_queue: input queue of the processor that should handle the message
+    @param data: message body (JSON string)
+    """
+    post_proc_script = os.path.join(config.python_dir, config.task_script)
+    command_args = [config.start_script, post_proc_script]
+    if config.task_script_queue_arg is not None:
+        command_args.append(config.task_script_queue_arg)
+    command_args.append(input_queue)
+    if config.task_script_data_arg is not None:
+        command_args.append(config.task_script_data_arg)
+    command_args.append(str(data).replace(" ", ""))
+    return command_args
+
+
 class Listener(stomp.ConnectionListener):
     def __init__(self, config, connection, per_instrument_to_shared_queue_map=None):
         super().__init__()
@@ -93,20 +111,9 @@ class Listener(stomp.ConnectionListener):
             raise RuntimeError("Error processing incoming message: contact post-processing expert")
 
         try:
-            # Put together the command to execute, including any optional arguments
-            post_proc_script = os.path.join(self.config.python_dir, self.config.task_script)
-            command_args = [self.config.start_script, post_proc_script]
-
-            # Format the queue name argument. PostProcessAdmin expects the processor's input queue,
-            # not the per-instrument queue.
-            if self.config.task_script_queue_arg is not None:
-                command_args.append(self.config.task_script_queue_arg)
-            command_args.append(self.per_instrument_to_shared_queue_map.get(headers["subscription"], destination))
-
-            # Format the data argument
-            if self.config.task_script_data_arg is not None:
-                command_args.append(self.config.task_script_data_arg)
-            command_args.append(str(data).replace(" ", ""))
+            # PostProcessAdmin expects the processor's input queue, not the per-instrument queue
+            input_queue = self.per_instrument_to_shared_queue_map.get(headers["subscription"], destination)
+            command_args = post_processing_command(self.config, input_queue, data)
 
             logging.warning("Command: %s", str(command_args))
 
