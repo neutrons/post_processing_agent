@@ -7,35 +7,34 @@ and runs the job in a worker thread. That keeps runs spread across the autoreduc
 piling up behind a busy one, which STOMP can't do because it always prefetches at least one
 message per subscription.
 
-Like the STOMP consumer, each agent runs one job at a time.
+Like the STOMP consumer, each agent runs one job at a time. Since the job runs in its own
+thread, heartbeats and ping replies keep going while it runs.
 
 @copyright: 2026 Oak Ridge National Laboratory
 """
 
+import json
 import logging
 import os
 import signal
 import socket
 import subprocess
 import threading
+import time
 
-from proton import symbol
+from proton import Message, symbol
 from proton.handlers import MessagingHandler
-from proton.reactor import ApplicationEvent, Container, EventInjector, ReceiverOption
+from proton.reactor import ApplicationEvent, Container, EventInjector, ReceiverOption, SenderOption
 
-from postprocessing.Consumer import post_processing_command
+from postprocessing.Consumer import HEARTBEAT_DELAY, heartbeat_message, post_processing_command
+from postprocessing.queue_discovery import JolokiaQueueLister, find_per_instrument_queues
 
 # How long to wait after finding every queue empty before asking them all again
 IDLE_RETRY_SEC = 1.0
-
-
-class QueueSource(ReceiverOption):
-    """
-    Tell Artemis the address is a queue (anycast) and not a topic
-    """
-
-    def apply(self, receiver):
-        receiver.source.capabilities.put_object(symbol("queue"))
+# Pings don't take the job slot, so their link keeps this much credit
+PING_CREDIT = 10
+# How long to wait before opening a link again after the broker closed it
+RELINK_DELAY_SEC = 60.0
 
 
 def amqp_address(destination):
@@ -43,6 +42,49 @@ def amqp_address(destination):
     Turn a STOMP destination like /queue/REDUCTION.DATA_READY into the AMQP address
     """
     return destination.split("/", 2)[-1] if destination.startswith("/") else destination
+
+
+def capability(destination):
+    """
+    Artemis routing for a STOMP destination: topics are multicast, everything else anycast
+    """
+    return "topic" if destination.startswith("/topic/") else "queue"
+
+
+class SourceCapability(ReceiverOption):
+    """
+    Tell Artemis whether we're reading from a queue or a topic
+    """
+
+    def __init__(self, destination):
+        self.capability = capability(destination)
+
+    def apply(self, receiver):
+        receiver.source.capabilities.put_object(symbol(self.capability))
+
+
+class TargetCapability(SenderOption):
+    """
+    Tell Artemis whether we're sending to a queue or a topic
+    """
+
+    def __init__(self, destination):
+        self.capability = capability(destination)
+
+    def apply(self, sender):
+        sender.target.capabilities.put_object(symbol(self.capability))
+
+
+class Timer:
+    """
+    Calls a function when a container timer goes off, so each timer can have its own handler
+    """
+
+    def __init__(self, callback):
+        self.callback = callback
+
+    def on_timer_task(self, event):
+        self.callback()
 
 
 class AmqpConsumer(MessagingHandler):
@@ -68,8 +110,19 @@ class AmqpConsumer(MessagingHandler):
         self.busy = False
         self._exit = False
 
+        self.ping_receiver = None
+        # Address -> sender, and address -> latest message waiting for credit. Only the latest
+        # is kept, so a long outage doesn't leave a pile of stale heartbeats to send.
+        self.senders = {}
+        self.outbox = {}
+
         for queue in config.queues:
-            self.input_queues[queue] = queue
+            if queue != config.heartbeat_ping:
+                self.input_queues[queue] = queue
+
+        self._queue_lister = None
+        if config.per_instrument_queues:
+            self._queue_lister = JolokiaQueueLister(config.jolokia_urls, config.jolokia_user, config.jolokia_pwd)
 
         # Signals registered for systemd
         signal.signal(signal.SIGTERM, self.exit_gracefully)
@@ -96,17 +149,23 @@ class AmqpConsumer(MessagingHandler):
         @param queue: queue destination, like /queue/REDUCTION.CG2.DATA_READY
         @param input_queue: input queue of the processor for that queue, if different
         """
+        if queue in self.input_queues:
+            return
         self.input_queues[queue] = input_queue or queue
         if self.connection is not None:
-            self._create_receiver(queue)
+            self.receivers.append((self._create_receiver(queue), queue))
 
-    def _create_receiver(self, queue):
+    def _link_name(self, kind, destination):
         # The link name shows up in the broker console, so make it say who we are
-        name = f"{socket.gethostname()}-{os.getpid()}-{queue}"
-        receiver = self.container.create_receiver(
-            self.connection, amqp_address(queue), name=name, options=QueueSource()
+        return f"{socket.gethostname()}-{os.getpid()}-{kind}-{destination}"
+
+    def _create_receiver(self, destination):
+        return self.container.create_receiver(
+            self.connection,
+            amqp_address(destination),
+            name=self._link_name("receive", destination),
+            options=SourceCapability(destination),
         )
-        self.receivers.append((receiver, queue))
 
     # Connection
 
@@ -123,25 +182,74 @@ class AmqpConsumer(MessagingHandler):
             allowed_mechs="PLAIN",
             allow_insecure_mechs=True,
         )
-        for queue in list(self.input_queues):
-            self._create_receiver(queue)
+        for queue in self.input_queues:
+            self.receivers.append((self._create_receiver(queue), queue))
         logging.info("Pulling from %s", sorted(self.input_queues))
+        self._listen_for_pings()
+        self.send_heartbeat()
+        if self._queue_lister is not None:
+            self.discover_queues()
         if self._exit:
             self._stop()
+
+    def _listen_for_pings(self):
+        if not self._exit:
+            self.ping_receiver = self._create_receiver(self.config.heartbeat_ping)
+
+    def is_ping(self, link):
+        return link is not None and self.ping_receiver is not None and link.name == self.ping_receiver.name
 
     def on_link_opened(self, event):
         if event.receiver is None:
             return
+        if self.is_ping(event.receiver):
+            # Top up rather than add, since this runs again after every reconnect
+            event.receiver.flow(max(0, PING_CREDIT - event.receiver.credit))
+            return
         self.opened.add(event.receiver.name)
         self.next_queue()
 
+    def on_link_error(self, event):
+        # proton's default closes the whole connection, but one bad queue shouldn't stop the others.
+        # proton closes the link next, and on_link_closed cleans up.
+        link = event.link
+        condition = link.remote_condition
+        logging.error(
+            "The broker closed the link for %s: %s",
+            link_address(link),
+            condition.description if condition else "no reason given",
+        )
+
     def on_link_closed(self, event):
-        if event.receiver is not None and event.receiver.name in self.opened and not self._exit:
-            logging.error("The broker closed the link for %s", event.receiver.source.address)
-            self.opened.discard(event.receiver.name)
-            if self.pending is not None and self.pending.name == event.receiver.name:
-                self.pending = None
-                self.next_queue()
+        link = event.link
+        if self._exit or link is None:
+            return
+        if link.is_sender:
+            # Made again on the next send
+            address = link.target.address
+            if address in self.senders and self.senders[address].name == link.name:
+                del self.senders[address]
+                self.outbox.pop(address, None)
+            return
+        if self.is_ping(link):
+            logging.warning("Not listening for pings, trying again in %s s", RELINK_DELAY_SEC)
+            self.container.schedule(RELINK_DELAY_SEC, Timer(self._listen_for_pings))
+            return
+        queue = next((q for r, q in self.receivers if r.name == link.name), None)
+        if queue is None:
+            return
+        self.receivers = [(r, q) for r, q in self.receivers if r.name != link.name]
+        self.opened.discard(link.name)
+        input_queue = self.input_queues.pop(queue)
+        if queue in self.config.queues:
+            logging.warning("Stopped pulling from %s, trying again in %s s", queue, RELINK_DELAY_SEC)
+            self.container.schedule(RELINK_DELAY_SEC, Timer(lambda: self.add_queue(queue, input_queue)))
+        else:
+            # Discovery adds it back if it's still on the broker
+            logging.warning("Stopped pulling from %s", queue)
+        if self.pending is not None and self.pending.name == link.name:
+            self.pending = None
+            self.next_queue()
 
     def on_disconnected(self, event):
         # proton reconnects and reopens the links by itself; start asking again once they're back
@@ -164,7 +272,7 @@ class AmqpConsumer(MessagingHandler):
         if self.empty_in_a_row >= len(self.opened):
             # Every queue was empty: wait a moment before going round again
             self.empty_in_a_row = 0
-            self.container.schedule(IDLE_RETRY_SEC, self)
+            self.container.schedule(IDLE_RETRY_SEC, Timer(self.next_queue))
             return
         # Take the next queue in turn, skipping any whose link isn't open
         for _ in range(len(self.receivers)):
@@ -174,9 +282,6 @@ class AmqpConsumer(MessagingHandler):
                 self.pending = receiver
                 receiver.drain(1)
                 return
-
-    def on_timer_task(self, event):
-        self.next_queue()
 
     def on_link_flow(self, event):
         receiver = event.receiver
@@ -193,14 +298,17 @@ class AmqpConsumer(MessagingHandler):
             self.next_queue()
 
     def on_message(self, event):
+        if self.is_ping(event.receiver):
+            self.accept(event.delivery)
+            event.receiver.flow(1)
+            self.answer_ping(event.message.body)
+            return
         if self.busy or self._exit:
             # Can happen if a drain from before a reconnect delivers late: give it back for another node
             self.release(event.delivery, delivered=False)
             return
         try:
-            # Messages sent over STOMP arrive as binary, which proton hands over as bytes or memoryview
-            body = event.message.body
-            data = bytes(body).decode() if isinstance(body, (bytes, memoryview)) else str(body)
+            data = message_text(event.message.body)
             # proton returns a new link object for each event, so match receivers by name
             queue = next(q for r, q in self.receivers if r.name == event.receiver.name)
         except Exception:
@@ -250,3 +358,90 @@ class AmqpConsumer(MessagingHandler):
             self.connection.close()
         self.injector.close()
         self.container.stop()
+
+    # Heartbeats and pings
+
+    def send(self, destination, body):
+        """
+        Send a message to a topic or queue, as soon as the broker gives us credit
+        """
+        address = amqp_address(destination)
+        if address not in self.senders:
+            self.senders[address] = self.container.create_sender(
+                self.connection,
+                address,
+                name=self._link_name("send", destination),
+                options=TargetCapability(destination),
+            )
+        self.outbox[address] = body
+        self.flush()
+
+    def flush(self):
+        for address in list(self.outbox):
+            sender = self.senders[address]
+            if sender.credit:
+                # STOMP listeners get the creation time as the timestamp header, as for STOMP-sent messages
+                sender.send(Message(body=self.outbox.pop(address), creation_time=time.time()))
+
+    def on_sendable(self, event):
+        self.flush()
+
+    def send_heartbeat(self):
+        if self._exit:
+            return
+        self.send(self.config.heart_beat, heartbeat_message())
+        self.container.schedule(HEARTBEAT_DELAY, Timer(self.send_heartbeat))
+
+    def answer_ping(self, body):
+        """
+        Reply to a ping with a heartbeat, sent wherever the ping asks
+        """
+        try:
+            data = json.loads(message_text(body))
+        except Exception:
+            logging.error("Could not read ping request %s", body)
+            return
+        if isinstance(data, dict) and "reply_to" in data:
+            self.send(data["reply_to"], heartbeat_message(data))
+        else:
+            logging.error("Incomplete ping request %s", str(data))
+
+    # Per-instrument queue discovery
+
+    def discover_queues(self):
+        """
+        Ask the broker for its queues in another thread, since Jolokia can take a while to answer
+        """
+        threading.Thread(target=self._list_queues, daemon=True).start()
+
+    def _list_queues(self):
+        try:
+            names, error = self._queue_lister.queue_names(), None
+        except Exception as e:
+            names, error = [], e
+        if not self._exit:
+            self.injector.trigger(ApplicationEvent("queues_listed", subject=(names, error)))
+
+    def on_queues_listed(self, event):
+        names, error = event.subject
+        self.container.schedule(self.config.queue_discovery_interval_sec, Timer(self.discover_queues))
+        if error is not None:
+            logging.error("Per-instrument queue discovery failed, keeping %s queues: %s", len(self.input_queues), error)
+            return
+        found = find_per_instrument_queues(names, self.config.queues)
+        new_queues = sorted(set(found) - set(self.input_queues))
+        for queue in new_queues:
+            self.add_queue(queue, found[queue])
+        if new_queues:
+            logging.info("Pulling from new per-instrument queues: %s", new_queues)
+
+
+def link_address(link):
+    return link.target.address if link.is_sender else link.source.address
+
+
+def message_text(body):
+    """
+    Messages sent over STOMP arrive as binary, which proton hands over as bytes or memoryview
+    """
+    return bytes(body).decode() if isinstance(body, (bytes, memoryview)) else str(body)
