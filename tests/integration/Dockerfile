@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi9/ubi
 
 RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-RUN dnf install -y python3-requests python3-stomppy python3-pip python3-coverage python3-psutil python-unversioned-command
+RUN dnf install -y python3-requests python3-stomppy python3-qpid-proton cyrus-sasl-plain python3-pip python3-coverage python3-psutil python-unversioned-command
 
 COPY tests/integration/python3-pyoncat-2.1-1.noarch.rpm /tmp/
 RUN dnf install -y /tmp/python3-pyoncat-2.1-1.noarch.rpm
