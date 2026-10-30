@@ -266,7 +266,8 @@ def jolokia_delivering(queues):
 def start_consumers(n, queues, **kw):
     report, ctrl = multiprocessing.Queue(), multiprocessing.Event()
     procs = [
-        multiprocessing.Process(target=run_consumer, args=(f"node{i}", queues(i), report, ctrl), kwargs=kw)
+        # Daemons, so a scenario that fails before stop() doesn't leave the script hanging on exit
+        multiprocessing.Process(target=run_consumer, args=(f"node{i}", queues(i), report, ctrl), kwargs=kw, daemon=True)
         for i in range(n)
     ]
     for p in procs:

@@ -349,7 +349,8 @@ class AmqpConsumer(MessagingHandler):
             logging.warning("Command: %s", str(command_args))
             proc = subprocess.Popen(command_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             for line in proc.stdout:
-                logging.subprocess(line.decode().strip())
+                # A bad byte from the job mustn't end the loop, or the next job starts while this one runs
+                logging.subprocess(line.decode(errors="replace").strip())
             proc.wait()
             logging.warning("end")
         except Exception:

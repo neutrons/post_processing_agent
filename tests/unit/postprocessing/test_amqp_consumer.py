@@ -232,6 +232,15 @@ class TestRunJob:
         logged.assert_called_once_with("reducing")
         assert consumer.injector.trigger.call_args.args[0].type.name == "job_done"
 
+    def test_waits_for_the_job_after_a_bad_byte(self, start, mocker):
+        consumer = start()
+        popen = mocker.patch("postprocessing.amqp_consumer.subprocess.Popen")
+        popen.return_value.stdout = [b"bad \xff byte\n", b"done\n"]
+        logged = mocker.patch("postprocessing.amqp_consumer.logging.subprocess", create=True)
+        consumer._run_job(REDUCTION, "{}")
+        assert [c.args[0] for c in logged.call_args_list] == ["bad � byte", "done"]
+        popen.return_value.wait.assert_called_once()
+
     def test_job_done_after_an_error(self, start, mocker, caplog):
         consumer = start()
         mocker.patch("postprocessing.amqp_consumer.subprocess.Popen", side_effect=OSError("no such file"))
