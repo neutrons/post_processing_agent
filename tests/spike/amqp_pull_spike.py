@@ -256,7 +256,10 @@ def jolokia_delivering(queues):
             {"Content-Type": "application/json", "Origin": "http://localhost", "Authorization": "Basic " + auth},
         )
         reply = json.load(urllib.request.urlopen(req, timeout=5))
-        total += reply.get("value") or 0
+        # Jolokia reports errors in the body with HTTP 200, and a failed read shouldn't count as 0 held
+        if reply.get("status") != 200:
+            raise RuntimeError(f"Jolokia read of {q} failed: {reply.get('error')}")
+        total += reply["value"]
     return total
 
 
