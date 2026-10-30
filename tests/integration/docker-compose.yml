@@ -4,6 +4,8 @@ services:
     build:
       context: ../..
       dockerfile: ./tests/integration/Dockerfile
+      args:
+        CONSUMER_PROTOCOL: ${CONSUMER_PROTOCOL:-stomp}
 
   activemq:
     user: root

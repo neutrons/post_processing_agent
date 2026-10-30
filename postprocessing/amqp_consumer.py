@@ -109,6 +109,7 @@ class AmqpConsumer(MessagingHandler):
         self.pending = None
         self.busy = False
         self._exit = False
+        self.reconnecting = False
 
         self.ping_receiver = None
         # Address -> sender, and address -> latest message waiting for credit. Only the latest
@@ -235,10 +236,13 @@ class AmqpConsumer(MessagingHandler):
             logging.warning("Not listening for pings, trying again in %s s", RELINK_DELAY_SEC)
             self.container.schedule(RELINK_DELAY_SEC, Timer(self._listen_for_pings))
             return
-        queue = next((q for r, q in self.receivers if r.name == link.name), None)
-        if queue is None:
+        index = next((i for i, (r, _) in enumerate(self.receivers) if r.name == link.name), None)
+        if index is None:
             return
-        self.receivers = [(r, q) for r, q in self.receivers if r.name != link.name]
+        _receiver, queue = self.receivers.pop(index)
+        # Keep the rotation on the queue that was next, instead of skipping it
+        if index < self.next_index:
+            self.next_index -= 1
         self.opened.discard(link.name)
         input_queue = self.input_queues.pop(queue)
         if queue in self.config.queues:
@@ -251,11 +255,23 @@ class AmqpConsumer(MessagingHandler):
             self.pending = None
             self.next_queue()
 
+    def on_connection_opened(self, event):
+        if self.reconnecting:
+            logging.info("Reconnected over AMQP")
+            self.reconnecting = False
+
     def on_disconnected(self, event):
-        # proton reconnects and reopens the links by itself; start asking again once they're back
-        logging.warning("Lost the AMQP connection, reconnecting")
+        # proton reconnects and reopens the links by itself; start asking again once they're back.
+        # This runs for every failed attempt too, so only say it once per outage.
+        if not self.reconnecting:
+            logging.warning("Lost the AMQP connection, reconnecting")
+            self.reconnecting = True
         self.opened.clear()
         self.pending = None
+        # This runs once the broker stops sending, but proton only reconnects after a write fails
+        # too, which could be the next heartbeat. Close our side so it reconnects straight away.
+        if event.transport is not None:
+            event.transport.close_head()
 
     def on_transport_error(self, event):
         condition = event.transport.condition
@@ -433,7 +449,8 @@ class AmqpConsumer(MessagingHandler):
         for queue in new_queues:
             self.add_queue(queue, found[queue])
         if new_queues:
-            logging.info("Pulling from new per-instrument queues: %s", new_queues)
+            # Same wording as the STOMP consumer, so searching the logs works for both
+            logging.info("Subscribed to new per-instrument queues: %s", new_queues)
 
 
 def link_address(link):
