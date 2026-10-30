@@ -36,6 +36,14 @@ class Configuration:
         # ActiveMQ broker information
         self.failover_uri = config["failover_uri"]
         self.brokers = [(host, port) for host, port in config["brokers"]]
+        # How the agent reads its queues. PostProcessAdmin always sends over STOMP.
+        self.consumer_protocol = str(config.get("consumer_protocol", "stomp")).lower()
+        if self.consumer_protocol not in ("stomp", "amqp"):
+            raise RuntimeError(f"consumer_protocol must be stomp or amqp, not {config['consumer_protocol']!r}")
+        # Same brokers on the AMQP 1.0 port, for the pull consumer
+        self.amqp_brokers = [
+            (host, port) for host, port in config.get("amqp_brokers", [(host, 5672) for host, _ in self.brokers])
+        ]
         self.sw_dir = config["sw_dir"] if "sw_dir" in config else "/opt/postprocessing"
         self.postprocess_error = config["postprocess_error"]
         # Reduction AMQ queues
@@ -152,6 +160,10 @@ class Configuration:
         if self.comm_only:
             logger.info("  - Running in COMMUNICATION ONLY mode: no post-processing will be performed")
         logger.info("  - LOCAL execution")
+        if self.consumer_protocol == "amqp":
+            logger.info("  - Consumer protocol: AMQP, one job at a time, brokers %s", self.amqp_brokers)
+        else:
+            logger.info("  - Consumer protocol: STOMP, brokers %s", self.brokers)
         logger.info("  - Max number of processes: %s", self.max_procs)
         logger.info("  - Input queues: %s", self.queues)
         if self.per_instrument_queues:
@@ -188,6 +200,12 @@ class StreamToLogger:
         sys.stdout.write(buf)
         for line in buf.rstrip().splitlines():
             self.logger.log(self.log_level, line.rstrip())
+
+    def flush(self):
+        """
+        Python flushes stderr on exit, and exits with code 120 if it can't
+        """
+        sys.stdout.flush()
 
 
 def initialize_logging(log_file, level=logging.INFO, preemptive_cleanup=False):

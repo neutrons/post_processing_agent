@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi9/ubi
 
 RUN dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-RUN dnf install -y python3-requests python3-stomppy python3-pip python3-coverage python3-psutil python-unversioned-command
+RUN dnf install -y python3-requests python3-stomppy python3-qpid-proton cyrus-sasl-plain python3-pip python3-coverage python3-psutil python-unversioned-command
 
 COPY tests/integration/python3-pyoncat-2.1-1.noarch.rpm /tmp/
 RUN dnf install -y /tmp/python3-pyoncat-2.1-1.noarch.rpm
@@ -10,6 +10,10 @@ COPY postprocessing /opt/postprocessing/postprocessing
 COPY scripts /opt/postprocessing/scripts
 COPY pyproject.toml /opt/postprocessing/
 COPY tests/integration/post_processing.conf /etc/autoreduce/post_processing.conf
+
+# Run the same tests with either consumer: CONSUMER_PROTOCOL=amqp docker compose up --build
+ARG CONSUMER_PROTOCOL=stomp
+RUN python3 -c "import json, sys; p = '/etc/autoreduce/post_processing.conf'; c = json.load(open(p)); c['consumer_protocol'] = sys.argv[1]; json.dump(c, open(p, 'w'), indent=4)" "$CONSUMER_PROTOCOL"
 
 RUN pip install --no-cache-dir /opt/postprocessing/
 
@@ -70,6 +74,13 @@ RUN mkdir -p /opt/postprocessing/log && \
     touch /SNS/IMAGING/IPTS-99999/nexus/IMAGING_12346.nxs.h5 && \
     touch /SNS/IMAGING/IPTS-99999/images/20260721_Run_12346_series_0001.fits && \
     touch /SNS/IMAGING/IPTS-99999/images/20260721_Run_12346_series_0002.fits && \
+    \
+    # A reduction that takes a while, for testing what the agent does during a job
+    mkdir -p /SNS/SLOW/IPTS-1/nexus && \
+    mkdir -p /SNS/SLOW/IPTS-1/shared/autoreduce && \
+    touch /SNS/SLOW/IPTS-1/nexus/SLOW_1.nxs.h5 && \
+    mkdir -p /SNS/SLOW/shared/autoreduce && \
+    echo "import time;time.sleep(5)" > /SNS/SLOW/shared/autoreduce/reduce_SLOW.py && \
     \
     chown -R root:root /opt/postprocessing /SNS
 
