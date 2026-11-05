@@ -302,6 +302,20 @@ class TestHeartbeats:
         assert sender.send.call_args.args[0].body == "2"
 
 
+class TestCallbackErrors:
+    def test_logged_instead_of_ending_the_agent(self, start, mocker, caplog):
+        consumer = start()
+        mocker.patch.object(consumer, "send", side_effect=RuntimeError("boom"))
+        message(consumer, mocker, consumer.ping_receiver, b'{"reply_to": "/topic/SNS.COMMON.STATUS.ACK"}')
+        assert "Error in on_message" in caplog.text
+        assert "boom" in caplog.text
+
+    def test_timer_errors_are_logged(self, caplog):
+        timer = amqp_consumer.Timer(lambda: 1 / 0)
+        timer.on_timer_task(None)
+        assert "Error in on_timer_task" in caplog.text
+
+
 class TestPings:
     def ping(self, consumer, mocker, body):
         return message(consumer, mocker, consumer.ping_receiver, body)
@@ -326,7 +340,11 @@ class TestPings:
 
     @pytest.mark.parametrize(
         "body, error",
-        [(b'{"no": "reply_to"}', "Incomplete ping request"), (b"not json", "Could not read ping request")],
+        [
+            (b'{"no": "reply_to"}', "Incomplete ping request"),
+            (b'{"reply_to": 123}', "Incomplete ping request"),
+            (b"not json", "Could not read ping request"),
+        ],
     )
     def test_bad_ping(self, start, mocker, caplog, body, error):
         consumer = start()

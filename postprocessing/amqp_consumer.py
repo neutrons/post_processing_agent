@@ -13,6 +13,7 @@ thread, heartbeats and ping replies keep going while it runs.
 @copyright: 2026 Oak Ridge National Laboratory
 """
 
+import functools
 import json
 import logging
 import os
@@ -51,6 +52,32 @@ def capability(destination):
     return "topic" if destination.startswith("/topic/") else "queue"
 
 
+def log_errors(callback):
+    """
+    Log an error in a proton callback and carry on. proton doesn't catch them, so one that got
+    out would end Container.run() and the agent with it. The STOMP consumer's loop does the same.
+    """
+
+    @functools.wraps(callback)
+    def guarded(*args, **kwargs):
+        try:
+            return callback(*args, **kwargs)
+        except Exception:
+            logging.exception("Error in %s", callback.__name__)
+
+    return guarded
+
+
+def guard_callbacks(cls):
+    """
+    Wrap each proton callback (on_*) of the class in log_errors
+    """
+    for name, method in list(vars(cls).items()):
+        if name.startswith("on_") and callable(method):
+            setattr(cls, name, log_errors(method))
+    return cls
+
+
 class SourceCapability(ReceiverOption):
     """
     Tell Artemis whether we're reading from a queue or a topic
@@ -75,6 +102,7 @@ class TargetCapability(SenderOption):
         sender.target.capabilities.put_object(symbol(self.capability))
 
 
+@guard_callbacks
 class Timer:
     """
     Calls a function when a container timer goes off, so each timer can have its own handler
@@ -87,6 +115,7 @@ class Timer:
         self.callback()
 
 
+@guard_callbacks
 class AmqpConsumer(MessagingHandler):
     """
     ActiveMQ consumer that pulls one message at a time over AMQP
@@ -418,7 +447,7 @@ class AmqpConsumer(MessagingHandler):
         except Exception:
             logging.error("Could not read ping request %s", body)
             return
-        if isinstance(data, dict) and "reply_to" in data:
+        if isinstance(data, dict) and isinstance(data.get("reply_to"), str):
             self.send(data["reply_to"], heartbeat_message(data))
         else:
             logging.error("Incomplete ping request %s", str(data))
