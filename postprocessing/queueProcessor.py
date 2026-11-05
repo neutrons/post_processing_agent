@@ -13,7 +13,11 @@ from postprocessing.Configuration import read_configuration
 
 configuration = read_configuration()
 
-from postprocessing.Consumer import Consumer
+# Only load the AMQP client when it's used, so the STOMP agent runs without it
+if configuration.consumer_protocol == "amqp":
+    from postprocessing.amqp_consumer import AmqpConsumer as Consumer
+else:
+    from postprocessing.Consumer import Consumer
 
 logging.info("Starting post-processing listener %s", importlib.metadata.version("postprocessing"))
 configuration.log_configuration()

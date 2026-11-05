@@ -4,6 +4,8 @@ services:
     build:
       context: ../..
       dockerfile: ./tests/integration/Dockerfile
+      args:
+        CONSUMER_PROTOCOL: ${CONSUMER_PROTOCOL:-stomp}
 
   activemq:
     user: root
@@ -12,6 +14,7 @@ services:
     ports:
       - 8161:8161
       - 61613:61613
+      - 5672:5672
     volumes:
       - ./config/artemis:/var/lib/artemis-instance/etc-override
 

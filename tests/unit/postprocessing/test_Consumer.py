@@ -1,5 +1,4 @@
 # package imports
-from postprocessing.Configuration import Configuration
 from postprocessing.Consumer import Consumer, Listener
 
 # third-party imports
@@ -9,44 +8,12 @@ import pytest
 import json
 import logging
 
-PROCESSORS = [
-    "oncat_processor.ONCatProcessor",
-    "oncat_reduced_processor.ONCatProcessor",
-    "reduction_processor.ReductionProcessor",
-]
 SHARED_QUEUES = [
     "/queue/CATALOG.ONCAT.DATA_READY",
     "/queue/REDUCTION_CATALOG.DATA_READY",
     "/queue/REDUCTION.DATA_READY",
     "/topic/SNS.COMMON.STATUS.PING",
 ]
-
-
-@pytest.fixture
-def make_config(tmp_path):
-    def _make_config(**overrides):
-        config_data = {
-            "failover_uri": "failover:(tcp://localhost:61613)",
-            "brokers": [["broker1", 61613], ["broker2", 61613]],
-            "amq_user": "user",
-            "amq_pwd": "secret",
-            "sw_dir": "/opt/postprocessing",
-            "postprocess_error": "POSTPROCESS.ERROR",
-            "reduction_started": "REDUCTION.STARTED",
-            "reduction_complete": "REDUCTION.COMPLETE",
-            "reduction_error": "REDUCTION.ERROR",
-            "reduction_disabled": "REDUCTION.DISABLED",
-            "heart_beat": "/topic/SNS.COMMON.STATUS.AUTOREDUCE.0",
-            "task_script_queue_arg": "-q",
-            "task_script_data_arg": "-d",
-            "processors": PROCESSORS,
-        }
-        config_data.update(overrides)
-        config_file = tmp_path / "post_processing.conf"
-        config_file.write_text(json.dumps(config_data))
-        return Configuration(config_file.as_posix())
-
-    return _make_config
 
 
 @pytest.fixture
@@ -84,6 +51,24 @@ class TestPerInstrumentConfiguration:
         log_contents = open(test_logger.log_file).read()
         assert "Per-instrument queues: disabled" in log_contents
         assert "Per-instrument queues: ENABLED, discovered every 60.0 s" in log_contents
+
+
+class TestConsumerProtocol:
+    def test_default_is_stomp(self, make_config):
+        conf = make_config()
+        assert conf.consumer_protocol == "stomp"
+        assert conf.amqp_brokers == [("broker1", 5672), ("broker2", 5672)]
+
+    def test_amqp(self, make_config, test_logger):
+        conf = make_config(consumer_protocol="AMQP", amqp_brokers=[["broker1", 5673]])
+        assert conf.consumer_protocol == "amqp"
+        assert conf.amqp_brokers == [("broker1", 5673)]
+        conf.log_configuration(logger=test_logger.logger)
+        assert "Consumer protocol: AMQP" in open(test_logger.log_file).read()
+
+    def test_unknown(self, make_config):
+        with pytest.raises(RuntimeError, match="consumer_protocol must be stomp or amqp, not 'openwire'"):
+            make_config(consumer_protocol="openwire")
 
 
 class TestConsumer:

@@ -4,6 +4,7 @@ description = "Post-processing agent to automatically catalog and reduce neutron
 version = "4.6.0"
 requires-python = ">=3.9"
 dependencies = [
+    "python-qpid-proton",
     "requests",
     "stomp.py",
 ]
@@ -38,6 +39,9 @@ platforms = ["linux-64", "win-64", "osx-64", "osx-arm64"]
 
 [tool.pixi.pypi-dependencies]
 postprocessing = { path = ".", editable = true }
+# AMQP client. There's no conda-forge package, so pixi builds it from the PyPI source
+# with the compiler, OpenSSL and Cyrus SASL below.
+python-qpid-proton = ">=0.37"
 
 [tool.pixi.dependencies]
 python = ">=3.9"
@@ -46,6 +50,10 @@ psutil = "*"
 requests = "*"
 "stomp.py" = "7.*"
 pyoncat = "*"
+c-compiler = "*"
+pkg-config = "*"
+openssl = "*"
+cyrus-sasl = "*"
 
 [tool.pixi.feature.test.dependencies]
 pytest = "*"

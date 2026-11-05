@@ -22,6 +22,9 @@ Requires: python%{python3_pkgversion}
 Requires: python%{python3_pkgversion}-psutil
 Requires: python%{python3_pkgversion}-requests
 Requires: python%{python3_pkgversion}-stomppy
+Requires: python%{python3_pkgversion}-qpid-proton
+# qpid-proton logs in through Cyrus SASL, which needs this plugin for username/password
+Requires: cyrus-sasl-plain
 Requires: python%{python3_pkgversion}-pyoncat
 Requires: python-unversioned-command
 Requires: systemd

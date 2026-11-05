@@ -40,6 +40,20 @@ subscribes to the required queues, as described in [Tasks and queues](#tasks-and
 | `"log_file"` | Path to the log file                                                                                        | `post_processing.log` |
 | `"heart_beat"` | Topic the agent will send heartbeats to                                                                     | `/topic/SNS.COMMON.STATUS.AUTOREDUCE.0` |
 | `"heartbeat_ping"` | Topic the agent will subscribe to for ping requests                                                         | `/topic/SNS.COMMON.STATUS.PING` |
+| `"consumer_protocol"` | How the agent reads its queues: `"stomp"` or `"amqp"` (see [Reading queues over AMQP](#reading-queues-over-amqp)) | `"stomp"` |
+| `"amqp_brokers"` | Host name and port of the broker(s) on the AMQP port, used when `"consumer_protocol"` is `"amqp"` | port 5672 on each of `"brokers"` |
+
+### Reading queues over AMQP
+
+Over STOMP the broker always hands each subscription one message ahead, so a node busy with a long
+reduction can sit on runs that an idle node could start. With `"consumer_protocol": "amqp"` the agent
+holds no messages at all: when it's free it asks the next queue in turn for one message and runs it.
+Heartbeats, pings and per-instrument queue discovery work the same way. Pings are also answered
+while a job is running.
+
+Only reading changes. `PostProcessAdmin` still sends its status messages over STOMP, and the
+workflow manager doesn't need any changes. In this mode the agent runs one job at a time, which is
+what the STOMP agent does in practice, so `"max_procs"` and `"jobs_per_instrument"` don't apply.
 
 ### Per-instrument queues
 

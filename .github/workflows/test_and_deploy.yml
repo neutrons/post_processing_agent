@@ -35,6 +35,13 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     needs: tests
+    strategy:
+      fail-fast: false
+      matrix:
+        consumer_protocol: [stomp, amqp]
+    env:
+      # Read by docker compose to build the agent, and by the tests that only apply to one protocol
+      CONSUMER_PROTOCOL: ${{ matrix.consumer_protocol }}
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v7
