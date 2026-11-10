@@ -20,6 +20,7 @@ BuildRequires: systemd-rpm-macros
 
 Requires: python%{python3_pkgversion}
 Requires: python%{python3_pkgversion}-psutil
+Requires: python%{python3_pkgversion}-pyyaml
 Requires: python%{python3_pkgversion}-requests
 Requires: python%{python3_pkgversion}-stomppy
 Requires: python%{python3_pkgversion}-qpid-proton
