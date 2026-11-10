@@ -199,6 +199,35 @@ or
 
 as an example for how to activate a specific conda environment for reduction.
 
+Checking an instrument autoregister config
+------------------------------------------
+
+When an instrument has an autoregister config, the Calvera reduced processor registers the files
+in the output directory that match the regexes in
+``/<facility>/<instrument>/shared/tiled-autoregister-config.yaml``:
+
+    file_patterns:
+      - "^{instrument}_{run_number}_reduced\\.txt$"
+      - "^ort/{instrument}_{run_number}\\.ort$"
+      - "^reflectivity_{run_number}_\\d+\\.dat$"
+      - pattern: "^ort/{instrument}_{run_number}_(?P<angle>\\d+)\\.ort$"
+        tiled_path: "{instrument}/{ipts}/run_{run_number}/angle_\\g<angle>.ort"
+
+The placeholders ``{facility}``, ``{instrument}``, ``{ipts}`` and ``{run_number}`` are replaced with
+the values for the run, where the instrument and run number come from the raw file name. They are
+all optional, but a pattern without ``{run_number}`` matches the files of every run. Each regex must
+match the whole file path relative to the output directory.
+
+An entry is either a regex or a mapping with a ``pattern`` regex and an optional ``tiled_path``,
+the path of the file in Tiled. The ``tiled_path`` can refer to the groups captured by the regex
+as ``\1`` or ``\g<name>``. If a file matches more than one entry, the first one sets its
+``tiled_path``. Each output file in the message to Calvera has a ``tiled_path`` key when its entry
+configures one, and two files with the same ``tiled_path`` are an error.
+
+To list the files that would be registered for a run, with their Tiled paths, execute
+
+    $ pixi run python scripts/check_autoregister_config.py [nexus file] [Output Dir]
+
 
 Running with docker
 -------------------
