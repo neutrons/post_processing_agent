@@ -3,7 +3,7 @@ import json
 import pytest
 
 from scripts import check_autoregister_config
-from scripts.check_autoregister_config import facility_and_instrument, main
+from scripts.check_autoregister_config import facility_instrument_and_ipts, main
 
 NEXUS_FILE = "/SNS/REF_L/IPTS-1/nexus/REF_L_12345.nxs.h5"
 
@@ -36,13 +36,13 @@ def output_dir(tmp_path):
     return path
 
 
-def test_facility_and_instrument():
-    assert facility_and_instrument("/sns/ref_l/IPTS-1/nexus/REF_L_12345.nxs.h5") == ("SNS", "REF_L")
+def test_facility_instrument_and_ipts():
+    assert facility_instrument_and_ipts("/sns/ref_l/ipts-1/nexus/REF_L_12345.nxs.h5") == ("SNS", "REF_L", "IPTS-1")
 
 
-def test_facility_and_instrument_too_short():
+def test_facility_instrument_and_ipts_too_short():
     with pytest.raises(ValueError):
-        facility_and_instrument("/REF_L_12345.nxs.h5")
+        facility_instrument_and_ipts("/SNS/REF_L_12345.nxs.h5")
 
 
 def test_main_lists_matching_files(config_path, lookups, output_dir, capsys):
@@ -65,6 +65,33 @@ def test_main_lists_matching_files(config_path, lookups, output_dir, capsys):
             {"location": str(output_dir / "ort" / "REF_L_12345.ort")},
         ],
     }
+
+
+def test_main_prints_tiled_paths(config_path, output_dir, capsys):
+    config_path.write_text(
+        "file_patterns:\n"
+        '  - "^{instrument}_{run_number}_reduced\\\\.txt$"\n'
+        '  - pattern: "^ort/{instrument}_(?P<run>\\\\d+)\\\\.ort$"\n'
+        '    tiled_path: "{facility}/{instrument}/{ipts}/run_\\\\g<run>.ort"\n'
+    )
+
+    assert main([NEXUS_FILE, str(output_dir)]) == 0
+
+    out = capsys.readouterr().out
+    assert "    tiled_path: SNS/REF_L/IPTS-1/run_\\g<run>.ort\n" in out
+    assert "    tiled_path: SNS/REF_L/IPTS-1/run_12345.ort\n" in out
+    reduced_data_info = json.loads(out[out.index("{") :])
+    assert reduced_data_info["output_files"] == [
+        {"location": str(output_dir / "REF_L_12345_reduced.txt")},
+        {"location": str(output_dir / "ort" / "REF_L_12345.ort"), "tiled_path": "SNS/REF_L/IPTS-1/run_12345.ort"},
+    ]
+
+
+def test_main_duplicate_tiled_paths(config_path, output_dir, capsys):
+    config_path.write_text('file_patterns:\n  - pattern: "^.*{run_number}.*$"\n    tiled_path: "same"\n')
+
+    assert main([NEXUS_FILE, str(output_dir)]) == 1
+    assert "same tiled_path" in capsys.readouterr().err
 
 
 def test_main_no_matching_files(config_path, output_dir, capsys):

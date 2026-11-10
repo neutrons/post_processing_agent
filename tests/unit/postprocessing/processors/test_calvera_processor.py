@@ -45,13 +45,28 @@ def test_autoregister_config_path():
     assert proc._autoregister_config_path() == "/SNS/REF_L/shared/tiled-autoregister-config.yaml"
 
 
-def test_reduction_json_takes_precedence(processor):
+def write_reduction_json(processor):
     reduction_info = {"input_files": ["a"], "output_files": [{"location": "b"}]}
     with open(f"{processor.output_dir}/REF_L_12345.json", "w") as f:
         json.dump(reduction_info, f)
-    write_config(processor, 'file_patterns:\n  - "^.*$"\n')
+    return reduction_info
+
+
+def test_reduction_json_without_config(processor):
+    reduction_info = write_reduction_json(processor)
 
     assert processor._prepare_send_data()["reduced_data_info"] == reduction_info
+
+
+def test_config_takes_precedence_over_reduction_json(processor):
+    write_reduction_json(processor)
+    write_config(processor, 'file_patterns:\n  - "^{instrument}_{run_number}_reduced\\\\.txt$"\n')
+    touch_output_files(processor, "REF_L_12345_reduced.txt")
+
+    assert processor._prepare_send_data()["reduced_data_info"] == {
+        "input_files": [processor.data_file],
+        "output_files": [{"location": f"{processor.output_dir}/REF_L_12345_reduced.txt"}],
+    }
 
 
 def test_files_from_config(processor):
@@ -97,6 +112,7 @@ def test_no_json_and_no_config(processor):
 
 
 def test_config_matches_no_files(processor):
+    write_reduction_json(processor)  # not used as a fallback
     write_config(processor, 'file_patterns:\n  - "^{instrument}_{run_number}\\\\.txt$"\n')
     touch_output_files(processor, "REF_L_99999.txt")
 
@@ -109,4 +125,82 @@ def test_config_without_file_patterns(processor, contents):
     write_config(processor, contents)
 
     with pytest.raises(ValueError, match="does not define a list of file_patterns"):
+        processor._prepare_send_data()
+
+
+def test_tiled_path_from_config(processor):
+    write_config(
+        processor,
+        "file_patterns:\n"
+        '  - pattern: "^ort/{instrument}_{run_number}_(?P<angle>\\\\d+)\\\\.ort$"\n'
+        '    tiled_path: "{facility}/{instrument}/{ipts}/run_{run_number}/angle_\\\\g<angle>.ort"\n'
+        '  - "^{instrument}_{run_number}_reduced\\\\.txt$"\n',
+    )
+    touch_output_files(processor, "ort/REF_L_12345_1.ort", "ort/REF_L_12345_2.ort", "REF_L_12345_reduced.txt")
+
+    output_files = processor._prepare_send_data()["reduced_data_info"]["output_files"]
+
+    assert output_files == [
+        {"location": f"{processor.output_dir}/REF_L_12345_reduced.txt"},
+        {
+            "location": f"{processor.output_dir}/ort/REF_L_12345_1.ort",
+            "tiled_path": "SNS/REF_L/IPTS-1/run_12345/angle_1.ort",
+        },
+        {
+            "location": f"{processor.output_dir}/ort/REF_L_12345_2.ort",
+            "tiled_path": "SNS/REF_L/IPTS-1/run_12345/angle_2.ort",
+        },
+    ]
+
+
+def test_mapping_without_tiled_path(processor):
+    write_config(processor, 'file_patterns:\n  - pattern: "^{instrument}_{run_number}_reduced\\\\.txt$"\n')
+    touch_output_files(processor, "REF_L_12345_reduced.txt")
+
+    output_files = processor._prepare_send_data()["reduced_data_info"]["output_files"]
+
+    assert output_files == [{"location": f"{processor.output_dir}/REF_L_12345_reduced.txt"}]
+
+
+def test_first_matching_pattern_sets_tiled_path(processor):
+    write_config(
+        processor,
+        "file_patterns:\n"
+        '  - pattern: "^{instrument}_{run_number}_reduced\\\\.txt$"\n'
+        '    tiled_path: "first.txt"\n'
+        '  - pattern: "^.*\\\\.txt$"\n'
+        '    tiled_path: "second.txt"\n',
+    )
+    touch_output_files(processor, "REF_L_12345_reduced.txt")
+
+    output_files = processor._prepare_send_data()["reduced_data_info"]["output_files"]
+
+    assert output_files == [{"location": f"{processor.output_dir}/REF_L_12345_reduced.txt", "tiled_path": "first.txt"}]
+
+
+def test_duplicate_tiled_paths(processor):
+    write_config(
+        processor,
+        "file_patterns:\n"
+        '  - pattern: "^{instrument}_{run_number}_\\\\d\\\\.txt$"\n'
+        '    tiled_path: "{run_number}.txt"\n',
+    )
+    touch_output_files(processor, "REF_L_12345_1.txt", "REF_L_12345_2.txt")
+
+    with pytest.raises(ValueError, match="More than one file maps to the same tiled_path: 12345.txt"):
+        processor._prepare_send_data()
+
+
+@pytest.mark.parametrize(
+    "entry, message",
+    [
+        ("  - 1\n", "neither a regex nor a mapping with a pattern"),
+        ("  - tiled_path: foo\n", "neither a regex nor a mapping with a pattern"),
+        ('  - pattern: "^a$"\n    tiled_path: 1\n', "tiled_path of '\\^a\\$' is not a string"),
+    ],
+)
+def test_invalid_file_pattern_entry(processor, entry, message):
+    write_config(processor, "file_patterns:\n" + entry)
+
+    with pytest.raises(ValueError, match=message):
         processor._prepare_send_data()
