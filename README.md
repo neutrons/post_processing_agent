@@ -228,6 +228,11 @@ To list the files that would be registered for a run, with their Tiled paths, ex
 
     $ pixi run python scripts/check_autoregister_config.py [nexus file] [Output Dir]
 
+To check a config in another location before adding it to the instrument's ``shared`` directory, pass
+its path with ``--config``:
+
+    $ pixi run python scripts/check_autoregister_config.py --config [config file] [nexus file] [Output Dir]
+
 
 Running with docker
 -------------------
