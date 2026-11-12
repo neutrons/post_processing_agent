@@ -215,8 +215,13 @@ in the output directory that match the regexes in
 
 The placeholders ``{facility}``, ``{instrument}``, ``{ipts}`` and ``{run_number}`` are replaced with
 the values for the run, where the instrument and run number come from the raw file name. They are
-all optional, but a pattern without ``{run_number}`` matches the files of every run. Each regex must
-match the whole file path relative to the output directory.
+all optional, but a pattern without ``{run_number}`` matches the files of every run.
+
+Each regex must match the whole path of a file relative to the run's output directory,
+``/<facility>/<instrument>/<IPTS>/shared/autoreduce/``, with ``/`` as the separator and no leading
+``/``. The output directory is searched recursively, so a file in a subdirectory matches a pattern
+that includes the subdirectory, such as ``^ort/{instrument}_{run_number}\.ort$`` for
+``/<facility>/<instrument>/<IPTS>/shared/autoreduce/ort/<instrument>_<run_number>.ort``.
 
 An entry is either a regex or a mapping with a ``pattern`` regex and an optional ``tiled_path``,
 the path of the file in Tiled. The ``tiled_path`` can refer to the groups captured by the regex
@@ -227,6 +232,9 @@ configures one, and two files with the same ``tiled_path`` are an error.
 To list the files that would be registered for a run, with their Tiled paths, execute
 
     $ pixi run python scripts/check_autoregister_config.py [nexus file] [Output Dir]
+
+The script matches the patterns against the paths relative to ``[Output Dir]``, which is the run's
+``/<facility>/<instrument>/<IPTS>/shared/autoreduce`` directory or a copy of it.
 
 To check a config in another location before adding it to the instrument's ``shared`` directory, pass
 its path with ``--config``:
