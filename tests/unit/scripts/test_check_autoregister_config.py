@@ -87,6 +87,26 @@ def test_main_prints_tiled_paths(config_path, output_dir, capsys):
     ]
 
 
+def test_main_config_option(config_path, lookups, output_dir, tmp_path, capsys):
+    other_config_path = tmp_path / "other-config.yaml"
+    other_config_path.write_text('file_patterns:\n  - "^ort/{instrument}_{run_number}\\\\.ort$"\n')
+
+    assert main([NEXUS_FILE, str(output_dir), "--config", str(other_config_path)]) == 0
+
+    assert lookups == []
+    out = capsys.readouterr().out
+    assert f"Config: {other_config_path}\n" in out
+    reduced_data_info = json.loads(out[out.index("{") :])
+    assert reduced_data_info["output_files"] == [{"location": str(output_dir / "ort" / "REF_L_12345.ort")}]
+
+
+def test_main_missing_config_option(config_path, output_dir, tmp_path, capsys):
+    config_path.write_text('file_patterns:\n  - "^.*$"\n')
+
+    assert main([NEXUS_FILE, str(output_dir), "--config", str(tmp_path / "missing.yaml")]) == 1
+    assert "missing.yaml does not exist" in capsys.readouterr().err
+
+
 def test_main_duplicate_tiled_paths(config_path, output_dir, capsys):
     config_path.write_text('file_patterns:\n  - pattern: "^.*{run_number}.*$"\n    tiled_path: "same"\n')
 

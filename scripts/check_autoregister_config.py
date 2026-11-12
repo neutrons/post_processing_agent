@@ -2,10 +2,11 @@
 """
 Check an instrument's autoregister config against a run.
 
-Looks up the config at /<facility>/<instrument>/shared/tiled-autoregister-config.yaml, where the
-facility, instrument and IPTS come from the NeXus file path /<facility>/<instrument>/<IPTS>/nexus/...,
-and prints the files in the output directory that the Calvera reduced processor would register
-for the run, with their Tiled paths, along with the reduced data info it would send.
+Looks up the config at /<facility>/<instrument>/shared/tiled-autoregister-config.yaml, or uses the
+config given with --config, where the facility, instrument and IPTS come from the NeXus file path
+/<facility>/<instrument>/<IPTS>/nexus/..., and prints the files in the output directory that the
+Calvera reduced processor would register for the run, with their Tiled paths, along with the
+reduced data info it would send.
 """
 
 import argparse
@@ -38,6 +39,11 @@ def main(argv=None):
     )
     parser.add_argument("nexus_file", help="path to the raw data file, <instrument>_<run_number>.nxs.h5")
     parser.add_argument("output_dir", help="directory containing the reduced files to register")
+    parser.add_argument(
+        "--config",
+        help="path to an autoregister config to check instead of the instrument's "
+        "/<facility>/<instrument>/shared/tiled-autoregister-config.yaml",
+    )
     args = parser.parse_args(argv)
 
     if not args.nexus_file.endswith(".nxs.h5"):
@@ -53,7 +59,7 @@ def main(argv=None):
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
-    config_path = autoregister_config_path(facility, instrument)
+    config_path = args.config or autoregister_config_path(facility, instrument)
     print(f"Config: {config_path}")
     if not os.path.exists(config_path):
         print(f"Error: {config_path} does not exist", file=sys.stderr)
